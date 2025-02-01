@@ -5,9 +5,6 @@ import { cookies } from 'next/headers'
 import { revalidateTag } from "next/cache";
 import { Event, GitHubContent, Subject, PrimitiveSubject, User, Ranking, MainPost, Message, FetchedUser } from "@/app/lib/definitions";
 import { redirect } from 'next/navigation';
-import { get } from 'http';
-import { use } from 'react';
-import { mutate } from 'swr';
 
 
 
@@ -141,6 +138,7 @@ export async function getEvent(id: string) {
 }
 
 export async function getPrimitiveSubjects() {
+  console.log('jijia getPrimitiveSubjects')
   const response = await fetch(process.env.BASE_URL as string + '/api/primitive-subjects', {
     headers: {
       Cookie: cookies().toString()
@@ -149,6 +147,7 @@ export async function getPrimitiveSubjects() {
   if (!response.ok) {
     throw new Error('Failed to fetch primitive subjects');
   }
+  console.log('response', response)
   const primitive_subjects: PrimitiveSubject[] = await response.json();
   return primitive_subjects;
 }
@@ -290,7 +289,7 @@ export async function updateUser(formData: FormData) {
 
 
 export async function getFiles(): Promise<{structure: GitHubContent[], error: string}> {
-  const res = await fetch(process.env.BASE_URL as string + "/api/files", { 
+  const res = await fetch(process.env.BASE_URL as string + "/api/files/" , { 
     headers: {
       Cookie: cookies().toString()
     },

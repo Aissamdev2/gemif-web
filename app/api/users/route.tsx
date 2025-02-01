@@ -1,11 +1,11 @@
 import { sql } from '@vercel/postgres'
-import { verifySession } from '@/app/lib/helpers'
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const verification = await verifySession();
-    const session = verification.session
-    if (!session) return new Response('Unauthorized', { status: 401 })
+    const userId = request.headers.get('X-User-Id');
+    if (!userId) {
+      return new Response('Unauthorized', { status: 401 });
+    }
     const users = (await sql`SELECT id, name, year, color, role FROM users`).rows
     return new Response(JSON.stringify(users))
 

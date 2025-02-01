@@ -1,12 +1,11 @@
 import { sql } from '@vercel/postgres'
-import { verifySession } from '@/app/lib/helpers'
 
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
-    const verification = await verifySession();
-    const session = verification.session
-    if (!session) return new Response('Unauthorized', { status: 401 })
-    const { id: userId } = session;
+    const userId = request.headers.get('X-User-Id');
+    if (!userId) {
+      return new Response('Unauthorized', { status: 401 });
+    }
     const result = await sql`SELECT role FROM users WHERE id = ${userId}`;
     const role = result.rows[0].role;
     if (role !== 'admin' && role !== 'dev') return new Response('Unauthorized, not enough permission', { status: 401 })
@@ -21,10 +20,10 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   try {
-    const verification = await verifySession();
-    const session = verification.session
-    if (!session) return new Response('Unauthorized', { status: 401 })
-    const { id: userId } = session;
+    const userId = request.headers.get('X-User-Id');
+    if (!userId) {
+      return new Response('Unauthorized', { status: 401 });
+    }
     const result = await sql`SELECT role FROM users WHERE id = ${userId}`;
     const role = result.rows[0].role;
     if (role !== 'admin' && role !== 'dev') return new Response('Unauthorized, not enough permission', { status: 401 })

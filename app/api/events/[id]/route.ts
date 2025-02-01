@@ -1,13 +1,12 @@
 import { sql } from '@vercel/postgres'
-import { verifySession } from '@/app/lib/helpers'
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
 
   try {
-    const verification = await verifySession();
-    const session = verification.session
-    if (!session) return new Response('Unauthorized', { status: 401 })
-    const { id: userId } = session
+    const userId = request.headers.get('X-User-Id');
+    if (!userId) {
+      return new Response('Unauthorized', { status: 401 });
+    }
     const { id } = params
     const event = (await sql`SELECT * FROM events WHERE id = ${id} AND userId = ${userId}`).rows[0]
     return new Response(JSON.stringify(event))
@@ -19,10 +18,10 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   try {
-    const verification = await verifySession();
-    const session = verification.session
-    if (!session) return new Response('Unauthorized', { status: 401 })
-    const { id: userId } = session;
+    const userId = request.headers.get('X-User-Id');
+    if (!userId) {
+      return new Response('Unauthorized', { status: 401 });
+    }
     const { id } = params;
 
     const body = await request.json();
@@ -92,10 +91,10 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
-    const verification = await verifySession();
-    const session = verification.session
-    if (!session) return new Response('Unauthorized', { status: 401 })
-    const { id: userId } = session;
+    const userId = request.headers.get('X-User-Id');
+    if (!userId) {
+      return new Response('Unauthorized', { status: 401 });
+    }
     const { id } = params;
     await sql`DELETE FROM events WHERE id = ${id} AND userId = ${userId}`;
     return new Response('Event deleted');

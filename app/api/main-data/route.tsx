@@ -1,4 +1,3 @@
-import { verifySession } from "@/app/lib/helpers";
 export type GitHubContent = {
   name: string;
   path: string;
@@ -6,19 +5,23 @@ export type GitHubContent = {
   children?: GitHubContent[]; // Only for directories
 };
 
-export async function GET() {
+export async function GET(request: Request) {
   const owner = "gemif-web"; // Replace with your GitHub username
   const repo = "Archive"; // Replace with your repo name
   const branch = "main"; // Replace with your branch name
   const baseURL = `https://api.github.com/repos/${owner}/${repo}/contents/`;
 
-  const verification = await verifySession();
-  const session = verification.session;
-  if (!session) return new Response("Unauthorized", { status: 401 });
+  const userId = request.headers.get('X-User-Id');
+  if (!userId) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+  const token = request.headers.get('X-User-Github-Token');
+  if (!token) {
+    return new Response('Unauthorized', { status: 401 });
+  }
 
   // Helper function to fetch the structure recursively
   async function fetchStructure(path = "main-data"): Promise<GitHubContent[]> {
-    const token = session?.githubtoken; // Set this in your `.env.local`
 
     const headers: HeadersInit = token
       ? { Authorization: `Bearer ${token}` }

@@ -17,7 +17,6 @@ export async function signUp(formData: FormData): Promise<{user: User | null, er
   const hashedPassword = await bcrypt.hash(password, 10);
   const role = "user";
 
-  console.log(key, process.env.SIGNUP_KEY, process.env.SIGNUP_KEY === key);
   if (key !== process.env.SIGNUP_KEY) {
     console.log('Entered signup key check failed');
     return { user: null, error: "CLAVE INCORRECTA" };
@@ -26,7 +25,6 @@ export async function signUp(formData: FormData): Promise<{user: User | null, er
   const tokens = await client.sql<Token>`SELECT * FROM githubtokens`;
 
   const tokensArray = tokens.rows.filter((token) => {
-    console.log(token.assigned);
     return !token.assigned
   });
 

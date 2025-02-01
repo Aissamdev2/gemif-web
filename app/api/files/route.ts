@@ -1,4 +1,3 @@
-import { verifySession } from "@/app/lib/helpers";
 import { ARCHIVE_FOLDER_ORDER } from "@/app/lib/utils";
 
 
@@ -12,15 +11,21 @@ export type GitHubContent = {
   children?: GitHubContent[];
 };
 
-export async function GET() {
-  const verification = await verifySession();
-  const session = verification.session;
-  if (!session) return new Response("Unauthorized", { status: 401 });
+export async function GET(request: Request) {
+  const userId = request.headers.get('X-User-Id');
+  if (!userId) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+
+  const token = request.headers.get('X-User-Github-Token');
+  if (!token) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+  
 
   const owner = "gemif-web"; // Your GitHub organization
   const repo = "Archive"; // Your repository
   const path = "archive"; // The root path to fetch
-  const token = session?.githubtoken;
 
   try {
     const contents = await fetchGitHubRepoContents({ owner, repo, path, token });

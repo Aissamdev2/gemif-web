@@ -1,7 +1,4 @@
 import {  sql } from '@vercel/postgres'
-import { verifySession } from '@/app/lib/helpers'
-import { getSubjects } from '@/app/lib/actions';
-
 // export async function GET() {
 //   try {
 //     const verification = await verifySession();
@@ -27,16 +24,14 @@ import { getSubjects } from '@/app/lib/actions';
 //   }
 // }
 
-export async function GET() {
+export async function GET({ request }: { request: Request }) {
   try {
-    const verification = await verifySession();
-    const session = verification.session;
-    if (!session) return new Response('Unauthorized', { status: 401 });
-
-    const { id: userId } = session;
-
+    const userId = request.headers.get('X-User-Id');
+    if (!userId) {
+      return new Response('Unauthorized', { status: 401 });
+    }
     // Fetch subjects and extract primitive IDs
-    const subjects = await getSubjects();
+    const subjects = (await sql`SELECT * FROM subjects WHERE userId = ${userId};`).rows;
     const primitiveIds = subjects
       .map(subject => subject.primitiveid)
       .filter((id): id is string => !!id); // Ensure primitiveIds is string[]
@@ -73,14 +68,15 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const verification = await verifySession();
-    const session = verification.session
-    if (!session) return new Response('Unauthorized', { status: 401 })
+    const userId = request.headers.get('X-User-Id');
+    if (!userId) {
+      return new Response('Unauthorized', { status: 401 });
+    }
     const body = await request.json()
     if (!body)return new Response('Invalid request body', { status: 400 })
     const { name, date, time, description, subjectid, primitiveid, scope } = body
     if (!name || !date) return new Response('Missing required fields', { status: 400 })
-    await sql`INSERT INTO events (name, description, date, time, userId, subjectId, primitiveid, scope) VALUES (${name}, ${description}, ${date}, ${time}, ${session.id}, ${subjectid}, ${primitiveid}, ${scope});`
+    await sql`INSERT INTO events (name, description, date, time, userId, subjectId, primitiveid, scope) VALUES (${name}, ${description}, ${date}, ${time}, ${userId}, ${subjectid}, ${primitiveid}, ${scope});`
     return new Response('Event created')
   } catch (error) {
     console.log(error)
