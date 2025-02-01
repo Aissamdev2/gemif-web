@@ -1,4 +1,4 @@
-import { Event, Subject, PrimitiveSubject } from "../lib/definitions"
+import { Event, Subject } from "../lib/definitions"
 import { dateToString } from "../lib/utils";
 import DashboardSkeleton from "./dashboard-skeleton";
 import Link from "next/link";

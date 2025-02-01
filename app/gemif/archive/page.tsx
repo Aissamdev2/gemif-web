@@ -1,9 +1,7 @@
 'use client'
 
-import { GitHubContent } from "@/app/lib/definitions";
 import { useFiles } from "@/app/lib/use-files";
 import FileTree from "@/app/ui/file-tree";
-import FolderToggle from "@/app/ui/folder-toggle";
 import Loader from "@/app/ui/loader";
 import React from "react";
 import { OctagonAlert } from "lucide-react";

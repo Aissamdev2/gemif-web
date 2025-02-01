@@ -1,12 +1,11 @@
 'use client'
 
 import { useFormStatus, useFormState } from "react-dom";
-import { addEvent, addMainPost, updateMainPost } from "@/app/lib/actions";
+import { updateMainPost } from "@/app/lib/actions";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SWRProvider } from "../lib/swr-provider";
 import { mutate } from "swr";
-import clsx from "clsx";
 import { useUser } from "../lib/use-user";
 import { useMainPosts } from "../lib/use-main-posts";
 import { TITLES } from "../lib/utils";

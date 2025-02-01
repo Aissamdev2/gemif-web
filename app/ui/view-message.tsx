@@ -1,15 +1,12 @@
 'use client'
 
 import { useFormStatus, useFormState } from "react-dom";
-import { addEvent, addMainPost, deleteMainPost, deleteMessage } from "@/app/lib/actions";
+import { deleteMessage } from "@/app/lib/actions";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { SWRProvider } from "../lib/swr-provider";
 import { mutate } from "swr";
-import clsx from "clsx";
 import { useUser } from "../lib/use-user";
-import { useMainPosts } from "../lib/use-main-posts";
-import { MainPost, Message, User } from "../lib/definitions";
+import {  Message, User } from "../lib/definitions";
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { useMessages } from "../lib/use-messages";
 

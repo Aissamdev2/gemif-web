@@ -2,7 +2,6 @@
 
 import Image from "next/image"
 import { useEffect, useRef, useState } from "react";
-import { Message, User } from "../lib/definitions";
 import { useUser } from "../lib/use-user";
 import Link from "next/link";
 import { HEADER_OPTIONS } from "../lib/utils";

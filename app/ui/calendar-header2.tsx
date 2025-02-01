@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useContext } from "react";
+import { useContext } from "react";
 import { MONTHS } from "../lib/utils";
 import { DateContext } from "../lib/date-context";
 

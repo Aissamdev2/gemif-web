@@ -1,7 +1,7 @@
 'use client'
 
 import { updateSubject } from "@/app/lib/actions";
-import { PrimitiveSubject, Ranking, Subject } from "@/app/lib/definitions";
+import { PrimitiveSubject, Subject } from "@/app/lib/definitions";
 import { usePrimitiveSubjects } from "@/app/lib/use-primitive-subjects";
 import { useRanking } from "@/app/lib/use-ranking";
 import { useSubjects } from "@/app/lib/use-subjects";

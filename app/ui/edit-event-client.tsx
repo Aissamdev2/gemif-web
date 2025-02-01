@@ -1,12 +1,11 @@
 'use client'
 
 import { useEffect, useState } from "react";
-import { Event, Subject, PrimitiveSubject, User } from "../lib/definitions";
+import { Event, Subject } from "../lib/definitions";
 import { useRouter } from "next/navigation";
 import { useFormState, useFormStatus } from "react-dom";
 import { updateEvent } from "../lib/actions";
 import { useUser } from "../lib/use-user";
-import { getSubjects } from "../lib/utils";
 import { useSubjects } from "../lib/use-subjects";
 
 export default function EditEventClient({ event }: { event: Event }) {

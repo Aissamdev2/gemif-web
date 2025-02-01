@@ -1,8 +1,8 @@
-import CalendarClient from "./calendar-client"
+// import CalendarClient from "./calendar-client"
 
-export default async function CalendarEvents() {
+// export default async function CalendarEvents() {
 
-  return (
-    <CalendarClient />
-  )
-}
+//   return (
+//     <CalendarClient />
+//   )
+// }

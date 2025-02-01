@@ -1,12 +1,10 @@
 'use client'
 
 import { useFormStatus, useFormState } from "react-dom";
-import { addEvent, addMainPost, deleteMainPost } from "@/app/lib/actions";
+import { deleteMainPost } from "@/app/lib/actions";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { SWRProvider } from "../lib/swr-provider";
 import { mutate } from "swr";
-import clsx from "clsx";
 import { useUser } from "../lib/use-user";
 import { useMainPosts } from "../lib/use-main-posts";
 import { MainPost, User } from "../lib/definitions";

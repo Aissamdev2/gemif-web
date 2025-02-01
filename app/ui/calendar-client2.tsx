@@ -1,8 +1,7 @@
 import { useContext } from "react";
 import { compareDates, getCalendarDates } from "../lib/utils";
 import { DateContext } from "../lib/date-context";
-import { Subject, Event, SubjectInfo, PrimitiveSubject } from "../lib/definitions";
-import SubjectTag from "./subject-tag2";
+import { Subject, Event, PrimitiveSubject } from "../lib/definitions";
 import CalendarClientSkeleton from "./calendar-client-skeleton";
 import Link from "next/link";
 

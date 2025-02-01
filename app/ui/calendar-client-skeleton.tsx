@@ -1,8 +1,3 @@
-import { useContext } from "react";
-import { compareDates, getCalendarDates } from "../lib/utils";
-import { DateContext } from "../lib/date-context";
-import { Subject, Event } from "../lib/definitions";
-import SubjectTag from "./subject-tag2";
 
 export default function CalendarClientSkeleton() {
 

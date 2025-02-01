@@ -1,16 +1,15 @@
 'use client'
 
 import { useFormStatus, useFormState } from "react-dom";
-import { addEvent, addMainPost } from "@/app/lib/actions";
+import {  addMainPost } from "@/app/lib/actions";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SWRProvider } from "../lib/swr-provider";
 import { mutate } from "swr";
-import clsx from "clsx";
 import { useUser } from "../lib/use-user";
 import { TITLES } from "../lib/utils";
 import { useMainData } from "../lib/use-main-data";
-import { GitHubContent, User } from "../lib/definitions";
+import {  User } from "../lib/definitions";
 import { OctagonAlert } from "lucide-react";
 import Loader from "./loader";
 

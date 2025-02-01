@@ -1,12 +1,11 @@
 'use server';
 
 import bcrypt from "bcrypt";
-import { db, VercelPoolClient } from "@vercel/postgres";
+import { db } from "@vercel/postgres";
 import { SignJWT } from "jose";
-import { Subject, PrimitiveSubject, User, UserCookie, Token } from "@/app/lib/definitions";
+import { User, UserCookie, Token } from "@/app/lib/definitions";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { getPrimitiveSubjects } from "./actions";
 
 export async function signUp(formData: FormData): Promise<{user: User | null, error: string}> {
   const client = await db.connect();

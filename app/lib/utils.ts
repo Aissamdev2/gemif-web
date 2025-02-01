@@ -1,4 +1,4 @@
-import { SUBJECTS, SUBJECTS_PLAIN } from "./subjects";
+import { SUBJECTS_PLAIN } from "./subjects";
 
 export const MONTH_DAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 export const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];

@@ -1,6 +1,5 @@
 
 import { getEvent, getUser } from "../lib/actions"
-import { useUser } from "../lib/use-user"
 import EditEventClient from "./edit-event-client"
 
 export default async function EditEvent({ id }: { id: string }) {

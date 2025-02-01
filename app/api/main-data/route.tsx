@@ -1,6 +1,4 @@
 import { verifySession } from "@/app/lib/helpers";
-import { ARCHIVE_FOLDER_ORDER } from "@/app/lib/utils";
-
 export type GitHubContent = {
   name: string;
   path: string;

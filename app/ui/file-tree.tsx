@@ -1,4 +1,3 @@
-import { memo } from "react";
 import { GitHubContent } from "../lib/definitions";
 import FolderToggle from "./folder-toggle";
 import { File } from "lucide-react";

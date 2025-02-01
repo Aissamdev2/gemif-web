@@ -2,7 +2,7 @@
 
 import { useMainPosts } from "@/app/lib/use-main-posts";
 import { useUser } from "@/app/lib/use-user";
-import { Pencil, Eye } from "lucide-react";
+import { Eye } from "lucide-react";
 import Link from "next/link";
 import Loader from "./loader";
 

@@ -1,15 +1,9 @@
 'use client'
-
-import { checkUnseenMessages } from "@/app/lib/actions";
-import { Message } from "@/app/lib/definitions";
-import { useMainPosts } from "@/app/lib/use-main-posts";
 import { useMessages } from "@/app/lib/use-messages";
 import { useUsers } from "@/app/lib/use-users";
 import { timeAgo } from "@/app/lib/utils";
 import Loader from "@/app/ui/loader";
-import { Pencil, Eye } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
 export default function MessagesPage() {
 

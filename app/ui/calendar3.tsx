@@ -1,11 +1,9 @@
 'use client';
 
-import CalendarEvents from "./calendar-events";
 import CalendarHeader from "@/app/ui/calendar-header2";
-import { compareDates } from "../lib/utils";
 import { DateContext, DateProvider } from "../lib/date-context";
 import AddEventButton from "./add-event-button2";
-import { useContext, useState } from "react";
+import { useContext } from "react";
 import CalendarClient from "./calendar-client2";
 import { useEvents } from "../lib/use-events";
 import { useSubjects } from "../lib/use-subjects";

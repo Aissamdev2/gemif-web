@@ -1,4 +1,4 @@
-import { QueryResultRow, sql } from '@vercel/postgres'
+import {  sql } from '@vercel/postgres'
 import { verifySession } from '@/app/lib/helpers'
 import { getPrimitiveSubjects, getSubjects } from '@/app/lib/actions';
 

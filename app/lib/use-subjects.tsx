@@ -1,6 +1,5 @@
 import useSWR from "swr";
 import { getSubjects } from "./actions";
-import { subjects } from "./placeholder-data";
 
 export function useSubjects() {
 

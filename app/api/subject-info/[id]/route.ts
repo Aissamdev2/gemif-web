@@ -1,4 +1,3 @@
-import { sql } from '@vercel/postgres'
 import { verifySession } from '@/app/lib/helpers'
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {

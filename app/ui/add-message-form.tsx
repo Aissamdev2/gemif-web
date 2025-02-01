@@ -1,15 +1,12 @@
 'use client'
 
 import { useFormStatus, useFormState } from "react-dom";
-import { addEvent, addMainPost, addMessage } from "@/app/lib/actions";
+import {  addMessage } from "@/app/lib/actions";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SWRProvider } from "../lib/swr-provider";
 import { mutate } from "swr";
 import { useUser } from "../lib/use-user";
-import { TITLES } from "../lib/utils";
-import { useMainData } from "../lib/use-main-data";
-import { User } from "../lib/definitions";
 
 export default function AddMessageForm() {
 

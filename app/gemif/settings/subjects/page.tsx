@@ -1,15 +1,10 @@
 'use client'
 import { useSubjects } from "@/app/lib/use-subjects";
-import { useUser } from "@/app/lib/use-user";
-import { getSubjects } from "@/app/lib/utils";
-import SubjectTag from "@/app/ui/subject-tag";
-import { SUBJECTS_PLAIN, SUBJECTS_PLAIN_WITHOUT_OTHERS } from "@/app/lib/subjects";
-import { use, useEffect, useState } from "react";
+import {  useEffect, useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
-import { archiveSubjects, updateSubject, updateSubjects } from "@/app/lib/actions";
+import { archiveSubjects, updateSubjects } from "@/app/lib/actions";
 import { mutate } from "swr";
 import { useRouter } from "next/navigation";
-import { Subject } from "@/app/lib/definitions";
 import { usePrimitiveSubjects } from "@/app/lib/use-primitive-subjects";
 import Loader from "@/app/ui/loader";
 

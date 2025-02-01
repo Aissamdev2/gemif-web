@@ -5,7 +5,6 @@ import { cookies } from 'next/headers'
 import { revalidateTag } from "next/cache";
 import { Event, GitHubContent, Subject, PrimitiveSubject, User, Ranking, MainPost, Message, FetchedUser } from "@/app/lib/definitions";
 import { redirect } from 'next/navigation';
-import { primitive_subjects } from './placeholder-data';
 import { get } from 'http';
 import { use } from 'react';
 import { mutate } from 'swr';
