@@ -24,7 +24,7 @@ import {  sql } from '@vercel/postgres'
 //   }
 // }
 
-export async function GET({ request }: { request: Request }) {
+export async function GET(request: Request) {
   try {
     const userId = request.headers.get('X-User-Id');
     if (!userId) {
