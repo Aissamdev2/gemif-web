@@ -31,7 +31,7 @@ export default function EditMainPost({ id, type }: { id: string | undefined, typ
   const { mainData, error: mainDataError, isLoading: isLoadingMainData} = useMainData()
   const [selectedFile, setSelectedFile] = useState('Seleccione un archivo')
 
-  const mainPost = useMemo(() => mainPosts?.find(post => post.id === id), [mainData])
+  const mainPost = useMemo(() => mainPosts?.find(post => post.id === id), [mainPosts, id])
 
   useEffect(() => {
     if (mainPost?.filename) {

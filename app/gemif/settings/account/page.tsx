@@ -7,7 +7,6 @@ import { ROLES } from "@/app/lib/utils";
 import { useFormState, useFormStatus } from "react-dom";
 import { updateUser } from "@/app/lib/actions";
 import { mutate } from "swr";
-import { users } from "@/app/lib/placeholder-data";
 import Loader from "@/app/ui/loader";
 
 export default function Page() {
