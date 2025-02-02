@@ -138,7 +138,7 @@ export async function getEvent(id: string) {
 }
 
 export async function getPrimitiveSubjects() {
-  console.log('jijia getPrimitiveSubjects')
+  console.log('getPrimitiveSubjects() url: ', process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + '/api/primitive-subjects')
   const response = await fetch(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + '/api/primitive-subjects', {
     headers: {
       Cookie: cookies().toString()
