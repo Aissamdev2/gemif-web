@@ -141,7 +141,7 @@ export default function SubjectsPage() {
 
           
         </div>
-        <div className="p-5 bg-white rounded-2xl max-w-[600px] flex flex-col gap-1">
+        <div className="p-5 bg-white rounded-2xl lg:max-w-[600px] flex flex-col gap-1">
           <h2 className="text-3xl font-extrabold tracking-tight text-black leading-tight md:text-3xl">
             Dale tu puntuación a las asignaturas
           </h2>

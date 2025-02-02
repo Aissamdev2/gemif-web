@@ -7,7 +7,7 @@ import Link from "next/link";
 import { HEADER_OPTIONS } from "../lib/utils";
 import { useFormState, useFormStatus } from "react-dom";
 import { signOut } from "../lib/auth";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { checkUnseenMessages } from "../lib/actions";
 import { useUnseenMessages } from "../lib/use-unseen-messages";
 import { mutate } from "swr";
@@ -16,6 +16,7 @@ import { CircleUserRound } from "lucide-react";
 
 export default function Header() {
   const pathname = usePathname(); 
+  const router = useRouter();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { user, error: userError, isLoading: isLoadingUser } = useUser();
@@ -43,8 +44,8 @@ export default function Header() {
     if (!newState) return
     setState(newState)
     mutate(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + "/api/messages/unseen", checkUnseenMessages())
-
-  }, [pathname])
+    router.refresh()
+  }, [pathname, router])
 
 
   if (userError) return <div>Error: {userError.message}</div>
@@ -60,6 +61,7 @@ export default function Header() {
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               style={{ objectFit: 'cover' }}
+              priority
             />
           </div>
           <div className="mx-1 md:mx-3 border-r border-gray-200 h-[20px]" />
@@ -131,7 +133,7 @@ function LogOutButton() {
       <button
         className="text-red-700 font-semibold w-full text-left"
         type="submit"
-        aria-disabled={pending}
+        disabled={pending}
         onClick={handleClick}
       >
         {pending ? "Saliendo..." : "Salir"}

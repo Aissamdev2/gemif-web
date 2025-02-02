@@ -56,13 +56,13 @@ export default function AddMainPostForm({ type }: { type: string }) {
           <div className="flex flex-col gap-5 w-full lg:w-fit md:h-auto bg-white p-6">
             {
               !mainData || isLoadingMainData  ? (
-                <div className="flex justify-center items-center">
+                <div className="flex justify-center items-center w-full">
                   <Loader />
                 </div>
               ) : (
                 <>
                 <h4 className="text-lg font-bold leading-8 text-gray-900 text-center">{`Añadir nuevo ${TITLES[type]}`}</h4>
-                <div className="flex flex-col gap-8 overflow-auto scrollbar-hidden py-5 md:flex-row">
+                <div className="flex flex-col lg:justify-center gap-8 overflow-auto scrollbar-hidden py-5 lg:flex-row">
                   <div className="flex flex-col gap-4">
                     <div className="relative">
                       <label className="flex  items-center mb-1 text-gray-600 text-xs font-medium">Título</label>
@@ -108,7 +108,7 @@ export default function AddMainPostForm({ type }: { type: string }) {
                       )
                     ) : (
                       <div className="relative">
-                        <label className="flex  items-center mb-1 text-gray-600 text-xs font-medium">Enlace</label>
+                        <label className="flex  items-center mb-1 text-gray-600 text-xs font-medium">{'Enlace (importante poner el protocolo http:// o https://)'}</label>
                         <input type="text" name="link"
                           className="block w-full  pl-4 pr-3.5 py-2.5 text-sm font-normal shadow-xs text-gray-900 bg-transparent border border-gray-200 rounded-lg placeholder-gray-400 focus:outline-none leading-relaxed"
                           placeholder="Ejemplo: https://google.com" required />
@@ -121,7 +121,7 @@ export default function AddMainPostForm({ type }: { type: string }) {
             }
           <div className="flex items-center justify-end gap-4">
             <button onClick={() => router.back()} type="button" className="w-full text-center p-1.5 py-2 rounded-md bg-white text-black text-xs font-medium transition-all duration-300 border hover:border-gray-400"  data-pd-overlay="#modalBox-3" data-modal-target="modalBox-3">Cancel</button>
-            <AddButton selectedFile={selectedFile} user={user} disabled={!user || isLoadingUser || isLoadingMainData || !mainData}/>
+            <AddButton selectedFile={selectedFile} user={user} disabled={!user || isLoadingUser || isLoadingMainData || !mainData} type={type}/>
           </div>
         </div>
         </form>
@@ -129,7 +129,7 @@ export default function AddMainPostForm({ type }: { type: string }) {
     )
 }
 
-function AddButton({selectedFile, user, disabled}:{selectedFile: string, user: User | undefined, disabled: boolean}) {
+function AddButton({selectedFile, user, disabled, type}:{selectedFile: string, user: User | undefined, disabled: boolean, type: string}) {
   const { pending } = useFormStatus()
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -139,7 +139,7 @@ function AddButton({selectedFile, user, disabled}:{selectedFile: string, user: U
   }
 
   return (
-    <button disabled={!(user?.role === 'dev' || user?.role === 'admin') || pending || disabled || selectedFile === 'Seleccione un archivo' } type="submit" onClick={handleClick} className={`${!(user?.role === 'dev' || user?.role === 'admin') || disabled || pending || selectedFile === 'Seleccione un archivo' ? 'pointer-events-none opacity-30' : ''} w-full text-center p-1.5 py-2 rounded-md bg-indigo-600 text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-indigo-700`}>
+    <button disabled={!(user?.role === 'dev' || user?.role === 'admin') || pending || disabled || (selectedFile === 'Seleccione un archivo' && type === 'file') } type="submit" onClick={handleClick} className={`${!(user?.role === 'dev' || user?.role === 'admin') || pending || disabled || (selectedFile === 'Seleccione un archivo' && type === 'file') ? 'pointer-events-none opacity-30' : ''} w-full text-center p-1.5 py-2 rounded-md bg-indigo-600 text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-indigo-700`}>
       Crear publicación
     </button>
   )

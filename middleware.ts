@@ -40,7 +40,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // Redirect to '/gemif/calendar' if session exists and page is not '/gemif' or '/initial-setup'
-    if (!sessionError && !request.nextUrl.pathname.startsWith('/gemif') && 
+    if (!sessionError && !request.nextUrl.pathname.startsWith('/gemif') &&
         !request.nextUrl.pathname.startsWith('/initial-setup') && !API_ENDPOINTS.some((endpoint) => !request.nextUrl.pathname.startsWith(endpoint))) {
       console.log('entered gemif calendar because session exists and im not calling api: ', sessionError)
       return NextResponse.redirect(new URL('/gemif/calendar', request.nextUrl));
