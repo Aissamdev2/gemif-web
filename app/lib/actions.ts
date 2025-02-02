@@ -34,6 +34,7 @@ export async function initialize() {
   const user = await getUser();
   const updatedUser = await increaseLoginCount(user);
   await setCookie(updatedUser);
+  
   redirect("/gemif/main");
 }
 

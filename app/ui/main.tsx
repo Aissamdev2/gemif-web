@@ -5,6 +5,7 @@ import { useUser } from "@/app/lib/use-user";
 import { Eye } from "lucide-react";
 import Link from "next/link";
 import Loader from "./loader";
+import { SWRProvider } from "../lib/swr-provider";
 
 export default function Main() {
 
@@ -15,6 +16,7 @@ export default function Main() {
   if (mainPostsError) return <div>Error: {mainPostsError.message}</div>;
 
   return (
+    <SWRProvider>
     <section className="z-50 w-full h-full flex flex-col lg:mb-0 px-2 lg:px-10 gap-12 pt-[80px] pb-[20px] lg:gap-4 lg:flex-col">
       <div className="p-5 bg-white rounded-2xl flex flex-col gap-4">
         <h2 className="text-3xl font-extrabold tracking-tight text-black leading-tight md:text-3xl">
@@ -116,6 +118,7 @@ export default function Main() {
           </div>
         </div>
     </section>
+    </SWRProvider>
   )
 }
 

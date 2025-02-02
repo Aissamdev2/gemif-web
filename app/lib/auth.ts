@@ -122,6 +122,7 @@ export async function signIn(formData: FormData): Promise<string> {
     redirect('/initial-setup');
   }
   await increaseLoginCount(user);
+  console.log('Redirected to main')
   redirect('/gemif/main');
 }
 

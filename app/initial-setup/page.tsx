@@ -6,7 +6,6 @@ import { useFormState, useFormStatus } from "react-dom";
 import { mutate } from "swr";
 import { archiveSubjects, initialize, updateSubjects } from "../lib/actions";
 import { getSubjects } from "../lib/actions";
-import { useRouter } from "next/navigation";
 
 
 export default function InitialSetup() {
@@ -14,7 +13,6 @@ export default function InitialSetup() {
   const { primitiveSubjects, error, error: primitiveSubjectsError, isLoading: isLoadingPrimitiveSubjects } = usePrimitiveSubjects()
   const [subjectState, setSubjectState] = useState<Record<string, boolean>>({});
   const [passedSubjectState, setPassedSubjectState] = useState<Record<string, boolean>>({});
-  const router = useRouter()
 
 
   const changeSubjects = async (_currentState: unknown, formData: FormData) => {
