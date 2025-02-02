@@ -12,7 +12,7 @@ import { useMessages } from "../lib/use-messages";
 export default function EditMessage({ id }: { id: string }) {
 
   const changeMessage = async (_currentState: unknown, formData: FormData) => {
-    mutate(process.env.BASE_URL as string + "/api/messages", updateMessage(formData))
+    mutate(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + "/api/messages", updateMessage(formData))
 
     return 'Message updated'
   }

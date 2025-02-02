@@ -49,7 +49,7 @@ export async function addEvent(formData: FormData) {
   console.log(event)
   const filteredEvent = Object.fromEntries(Object.entries(event).filter(([_, v]) => v !== undefined))
   
-  const response = await fetch(process.env.BASE_URL as string + '/api/events', {
+  const response = await fetch(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + '/api/events', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -75,7 +75,7 @@ export async function updateEvent(_currentState: unknown, formData: FormData) {
   const event = { name, description, subjectid, date, time, primitiveid, scope }
   const filteredEvent = Object.fromEntries(Object.entries(event).filter(([_, v]) => v !== undefined))
 
-  const response = await fetch(process.env.BASE_URL as string + '/api/events/' + id, {
+  const response = await fetch(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + '/api/events/' + id, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -92,7 +92,7 @@ export async function updateEvent(_currentState: unknown, formData: FormData) {
 
 export async function deleteEvent(formData: FormData) {
   const id = formData.get("id") as string
-  const response = await fetch(process.env.BASE_URL as string + '/api/events/' + id, {
+  const response = await fetch(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + '/api/events/' + id, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
@@ -107,7 +107,7 @@ export async function deleteEvent(formData: FormData) {
 }
 
 export async function getEvents() {
-  const response = await fetch(process.env.BASE_URL as string + '/api/events', {
+  const response = await fetch(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + '/api/events', {
     headers: {
       Cookie: cookies().toString()
     },
@@ -121,7 +121,7 @@ export async function getEvents() {
 }
 
 export async function getEvent(id: string) {
-  const response = await fetch(process.env.BASE_URL as string + '/api/events/' + id, {
+  const response = await fetch(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + '/api/events/' + id, {
     headers: {
       Cookie: cookies().toString()
     }
@@ -139,7 +139,7 @@ export async function getEvent(id: string) {
 
 export async function getPrimitiveSubjects() {
   console.log('jijia getPrimitiveSubjects')
-  const response = await fetch(process.env.BASE_URL as string + '/api/primitive-subjects', {
+  const response = await fetch(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + '/api/primitive-subjects', {
     headers: {
       Cookie: cookies().toString()
     },
@@ -153,7 +153,7 @@ export async function getPrimitiveSubjects() {
 }
 
 export async function getSubjects() {
-  const response = await fetch(process.env.BASE_URL as string + '/api/subjects', {
+  const response = await fetch(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + '/api/subjects', {
     headers: {
       Cookie: cookies().toString()
     },
@@ -174,7 +174,7 @@ export async function updateSubjects(formData: FormData) {
   subjectsToAdd.forEach(async (subject: PrimitiveSubject) => {
     const payload = { name: subject.name, color: subject.color, bgcolor: subject.bgcolor, bordercolor: subject.bordercolor, year:subject.year, quadri: subject.quadri, archived: false, score: null, primitiveid: subject.id }
     console.log('payload', payload)
-    const response = await fetch(process.env.BASE_URL as string + '/api/subjects/', {
+    const response = await fetch(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + '/api/subjects/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -190,7 +190,7 @@ export async function updateSubjects(formData: FormData) {
   if (subjectsToRemoveRaw) {
     const subjectsToRemove: Subject[] = JSON.parse(formData.get("subjectsToRemove") as string);
     subjectsToRemove.forEach(async (subject: Subject) => {
-      const response = await fetch(process.env.BASE_URL as string + '/api/subjects/' + subject.id, {
+      const response = await fetch(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + '/api/subjects/' + subject.id, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -216,7 +216,7 @@ export async function updateSubject( formData: FormData) {
   const payload = { color, bgcolor, bordercolor, score }
   const filteredpayload = Object.fromEntries(Object.entries(payload).filter(([_, v]) => v !== undefined))
 
-  const response = await fetch(process.env.BASE_URL as string + '/api/subjects/' + id, {
+  const response = await fetch(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + '/api/subjects/' + id, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -236,7 +236,7 @@ export async function updateSubject( formData: FormData) {
 }
 
 export async function getUsers() {
-  const response = await fetch(process.env.BASE_URL as string + '/api/users', {
+  const response = await fetch(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + '/api/users', {
     headers: {
       Cookie: cookies().toString()
     },
@@ -250,7 +250,7 @@ export async function getUsers() {
 }
 
 export async function getUser(): Promise<User> {
-  const response = await fetch(process.env.BASE_URL as string + '/api/user', {
+  const response = await fetch(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + '/api/user', {
     headers: {
       Cookie: cookies().toString()
     }
@@ -273,7 +273,7 @@ export async function updateUser(formData: FormData) {
   const payload = { name, email, year, role, color }
   const filteredPayload = Object.fromEntries(Object.entries(payload).filter(([_, v]) => v !== null))
 
-  const response = await fetch(process.env.BASE_URL as string + '/api/user/', {
+  const response = await fetch(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + '/api/user/', {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -289,7 +289,7 @@ export async function updateUser(formData: FormData) {
 
 
 export async function getFiles(): Promise<{structure: GitHubContent[], error: string}> {
-  const res = await fetch(process.env.BASE_URL as string + "/api/files/" , { 
+  const res = await fetch(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + "/api/files/" , { 
     headers: {
       Cookie: cookies().toString()
     },
@@ -305,7 +305,7 @@ export async function getFiles(): Promise<{structure: GitHubContent[], error: st
   return { structure, error: '' };
 }
 export async function getMainData(): Promise<{data: GitHubContent[], error: string}> {
-  const res = await fetch(process.env.BASE_URL as string + "/api/main-data", { 
+  const res = await fetch(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + "/api/main-data", { 
     headers: {
       Cookie: cookies().toString()
     },
@@ -322,7 +322,7 @@ export async function getMainData(): Promise<{data: GitHubContent[], error: stri
 }
 
 export async function getMainPosts() {
-  const response = await fetch(process.env.BASE_URL as string + '/api/main-posts', {
+  const response = await fetch(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + '/api/main-posts', {
     headers: {
       Cookie: cookies().toString()
     },
@@ -345,7 +345,7 @@ export async function addMainPost(formData: FormData) {
   const mainPost = { name, description, fileName, link }
   const filteredMainPost = Object.fromEntries(Object.entries(mainPost).filter(([_, v]) => v !== undefined))
   
-  const response = await fetch(process.env.BASE_URL as string + '/api/main-posts', {
+  const response = await fetch(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + '/api/main-posts', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -368,7 +368,7 @@ export async function updateMainPost(formData: FormData) {
   const mainPost = { name, description, fileName, link }
   const filteredMainPost = Object.fromEntries(Object.entries(mainPost).filter(([_, v]) => v !== undefined))
 
-  const response = await fetch(process.env.BASE_URL as string + '/api/main-posts/' + id, {
+  const response = await fetch(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + '/api/main-posts/' + id, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -384,7 +384,7 @@ export async function updateMainPost(formData: FormData) {
 }
 export async function deleteMainPost(formData: FormData) {
   const id = formData.get("id") as string
-  const response = await fetch(process.env.BASE_URL as string + '/api/main-posts/' + id, {
+  const response = await fetch(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + '/api/main-posts/' + id, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
@@ -402,7 +402,7 @@ export async function deleteMainPost(formData: FormData) {
 
 export async function getSubjectInfo(formData: FormData) {
   const id = formData.get("id") as string
-  const response = await fetch(process.env.BASE_URL as string + '/api/subject-info/' + id, {
+  const response = await fetch(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + '/api/subject-info/' + id, {
     headers: {
       Cookie: cookies().toString()
     }
@@ -423,7 +423,7 @@ export async function archiveSubjects(formData: FormData) {
   
   
   subjectsToArchive.forEach(async (subject: Subject) => {
-    const response = await fetch(process.env.BASE_URL as string + '/api/subjects/' + subject.id, {
+    const response = await fetch(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + '/api/subjects/' + subject.id, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -441,7 +441,7 @@ export async function archiveSubjects(formData: FormData) {
   if (subjectsToUnarchiveRaw) {
     const subjectsToUnarchive: Subject[] = JSON.parse(formData.get("subjectsToUnarchive") as string)
     subjectsToUnarchive.forEach(async (subject: Subject) => {
-      const response = await fetch(process.env.BASE_URL as string + '/api/subjects/' + subject.id, {
+      const response = await fetch(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + '/api/subjects/' + subject.id, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -460,7 +460,7 @@ export async function archiveSubjects(formData: FormData) {
 
 
 export async function getRanking() {
-  const response = await fetch(process.env.BASE_URL as string + '/api/ranking', {
+  const response = await fetch(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + '/api/ranking', {
     headers: {
       Cookie: cookies().toString()
     },
@@ -504,7 +504,7 @@ export async function getRanking() {
 }
 
 export async function getMessages() {
-  const response = await fetch(process.env.BASE_URL as string + '/api/messages', {
+  const response = await fetch(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + '/api/messages', {
     headers: {
       Cookie: cookies().toString()
     },
@@ -518,7 +518,7 @@ export async function getMessages() {
 
   const payload = { lastseen : new Date().toISOString() }
 
-  const responseLastSeen = await fetch(process.env.BASE_URL as string + '/api/user/', {
+  const responseLastSeen = await fetch(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + '/api/user/', {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -534,7 +534,7 @@ export async function getMessages() {
 }
 
 export async function getMessage(id: string) {
-  const response = await fetch(process.env.BASE_URL as string + '/api/messages/' + id, {
+  const response = await fetch(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + '/api/messages/' + id, {
     headers: {
       Cookie: cookies().toString()
     }
@@ -552,7 +552,7 @@ export async function getMessage(id: string) {
 
 export async function deleteMessage(formData: FormData) {
   const id = formData.get("id") as string
-  const response = await fetch(process.env.BASE_URL as string + '/api/messages/' + id, {
+  const response = await fetch(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + '/api/messages/' + id, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
@@ -575,7 +575,7 @@ export async function updateMessage( formData: FormData) {
   const message = { name, description, year, scope }
   const filteredMessage = Object.fromEntries(Object.entries(message).filter(([_, v]) => v !== undefined))
 
-  const response = await fetch(process.env.BASE_URL as string + '/api/messages/' + id, {
+  const response = await fetch(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + '/api/messages/' + id, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -598,7 +598,7 @@ export async function addMessage(formData: FormData) {
   const message = { name, description, year, scope }
   const filteredMessage = Object.fromEntries(Object.entries(message).filter(([_, v]) => v !== undefined))
   
-  const response = await fetch(process.env.BASE_URL as string + '/api/messages', {
+  const response = await fetch(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + '/api/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -613,7 +613,7 @@ export async function addMessage(formData: FormData) {
 }
 
 export async function checkUnseenMessages() {
-  const response = await fetch(process.env.BASE_URL as string + '/api/messages/unseen', {
+  const response = await fetch(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + '/api/messages/unseen', {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',

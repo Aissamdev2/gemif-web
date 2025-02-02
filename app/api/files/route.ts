@@ -34,7 +34,7 @@ export async function GET(request: Request) {
       headers: { "Content-Type": "application/json" },
     });
   } catch (error: any) {
-    console.error("Error fetching GitHub repo contents:", error);
+    console.error("Error fetching GitHub repo contents:", error, error.message);
     return new Response(
       JSON.stringify({ error: "Failed to fetch GitHub repo contents" }),
       {

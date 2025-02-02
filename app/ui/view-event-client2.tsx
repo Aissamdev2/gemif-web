@@ -17,7 +17,7 @@ import { useSubjects } from "../lib/use-subjects"
 export default function ViewEventClient({ id }: { id: string | undefined }) {
 
   const removeEvent = async (_currentState: unknown, formData: FormData) => {
-    mutate(process.env.BASE_URL as string + "/api/events", await deleteEvent(formData))
+    mutate(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + "/api/events", await deleteEvent(formData))
     return 'Event deleted'
   }
 

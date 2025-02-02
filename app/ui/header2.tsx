@@ -42,7 +42,7 @@ export default function Header() {
     const newState = pathname.split('/').slice(2).reverse().pop()
     if (!newState) return
     setState(newState)
-    mutate(process.env.BASE_URL as string + "/api/messages/unseen", checkUnseenMessages())
+    mutate(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + "/api/messages/unseen", checkUnseenMessages())
 
   }, [pathname])
 
