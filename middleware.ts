@@ -17,6 +17,7 @@ const API_ENDPOINTS = [
 
 
 export async function middleware(request: NextRequest) {
+  console.log('request.nextUrl: ', request.nextUrl, 'request.url: ', request.url);
   try {
     // Handle session verification for all requests
     const verification = await verifySession();
@@ -26,20 +27,20 @@ export async function middleware(request: NextRequest) {
     if ((sessionError === 'No session' || sessionError === 'No token') &&
         !request.nextUrl.pathname.startsWith('/login') &&
         !request.nextUrl.pathname.startsWith('/register')) {
-      return NextResponse.redirect(new URL('/login', request.url));
+      return NextResponse.redirect(new URL('/login', request.nextUrl));
     }
 
     // Handle redirect if session exists but login count is 0
     if (!sessionError && verification.session?.logincount === 0 && 
         !request.nextUrl.pathname.startsWith('/initial-setup') && 
         !API_ENDPOINTS.some((endpoint) => !request.nextUrl.pathname.startsWith(endpoint))) {
-      return NextResponse.redirect(new URL('/initial-setup', request.url));
+      return NextResponse.redirect(new URL('/initial-setup', request.nextUrl));
     }
 
     // Redirect to '/gemif/calendar' if session exists and page is not '/gemif' or '/initial-setup'
     if (!sessionError && !request.nextUrl.pathname.startsWith('/gemif') && 
         !request.nextUrl.pathname.startsWith('/initial-setup') && !API_ENDPOINTS.some((endpoint) => !request.nextUrl.pathname.startsWith(endpoint))) {
-      return NextResponse.redirect(new URL('/gemif/calendar', request.url));
+      return NextResponse.redirect(new URL('/gemif/calendar', request.nextUrl));
     }
 
     // Let the request continue if no redirect or session check fails
