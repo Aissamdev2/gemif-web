@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 import { UserCookie, VerifySession } from './definitions';
 
 export async function verifyJWT(token: string) {
+  console.log('issuer', process.env.JWT_ISSUER)
+  console.log('audience', process.env.JWT_AUDIENCE)
   try {
     const { payload, protectedHeader } = await jwtVerify(token, new TextEncoder().encode(process.env.JWT_SECRET), {
       issuer: process.env.JWT_ISSUER,
