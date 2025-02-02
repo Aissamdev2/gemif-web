@@ -83,6 +83,8 @@ export async function setCookie(user: User) {
     logincount: user?.logincount,
     githubtoken: user?.assignedgithubtoken
   }
+
+  console.log('after creating cookie: ', session)
   
   cookies().set('session', JSON.stringify(session), {
     httpOnly: true,

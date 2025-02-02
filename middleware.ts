@@ -53,7 +53,7 @@ export async function middleware(request: NextRequest) {
       response.headers.set('X-User-Id', verification.session.id); // Set the userId in a custom header
       response.headers.set('X-User-Github-Token', verification.session.githubtoken);
     }
-    console.log('Final redirect, response: ', response, 'session: ', verification.session);
+    console.log('Final redirect, response: ', response, 'session: ', verification);
     return response;
   } catch (error) {
     console.error('Session verification error:', error);

@@ -23,20 +23,25 @@ export function getSession(): UserCookie | null {
 
 export async function verifySession(): Promise<VerifySession> {
   const sessionString = cookies().get('session')?.value;
+  console.log('sessionString', sessionString)
   const session = sessionString ? JSON.parse(sessionString) : null;
   if (!session) {
+    console.log('No session')
     return { error: "No session", session: null }
   }
   const { token } = session
   if (!token) {
+    console.log('No token')
     return { error: "No token", session: null }
   }
   const payload = await verifyJWT(token)
   if (!payload) {
+    console.log('Invalid token')
     return { error: "Invalid token", session: null }
   }
   const { id: userId } = session
   if (!userId) {
+    console.log('No user id')
     return { error: "No user id", session: null }
   }
   return { error: null, session}
