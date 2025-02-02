@@ -27,7 +27,7 @@ export default function SubjectsPage() {
 
 
   const submitScore = async (_currentState: unknown, formData: FormData) => {
-    mutate(process.env.BASE_URL as string + "/api/ranking", await updateSubject(formData))
+    mutate(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + "/api/ranking", await updateSubject(formData))
     return 'Score submitted'
   }
 
