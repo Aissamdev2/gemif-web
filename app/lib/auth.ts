@@ -45,7 +45,7 @@ export async function signUp(formData: FormData): Promise<{user: User | null, er
 }
 
 export async function increaseLoginCount(user: User) {
-  const response = await fetch(process.env.BASE_URL as string + '/api/user/', {
+  const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/user/', {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
