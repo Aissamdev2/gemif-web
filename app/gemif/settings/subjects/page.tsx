@@ -29,12 +29,12 @@ export default function Page() {
 
 
   const changeSubjects = async (_currentState: unknown, formData: FormData) => {
-    mutate(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + "/api/subjects", await updateSubjects(formData))
+    mutate((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + "/api/subjects", await updateSubjects(formData))
     return 'Subjects updated'
   }
 
   const changeArchiveSubjects = async (_currentState: unknown, formData: FormData) => {
-    mutate(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + "/api/subjects", await archiveSubjects(formData))
+    mutate((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + "/api/subjects", await archiveSubjects(formData))
     return 'Subjects archived'
   }
 

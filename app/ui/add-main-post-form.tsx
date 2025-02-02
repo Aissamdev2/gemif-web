@@ -16,7 +16,7 @@ import Loader from "./loader";
 export default function AddMainPostForm({ type }: { type: string }) {
 
   const addNewMainPost = async (_currentState: unknown, formData: FormData) => {
-    mutate(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + "/api/main-posts", addMainPost(formData))
+    mutate((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + "/api/main-posts", addMainPost(formData))
 
     return 'Main post created'
   }

@@ -12,7 +12,7 @@ import Loader from "@/app/ui/loader";
 export default function Page() {
 
   const changeUser = async (_currentState: unknown, formData: FormData) => {
-    mutate(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + "/api/users", await updateUser(formData))
+    mutate((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + "/api/users", await updateUser(formData))
     return 'User updated'
   }
 

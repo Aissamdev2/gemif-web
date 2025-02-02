@@ -11,7 +11,7 @@ import { useUser } from "../lib/use-user";
 export default function AddMessageForm() {
 
   const addNewMessage = async (_currentState: unknown, formData: FormData) => {
-    mutate(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + "/api/messages", addMessage(formData))
+    mutate((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + "/api/messages", addMessage(formData))
 
     return 'Message created'
   }

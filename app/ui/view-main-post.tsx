@@ -14,7 +14,7 @@ import Loader from "./loader";
 export default function ViewMainPost({ id, type }: { id: string, type: string }) {
 
   const removeMainPost = async (_currentState: unknown, formData: FormData) => {
-    mutate(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string + "/api/main-posts", deleteMainPost(formData))
+    mutate((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + "/api/main-posts", deleteMainPost(formData))
 
     return 'Main post deleted'
   }
