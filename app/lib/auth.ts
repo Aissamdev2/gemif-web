@@ -1,7 +1,7 @@
 'use server';
 
 import bcrypt from "bcrypt";
-import { db } from "@vercel/postgres";
+import { db, sql } from "@vercel/postgres";
 import { SignJWT } from "jose";
 import { User, UserCookie, Token } from "@/app/lib/definitions";
 import { cookies } from "next/headers";
@@ -41,6 +41,9 @@ export async function signUp(formData: FormData): Promise<{user: User | null, er
   if (!user) {
   return { user: null, error: "NO SE PUDO REGISTRAR EL USUARIO" };
   }
+
+  await sql`UPDATE githubtokens SET assigned = true WHERE githubtoken = ${githubtoken}`;
+
   return {user, error: ""};
 }
 
