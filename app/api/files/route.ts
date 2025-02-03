@@ -4,7 +4,7 @@ const GITHUB_API_URL = "https://api.github.com/graphql";
 const BATCH_SIZE = 15; // Number of directories per GraphQL request
 const MAX_DEPTH = 6;
 
-export type GitHubContent = {
+type GitHubContent = {
   name: string;
   path: string;
   type: "file" | "tree";
@@ -110,7 +110,7 @@ const fetchTreeBatch = async (batch: TreeBatch, token: string): Promise<void> =>
   }
 };
 
-export async function fetchGitHubRepoContents(token: string): Promise<GitHubContent[]> {
+async function fetchGitHubRepoContents(token: string): Promise<GitHubContent[]> {
   // Initial root fetch
   const rootQuery = `
     query GetRootTree {
