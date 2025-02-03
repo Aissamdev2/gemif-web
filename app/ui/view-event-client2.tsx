@@ -81,7 +81,11 @@ export default function ViewEventClient({ id }: { id: string | undefined }) {
               <p className=" text-black font-semibold w-[150px] "> {event.name} </p>
               <SubjectTag subject={subjects?.find((subject: Subject) => subject.id === event.subjectid) } />
             </div>
-            <div className="text-gray-600 text-sm mt-2 w-[250px] bg-[#f4f4ff] rounded-lg p-2">{event.description}</div>
+            {
+              event.description && (
+                <div className="text-gray-600 text-sm mt-2 w-[250px] bg-[#f4f4ff] rounded-lg p-2">{event.description}</div>
+              )
+            }
           </div>
           <div className="flex flex-col justify-start">
             <p className=" text-gray-600 font-semibold">Fecha del evento</p>

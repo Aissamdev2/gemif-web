@@ -33,7 +33,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       fieldsToUpdate.push(`score = $${fieldsToUpdate.length + 1}`);
       values.push(score);
     }
-    if (archived) {
+    if (archived !== undefined) {
       fieldsToUpdate.push(`archived = $${fieldsToUpdate.length + 1}`);
       values.push(archived);
     }

@@ -4,7 +4,6 @@ import { useFormStatus, useFormState } from "react-dom";
 import {  addMainPost } from "@/app/lib/actions";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { SWRProvider } from "../lib/swr-provider";
 import { mutate } from "swr";
 import { useUser } from "../lib/use-user";
 import { TITLES } from "../lib/utils";
@@ -49,8 +48,7 @@ export default function AddMainPostForm({ type }: { type: string }) {
   }
 
 
-    return (
-      <SWRProvider>                                              
+    return (                                              
         <form action={dispatch} id="modalBox-3"
           className="starting:scale-[0] scale-[1] transition-[transform] duration-300 w-[90%] lg:w-fit h-fit max-h-screen z-[1000] overflow-x-hidden overflow-y-auto">
           <div className="flex flex-col gap-5 w-full lg:w-fit md:h-auto bg-white p-6">
@@ -125,7 +123,6 @@ export default function AddMainPostForm({ type }: { type: string }) {
           </div>
         </div>
         </form>
-      </SWRProvider>
     )
 }
 

@@ -41,14 +41,13 @@ export async function initialize() {
 export async function addEvent(formData: FormData) {
   const name = formData.get("name") as string
   const date = formData.get('date') as string
-  const time = formData.get('time') as string | undefined
-  const description = formData.get('description') as string | undefined
-  const subjectid = formData.get('subjectid') as string | undefined
-  const primitiveid = formData.get('primitiveid') as string | undefined
+  const time = formData.get('time') as string | null
+  const description = formData.get('description') as string | null
+  const subjectid = formData.get('subjectid') as string | null
+  const primitiveid = formData.get('primitiveid') as string | null
   const scope = formData.get('scope') as string
   const event = { name, description, subjectid, date, time, primitiveid, scope }
-  console.log(event)
-  const filteredEvent = Object.fromEntries(Object.entries(event).filter(([_, v]) => v !== undefined))
+  const filteredEvent = Object.fromEntries(Object.entries(event).filter(([_, v]) => v !== 'null'))
   
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/events', {
     method: 'POST',
@@ -68,13 +67,13 @@ export async function updateEvent(_currentState: unknown, formData: FormData) {
   const id = formData.get("id") as string
   const name = formData.get("name") as string
   const date = formData.get('date') as string
-  const time = formData.get('time') as string | undefined
-  const description = formData.get('description') as string | undefined
-  const subjectid = formData.get('subjectid') as string | undefined
-  const primitiveid = formData.get('primitiveid') as string | undefined
+  const time = formData.get('time') as string | null
+  const description = formData.get('description') as string | null
+  const subjectid = formData.get('subjectid') as string | null
+  const primitiveid = formData.get('primitiveid') as string | null
   const scope = formData.get('scope') as string
   const event = { name, description, subjectid, date, time, primitiveid, scope }
-  const filteredEvent = Object.fromEntries(Object.entries(event).filter(([_, v]) => v !== undefined))
+  const filteredEvent = Object.fromEntries(Object.entries(event).filter(([_, v]) => v !== 'null'))
 
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/events/' + id, {
     method: 'PATCH',
@@ -169,7 +168,7 @@ export async function getSubjects() {
 
 export async function updateSubjects(formData: FormData) {
   const subjectsToAddRaw = formData.get("subjectsToAdd") as string;
-  const subjectsToRemoveRaw = formData.get("subjectsToRemove") as string || undefined;
+  const subjectsToRemoveRaw = formData.get("subjectsToRemove") as string | null;
   const subjectsToAdd: PrimitiveSubject[] = JSON.parse(subjectsToAddRaw);
 
   // Wait for all POST requests to complete
@@ -222,11 +221,13 @@ export async function updateSubjects(formData: FormData) {
 export async function updateSubject( formData: FormData) {
   const id = formData.get("id") as string
   const color = formData.get('color') as string
-  const bgcolor = formData.get('bgcolor') as string | undefined
-  const bordercolor = formData.get('bordercolor') as string | undefined
-  const score = formData.get('score') as string | undefined
+  const bgcolor = formData.get('bgcolor') as string | null
+  const bordercolor = formData.get('bordercolor') as string | null
+  const score = formData.get('score') as string | null
   const payload = { color, bgcolor, bordercolor, score }
-  const filteredpayload = Object.fromEntries(Object.entries(payload).filter(([_, v]) => v !== undefined))
+  const filteredpayload = Object.fromEntries(Object.entries(payload).filter(([_, v]) => v !== 'null'))
+
+  console.log('filteredpayload', filteredpayload)
 
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/subjects/' + id, {
     method: 'PATCH',
@@ -276,14 +277,14 @@ export async function getUser(): Promise<User> {
 
 
 export async function updateUser(formData: FormData) {
-  const name = formData.get('name') as string | undefined;
-  const email = formData.get('email') as string | undefined;
-  const year = formData.get('year') as string | undefined;
-  const role = formData.get('role') as string | undefined;
-  const color = formData.get('userColor') as string | undefined;
+  const name = formData.get('name') as string | null;
+  const email = formData.get('email') as string | null;
+  const year = formData.get('year') as string | null;
+  const role = formData.get('role') as string | null;
+  const color = formData.get('userColor') as string | null;
 
   const payload = { name, email, year, role, color }
-  const filteredPayload = Object.fromEntries(Object.entries(payload).filter(([_, v]) => v !== null))
+  const filteredPayload = Object.fromEntries(Object.entries(payload).filter(([_, v]) => v !== 'null'))
 
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/user/', {
     method: 'PATCH',
@@ -351,11 +352,11 @@ export async function getMainPosts() {
 }
 export async function addMainPost(formData: FormData) {
   const name = formData.get("name") as string
-  const description = formData.get('description') as string | undefined
-  const fileName = formData.get('fileName') as string | undefined
-  const link = formData.get('link') as string | undefined
+  const description = formData.get('description') as string | null
+  const fileName = formData.get('fileName') as string | null
+  const link = formData.get('link') as string | null
   const mainPost = { name, description, fileName, link }
-  const filteredMainPost = Object.fromEntries(Object.entries(mainPost).filter(([_, v]) => v !== undefined))
+  const filteredMainPost = Object.fromEntries(Object.entries(mainPost).filter(([_, v]) => v !== 'null'))
   
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/main-posts', {
     method: 'POST',
@@ -374,11 +375,11 @@ export async function addMainPost(formData: FormData) {
 export async function updateMainPost(formData: FormData) {
   const id = formData.get("id") as string
   const name = formData.get("name") as string
-  const description = formData.get('description') as string | undefined
-  const fileName = formData.get('fileName') as string | undefined
-  const link = formData.get('link') as string | undefined
+  const description = formData.get('description') as string | null
+  const fileName = formData.get('fileName') as string | null
+  const link = formData.get('link') as string | null
   const mainPost = { name, description, fileName, link }
-  const filteredMainPost = Object.fromEntries(Object.entries(mainPost).filter(([_, v]) => v !== undefined))
+  const filteredMainPost = Object.fromEntries(Object.entries(mainPost).filter(([_, v]) => v !== 'null'))
 
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/main-posts/' + id, {
     method: 'PATCH',
@@ -449,7 +450,7 @@ export async function archiveSubjects(formData: FormData) {
       }
     }));
 
-    const subjectsToUnarchiveRaw = formData.get("subjectsToUnarchive") as string || undefined;
+    const subjectsToUnarchiveRaw = formData.get("subjectsToUnarchive") as string | undefined;
     
     if (subjectsToUnarchiveRaw) {
       const subjectsToUnarchive: Subject[] = JSON.parse(subjectsToUnarchiveRaw);
@@ -589,11 +590,11 @@ export async function deleteMessage(formData: FormData) {
 export async function updateMessage( formData: FormData) {
   const id = formData.get("id") as string
   const name = formData.get("name") as string
-  const description = formData.get('description') as string | undefined
-  const year = formData.get('year') as string | undefined
+  const description = formData.get('description') as string | null
+  const year = formData.get('year') as string | null
   const scope = formData.get('scope') as string
   const message = { name, description, year, scope }
-  const filteredMessage = Object.fromEntries(Object.entries(message).filter(([_, v]) => v !== undefined))
+  const filteredMessage = Object.fromEntries(Object.entries(message).filter(([_, v]) => v !== 'null'))
 
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/messages/' + id, {
     method: 'PATCH',
@@ -612,11 +613,11 @@ export async function updateMessage( formData: FormData) {
 
 export async function addMessage(formData: FormData) {
   const name = formData.get("name") as string
-  const description = formData.get('description') as string | undefined
+  const description = formData.get('description') as string | null
   const scope = formData.get('scope') as string
-  const year = formData.get('year') as string | undefined
+  const year = formData.get('year') as string | null
   const message = { name, description, year, scope }
-  const filteredMessage = Object.fromEntries(Object.entries(message).filter(([_, v]) => v !== undefined))
+  const filteredMessage = Object.fromEntries(Object.entries(message).filter(([_, v]) => v !== 'null'))
   
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/messages', {
     method: 'POST',

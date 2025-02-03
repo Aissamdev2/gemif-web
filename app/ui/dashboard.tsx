@@ -43,8 +43,8 @@ export default function Dashboard({events, subjects}:{ events: Event[] | undefin
                     <div className="flex items-center gap-2.5">
                       <span 
                       title={subject?.name}
-                      style={{ backgroundColor: subject?.bordercolor, borderColor: subject?.bordercolor, color: subject?.color }}
-                      className="w-2.5 h-2.5 rounded-full "></span>
+                      style={{ backgroundColor: subject?.bgcolor, borderColor: subject?.bordercolor }}
+                      className="w-2.5 h-2.5 rounded-full border-[2px]"></span>
                       <p className="font-medium text-sm text-gray-900">{dateToString(event.date)  + (event.time ? (' a las ' + event.time) : '')}</p>
                     </div>
                     

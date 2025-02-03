@@ -4,7 +4,6 @@ import { useFormStatus, useFormState } from "react-dom";
 import { addEvent } from "@/app/lib/actions";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { SWRProvider } from "../lib/swr-provider";
 import { mutate } from "swr";
 import { useUser } from "../lib/use-user";
 import { Subject } from "../lib/definitions";
