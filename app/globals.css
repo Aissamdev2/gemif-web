@@ -6,6 +6,38 @@ body {
   background-color: #fff;
 }
 
+.bg-fullscreen {
+  position: relative;
+  overflow: hidden; /* Prevents any unwanted scrollbars */
+}
+
+.bg-fullscreen::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('/background.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: -1; /* Places it behind everything */
+}
+
+@media (max-width: 768px) {
+  .bg-fullscreen::before {
+    transform: rotate(90deg) scale(1.2); /* Rotate + Scale Up */
+    width: 100vh; /* Swap width and height */
+    height: 100vw;
+    left: 50%;
+    top: 50%;
+    transform-origin: center;
+    translate: -50% -50%; /* Ensure centering */
+  }
+}
+
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;

@@ -65,8 +65,6 @@ export async function setCookie(user: User) {
   if (!user) {
     throw new Error("UNEXPECTED_ERROR");
   }
-  console.log('issuer', process.env.JWT_ISSUER)
-  console.log('audience', process.env.JWT_AUDIENCE)
   let token: string;
   try {
     token = await new SignJWT({ id: user?.id, email: user.email })
@@ -87,7 +85,6 @@ export async function setCookie(user: User) {
     githubtoken: user?.assignedgithubtoken
   }
 
-  console.log('after creating cookie: ', session)
   
   cookies().set('session', JSON.stringify(session), {
     httpOnly: true,
@@ -125,7 +122,6 @@ export async function signIn(formData: FormData): Promise<string> {
     redirect('/initial-setup');
   }
   await increaseLoginCount(user);
-  console.log('Redirected to main')
   redirect('/gemif/main');
 }
 

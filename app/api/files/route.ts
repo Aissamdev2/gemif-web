@@ -1,7 +1,5 @@
 import { ARCHIVE_FOLDER_ORDER } from "@/app/lib/utils";
 
-
-
 const GITHUB_API_URL = "https://api.github.com/graphql";
 
 export type GitHubContent = {
@@ -12,38 +10,70 @@ export type GitHubContent = {
 };
 
 export async function GET(request: Request) {
-  const userId = request.headers.get('X-User-Id');
-  if (!userId) {
-    return new Response('Unauthorized', { status: 401 });
-  }
+  const userId = request.headers.get("X-User-Id");
+  if (!userId) return new Response("Unauthorized", { status: 401 });
 
-  const token = request.headers.get('X-User-Github-Token');
-  if (!token) {
-    return new Response('Unauthorized', { status: 401 });
-  }
-  
+  const token = request.headers.get("X-User-Github-Token");
+  if (!token) return new Response("Unauthorized", { status: 401 });
 
-  const owner = "gemif-web"; // Your GitHub organization
-  const repo = "Archive"; // Your repository
-  const path = "archive"; // The root path to fetch
+  const owner = "gemif-web";
+  const repo = "Archive";
+  const path = "archive";
+  const maxDepth = 7; // Fetch up to 7 levels deep
 
   try {
-    const contents = await fetchGitHubRepoContents({ owner, repo, path, token });
+    const contents = await fetchRepoContentsRecursive({ owner, repo, path, token, depth: 0, maxDepth });
     return new Response(JSON.stringify(contents), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
   } catch (error: any) {
-    console.error("Error fetching GitHub repo contents:", error, error.message);
+    console.error("Error fetching GitHub repo contents:", error);
     return new Response(
       JSON.stringify({ error: "Failed to fetch GitHub repo contents" }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
+      { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
 }
+
+const fetchRepoContentsRecursive = async ({
+  owner,
+  repo,
+  path,
+  token,
+  depth,
+  maxDepth,
+}: {
+  owner: string;
+  repo: string;
+  path: string;
+  token: string;
+  depth: number;
+  maxDepth: number;
+}): Promise<GitHubContent[]> => {
+  if (depth >= maxDepth) return [];
+
+  const entries = await fetchGitHubRepoContents({ owner, repo, path, token });
+
+  await Promise.all(
+    entries.map(async (entry) => {
+      if (entry.type === "tree") {
+        entry.children = await fetchRepoContentsRecursive({
+          owner,
+          repo,
+          path: entry.path,
+          token,
+          depth: depth + 1,
+          maxDepth,
+        });
+      }
+    })
+  );
+
+  return entries.sort(
+    (a, b) => ARCHIVE_FOLDER_ORDER[a.name] - ARCHIVE_FOLDER_ORDER[b.name]
+  );
+};
 
 const fetchGitHubRepoContents = async ({
   owner,
@@ -64,54 +94,6 @@ const fetchGitHubRepoContents = async ({
             entries {
               name
               type
-              object {
-                ... on Tree {
-                  entries {
-                    name
-                    type
-                    object {
-                      ... on Tree {
-                        entries {
-                          name
-                          type
-                          object {
-                            ... on Tree {
-                              entries {
-                                name
-                                type
-                                object {
-                                  ... on Tree {
-                                    entries {
-                                      name
-                                      type
-                                      object {
-                                        ... on Tree {
-                                          entries {
-                                            name
-                                            type
-                                            object {
-                                              ... on Tree {
-                                                entries {
-                                                  name
-                                                  type
-                                                }
-                                              }
-                                            }
-                                          }
-                                        }
-                                      }
-                                    }
-                                  }
-                                }
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
             }
           }
         }
@@ -132,109 +114,16 @@ const fetchGitHubRepoContents = async ({
   });
 
   if (!response.ok) {
-    throw new Error("GitHub API request failed");
+    console.error("GitHub API Request Failed:", response.status, response.statusText);
+    throw new Error(`GitHub API request failed: ${response.statusText}`);
   }
 
   const json = await response.json();
   const entries = json.data?.repository?.object?.entries ?? [];
 
-  // Convert entries into the desired format
-  const processEntries = (entryList: any[], parentPath: string): GitHubContent[] => {
-    return entryList.map((entry) => {
-      const fullPath = `${parentPath}/${entry.name}`;
-      if (entry.type === "tree") {
-        return {
-          name: entry.name,
-          path: fullPath,
-          type: "tree",
-          children: entry.object?.entries ? processEntries(entry.object.entries, fullPath) : [],
-        };
-      }
-      return {
-        name: entry.name,
-        path: fullPath,
-        type: "file",
-      };
-    });
-  };
-
-  return processEntries(entries, path).sort((a, b) => ARCHIVE_FOLDER_ORDER[a.name] - ARCHIVE_FOLDER_ORDER[b.name]);
+  return entries.map((entry: any) => ({
+    name: entry.name,
+    path: `${path}/${entry.name}`,
+    type: entry.type === "tree" ? "tree" : "file",
+  }));
 };
-
-
-
-
-
-// export type GitHubContent = {
-//   name: string;
-//   path: string;
-//   type: "file" | "dir";
-//   children?: GitHubContent[]; // Only for directories
-// };
-
-// export async function GET() {
-//   const owner = "gemif-web"; // Replace with your GitHub organization name
-//   const repo = "Archive"; // Replace with your repository name
-//   const branch = "main"; // Replace with your branch name
-//   const baseURL = `https://api.github.com/repos/${owner}/${repo}/contents/`;
-
-//   const verification = await verifySession();
-//   const session = verification.session
-//   if (!session) return new Response('Unauthorized', { status: 401 })
-
-//   // Helper function to fetch the structure recursively
-//   async function fetchStructure(path = "archive"): Promise<GitHubContent[]> {
-//     const token = session?.githubtoken // Set this in your `.env.local`
-
-//     const headers: HeadersInit = token
-//       ? { Authorization: `Bearer ${token}` }
-//       : {};
-
-//     // Fetch the content of the current folder
-//     const response = await fetch(`${baseURL}${path}`, { headers });
-//     if (!response.ok) {
-//       if (response.status === 403) {
-//         throw new Error("GitHub API rate limit exceeded");
-//       }
-//       throw new Error(`Failed to fetch GitHub contents: ${response.statusText}`);
-//     }
-
-//     const data: GitHubContent[] = await response.json();
-
-//     // Process and recursively fetch children for directories
-//     const structure: GitHubContent[] = await Promise.all(
-//       data.map(async (item) => {
-//         if (item.type === "dir") {
-//           const children = await fetchStructure(item.path);
-//           return { ...item, children };
-//         }
-//         return item;
-//       })
-//     );
-
-//     return structure.sort((a, b) => ARCHIVE_FOLDER_ORDER[a.name] - ARCHIVE_FOLDER_ORDER[b.name]);
-//   }
-
-
-//   try {
-//     const structure = await fetchStructure();
-//     return new Response(JSON.stringify(structure), {
-//       status: 200,
-//       headers: { "Content-Type": "application/json" },
-//     });
-//   } catch (error: any) {
-//     if (error.message === "GitHub API rate limit exceeded") {
-//       return new Response(
-//         JSON.stringify({ error: "GitHub API rate limit exceeded" }),
-//         {
-//           status: 429,
-//           headers: { "Content-Type": "application/json" },
-//         }
-//       );
-//     }
-//     return new Response(JSON.stringify({ error: (error as Error).message }), {
-//       status: 500,
-//       headers: { "Content-Type": "application/json" },
-//     });
-//   }
-// }

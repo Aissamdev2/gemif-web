@@ -101,7 +101,7 @@ export default function AddEventForm() {
                 {
                   user && user.role === 'admin' && (
                     <div className="flex flex-col">
-                      <label htmlFor="options" className=" mb-2 text-sm font-medium text-gray-600 w-full">Vsibilidad</label>
+                      <label htmlFor="options" className=" mb-2 text-sm font-medium text-gray-600 w-full">Visibilidad</label>
                       <select 
                       id="options"
                       name="scope"

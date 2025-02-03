@@ -37,12 +37,12 @@ export default function Page() {
   }
 
   return (
-    <div className="flex absolute justify-center items-center bg-[#d0e1ff] h-screen w-screen backdrop-blur-[2px] z-10">
+    <div className="flex absolute justify-center items-center bg-[#eaf3ff] h-screen w-screen backdrop-blur-[2px] z-10">
       <form
         onSubmit={handleSubmit}
-        className="flex flex-col gap-[10px] bg-[#e8f0fd] w-fit h-fit rounded-[30px] border-[#6c9ded] py-10 px-10"
+        className="flex flex-col gap-[10px] bg-white w-fit h-fit rounded-[30px] border-[#6c9ded] py-10 px-10"
       >
-        <h2 className="text-3xl font-semibold text-center">Registrarse</h2>
+        <h2 className="text-3xl font-semibold text-center mt-4">Registrarse</h2>
         <p className="text-red-500 font-bold text-center min-h-6">
           {formError || errorMessage}
         </p>
@@ -61,7 +61,7 @@ export default function Page() {
                   type="text"
                   name="name"
                   id="name"
-                  className="bg-[white] border outline-none border-gray-100 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[90%] p-2.5"
+                  className="bg-[white] border outline-none border-blue-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[90%] p-2.5"
                   required
                 />
               </div>
@@ -80,7 +80,7 @@ export default function Page() {
                   step={1}
                   name="year"
                   id="year"
-                  className="bg-[white] border outline-none border-gray-100 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[90%] p-2.5"
+                  className="bg-[white] border outline-none border-blue-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[90%] p-2.5"
                   required
                 />
               </div>
@@ -99,7 +99,7 @@ export default function Page() {
                 id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="bg-[white] border outline-none border-gray-100 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[90%] p-2.5"
+                className="bg-[white] border outline-none border-blue-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[90%] p-2.5"
                 required
               />
             </div>
@@ -117,7 +117,7 @@ export default function Page() {
                 id="confirmEmail"
                 value={confirmEmail}
                 onChange={(e) => setConfirmEmail(e.target.value)}
-                className="bg-[white] border outline-none border-gray-100 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[90%] p-2.5"
+                className="bg-[white] border outline-none border-blue-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[90%] p-2.5"
                 required
               />
             </div>
@@ -136,7 +136,7 @@ export default function Page() {
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="bg-[white] border outline-none border-gray-100 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[90%] p-2.5"
+                className="bg-[white] border outline-none border-blue-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[90%] p-2.5"
                 required
               />
             </div>
@@ -153,7 +153,7 @@ export default function Page() {
                 id="confirmPassword"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="bg-[white] border outline-none border-gray-100 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[90%] p-2.5"
+                className="bg-[white] border outline-none border-blue-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[90%] p-2.5"
                 required
               />
             </div>
@@ -168,7 +168,7 @@ export default function Page() {
                 type="password"
                 name="key"
                 id="key"
-                className="bg-[white] border outline-none border-gray-100 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[90%] p-2.5"
+                className="bg-[white] border outline-none border-blue-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[90%] p-2.5"
                 required
               />
             </div>

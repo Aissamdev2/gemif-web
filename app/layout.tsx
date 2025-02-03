@@ -5,9 +5,9 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Calendario GEMiF, URV",
-  description: "Calendario de eventos para GEMiF, Universitat Rovira i Virgili (URV) NO OFICIAL",
-  keywords: "Calendario, GEMiF, URV, Universitat Rovira i Virgili",
+  title: "Página web GEMiF, URV",
+  description: "Página web para GEMiF, Universitat Rovira i Virgili (URV) NO OFICIAL",
+  keywords: "Pagina web, GEMiF, URV, Universitat Rovira i Virgili",
   authors: [{ name: "Aissam Khadraoui" }],
 };
 
