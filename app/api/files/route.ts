@@ -11,18 +11,21 @@ export type GitHubContent = {
 
 export async function GET(request: Request) {
   const userId = request.headers.get("X-User-Id");
-  if (!userId) return new Response("Unauthorized", { status: 401 });
+  if (!userId) {
+    return new Response("Unauthorized", { status: 401 });
+  }
 
   const token = request.headers.get("X-User-Github-Token");
-  if (!token) return new Response("Unauthorized", { status: 401 });
+  if (!token) {
+    return new Response("Unauthorized", { status: 401 });
+  }
 
   const owner = "gemif-web";
   const repo = "Archive";
   const path = "archive";
-  const maxDepth = 7; // Fetch up to 7 levels deep
 
   try {
-    const contents = await fetchRepoContentsRecursive({ owner, repo, path, token, depth: 0, maxDepth });
+    const contents = await fetchGitHubRepoContents({ owner, repo, path, token, depth: 7 });
     return new Response(JSON.stringify(contents), {
       status: 200,
       headers: { "Content-Type": "application/json" },
@@ -31,62 +34,31 @@ export async function GET(request: Request) {
     console.error("Error fetching GitHub repo contents:", error);
     return new Response(
       JSON.stringify({ error: "Failed to fetch GitHub repo contents" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
     );
   }
 }
 
-const fetchRepoContentsRecursive = async ({
-  owner,
-  repo,
-  path,
-  token,
-  depth,
-  maxDepth,
-}: {
-  owner: string;
-  repo: string;
-  path: string;
-  token: string;
-  depth: number;
-  maxDepth: number;
-}): Promise<GitHubContent[]> => {
-  if (depth >= maxDepth) return [];
-
-  const entries = await fetchGitHubRepoContents({ owner, repo, path, token });
-
-  await Promise.all(
-    entries.map(async (entry) => {
-      if (entry.type === "tree") {
-        entry.children = await fetchRepoContentsRecursive({
-          owner,
-          repo,
-          path: entry.path,
-          token,
-          depth: depth + 1,
-          maxDepth,
-        });
+const buildNestedFields = (depth: number, currentLevel: number = 1): string => {
+  if (currentLevel >= depth) return '';
+  return `
+    object {
+      ... on Tree {
+        entries {
+          name
+          type
+          ${buildNestedFields(depth, currentLevel + 1)}
+        }
       }
-    })
-  );
-
-  return entries.sort(
-    (a, b) => ARCHIVE_FOLDER_ORDER[a.name] - ARCHIVE_FOLDER_ORDER[b.name]
-  );
+    }
+  `;
 };
 
-const fetchGitHubRepoContents = async ({
-  owner,
-  repo,
-  path,
-  token,
-}: {
-  owner: string;
-  repo: string;
-  path: string;
-  token: string;
-}): Promise<GitHubContent[]> => {
-  const query = `
+const buildQuery = (depth: number): string => {
+  return `
     query GetRepoFiles($owner: String!, $repo: String!, $expression: String!) {
       repository(owner: $owner, name: $repo) {
         object(expression: $expression) {
@@ -94,12 +66,56 @@ const fetchGitHubRepoContents = async ({
             entries {
               name
               type
+              ${buildNestedFields(depth)}
             }
           }
         }
       }
     }
   `;
+};
+
+const processNestedEntries = (
+  entries: any[],
+  parentPath: string,
+  currentDepth: number,
+  maxDepth: number
+): GitHubContent[] => {
+  return entries.map(entry => {
+    const fullPath = `${parentPath}/${entry.name}`;
+    const content: GitHubContent = {
+      name: entry.name,
+      path: fullPath,
+      type: entry.type === 'tree' ? 'tree' : 'file',
+    };
+
+    if (entry.type === 'tree' && entry.object?.entries && currentDepth < maxDepth) {
+      content.children = processNestedEntries(
+        entry.object.entries,
+        fullPath,
+        currentDepth + 1,
+        maxDepth
+      );
+    }
+
+    return content;
+  });
+};
+
+const fetchGitHubRepoContents = async ({
+  owner,
+  repo,
+  path,
+  token,
+  depth,
+}: {
+  owner: string;
+  repo: string;
+  path: string;
+  token: string;
+  depth: number;
+}): Promise<GitHubContent[]> => {
+  const query = buildQuery(depth);
 
   const response = await fetch(GITHUB_API_URL, {
     method: "POST",
@@ -119,11 +135,13 @@ const fetchGitHubRepoContents = async ({
   }
 
   const json = await response.json();
-  const entries = json.data?.repository?.object?.entries ?? [];
+  const rootTree = json?.data?.repository?.object;
 
-  return entries.map((entry: any) => ({
-    name: entry.name,
-    path: `${path}/${entry.name}`,
-    type: entry.type === "tree" ? "tree" : "file",
-  }));
+  if (!rootTree?.entries) {
+    console.error("Invalid GitHub API Response:", JSON.stringify(json, null, 2));
+    return [];
+  }
+
+  const processedEntries = processNestedEntries(rootTree.entries, path, 1, depth);
+  return processedEntries.sort((a, b) => ARCHIVE_FOLDER_ORDER[a.name] - ARCHIVE_FOLDER_ORDER[b.name]);
 };
