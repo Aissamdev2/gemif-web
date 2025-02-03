@@ -154,7 +154,7 @@ export default function Page() {
                           if (subject.archived) return null
                           return (
                             <div key={subject.id} title={subject.name} className="flex items-center">
-                              <input checked={!!subjectState[subject.name]} id={subject.name + 'active'} type="checkbox" name="subject" value={subject.name} onChange={handleChange} className="w-[21.6px] h-[21.6px] appearance-none border cursor-pointer border-gray-300  rounded-md mr-2 hover:border-indigo-500 hover:bg-indigo-100 checked:bg-no-repeat checked:bg-center checked:border-indigo-500 checked:bg-indigo-100"/>
+                              <input checked={!!subjectState[subject.name]} id={subject.name + 'active'} type="checkbox" name="subject" value={subject.name} onChange={handleChange} className="w-[21.6px] h-[21.6px] appearance-none border cursor-pointer border-gray-300  rounded-md mr-2 hover:border-indigo-500 checked:bg-no-repeat checked:bg-center checked:border-indigo-500 checked:bg-indigo-100"/>
                               <label htmlFor={subject.name + 'active'} className="text-sm font-norma cursor-pointer truncate max-w-[200px] text-gray-600">{subject.name}</label>
                             </div>
                           )
@@ -171,7 +171,7 @@ export default function Page() {
                           if (subjects?.map((subject) => subject.name)?.includes(subject.name) || subject.name === 'Otros') return null
                           return (
                             <div key={subject.id} title={subject.name} className="flex items-center">
-                              <input checked={!!subjectState[subject.name]} id={subject.name + 'inactive'} type="checkbox" name="subject" value={subject.name} onChange={handleChange} className="w-[21.6px] h-[21.6px] appearance-none border cursor-pointer border-gray-300  rounded-md mr-2 hover:border-indigo-500 hover:bg-indigo-100 checked:bg-no-repeat checked:bg-center checked:border-indigo-500 checked:bg-indigo-100"/>
+                              <input checked={!!subjectState[subject.name]} id={subject.name + 'inactive'} type="checkbox" name="subject" value={subject.name} onChange={handleChange} className="w-[21.6px] h-[21.6px] appearance-none border cursor-pointer border-gray-300  rounded-md mr-2 hover:border-indigo-500 checked:bg-no-repeat checked:bg-center checked:border-indigo-500 checked:bg-indigo-100"/>
                               <label htmlFor={subject.name + 'inactive'} className="text-sm font-norma cursor-pointer truncate max-w-[200px] text-gray-600">{subject.name}</label>
                             </div>
                           )
@@ -211,7 +211,7 @@ export default function Page() {
                           if (subject.name === 'Otros') return null
                           return (
                             <div key={subject.id} title={subject.name} className="flex items-center">
-                              <input checked={!!archiveState[subject.name]} id={subject.name + 'unarchived'} type="checkbox" name="archive" value={subject.name} onChange={handleArchiveChange} className="w-[21.6px] h-[21.6px] appearance-none border cursor-pointer border-gray-300  rounded-md mr-2 hover:border-indigo-500 hover:bg-indigo-100 checked:bg-no-repeat checked:bg-center checked:border-indigo-500 checked:bg-indigo-100"/>
+                              <input checked={!!archiveState[subject.name]} id={subject.name + 'unarchived'} type="checkbox" name="archive" value={subject.name} onChange={handleArchiveChange} className="w-[21.6px] h-[21.6px] appearance-none border cursor-pointer border-gray-300  rounded-md mr-2 hover:border-indigo-500 checked:bg-no-repeat checked:bg-center checked:border-indigo-500 checked:bg-indigo-100"/>
                               <label htmlFor={subject.name + 'unarchived'} className="text-sm font-norma cursor-pointer truncate max-w-[200px] text-gray-600">{subject.name}</label>
                             </div>
                           )
@@ -228,7 +228,7 @@ export default function Page() {
                           if (subject.name === 'Otros') return null
                           return (
                             <div key={subject.id} title={subject.name} className="flex items-center">
-                              <input checked={!!archiveState[subject.name]} id={subject.name + 'archived'} type="checkbox" name="archive" value={subject.name} onChange={handleArchiveChange} className="w-[21.6px] h-[21.6px] appearance-none border cursor-pointer border-gray-300  rounded-md mr-2 hover:border-indigo-500 hover:bg-indigo-100 checked:bg-no-repeat checked:bg-center checked:border-indigo-500 checked:bg-indigo-100"/>
+                              <input checked={!!archiveState[subject.name]} id={subject.name + 'archived'} type="checkbox" name="archive" value={subject.name} onChange={handleArchiveChange} className="w-[21.6px] h-[21.6px] appearance-none border cursor-pointer border-gray-300  rounded-md mr-2 hover:border-indigo-500 checked:bg-no-repeat checked:bg-center checked:border-indigo-500 checked:bg-indigo-100"/>
                               <label htmlFor={subject.name + 'archived'} className="text-sm font-norma cursor-pointer truncate max-w-[200px] text-gray-600">{subject.name}</label>
                             </div>
                           )

@@ -26,7 +26,7 @@ export default function InitialSetup() {
     }
 
   const [addState, dispatch] = useFormState(changeSubjects, undefined)
-  const [archiveSstate, archiveDispatch] = useFormState(changeArchiveSubjects, undefined)
+  const [archiveState, archiveDispatch] = useFormState(changeArchiveSubjects, undefined)
 
   useEffect(() => {
       if (primitiveSubjects) {
@@ -98,7 +98,7 @@ export default function InitialSetup() {
                   primitiveSubjects.map((subject, index) => {
                     return (
                       <div key={subject.id + 'taking'} title={subject.name} className="flex items-center">
-                        <input checked={!!subjectState[subject.name]} disabled={!!passedSubjectState[subject.name]} id={subject.name + 'taking'} type="checkbox" name="subject" value={subject.name} onChange={handleChange} className="w-[21.6px] h-[21.6px] appearance-none border cursor-pointer border-gray-300  rounded-md mr-2 hover:border-indigo-500 hover:bg-indigo-100 checked:bg-no-repeat checked:bg-center checked:border-indigo-500 checked:bg-indigo-100"/>
+                        <input checked={!!subjectState[subject.name]} disabled={!!passedSubjectState[subject.name]} id={subject.name + 'taking'} type="checkbox" name="subject" value={subject.name} onChange={handleChange} className={`w-[21.6px] h-[21.6px] appearance-none border cursor-pointer border-gray-300  rounded-md mr-2 ${!!passedSubjectState[subject.name] ? 'opacity-50' : 'hover:border-indigo-500'} checked:bg-no-repeat checked:bg-center checked:border-indigo-500 checked:bg-indigo-100`}/>
                         <label htmlFor={subject.name + 'taking'} className={`${!!passedSubjectState[subject.name] ? 'line-through' : ''} text-sm font-norma cursor-pointer truncate max-w-[200px] text-gray-600`}>{subject.name}</label>
                       </div>
                     )
@@ -122,7 +122,7 @@ export default function InitialSetup() {
                   primitiveSubjects.map((subject, index) => {
                     return (
                       <div key={subject.id + 'passed'} title={subject.name} className="flex items-center">
-                        <input checked={!!passedSubjectState[subject.name]} disabled={!!subjectState[subject.name]} id={subject.name + 'passed'} type="checkbox" name="subject" value={subject.name} onChange={handlePassedChange} className="w-[21.6px] h-[21.6px] appearance-none border cursor-pointer border-gray-300  rounded-md mr-2 hover:border-indigo-500 hover:bg-indigo-100 checked:bg-no-repeat checked:bg-center checked:border-indigo-500 checked:bg-indigo-100"/>
+                        <input checked={!!passedSubjectState[subject.name]} disabled={!!subjectState[subject.name]} id={subject.name + 'passed'} type="checkbox" name="subject" value={subject.name} onChange={handlePassedChange} className={`w-[21.6px] h-[21.6px] appearance-none border cursor-pointer border-gray-300  rounded-md mr-2 ${!!subjectState[subject.name] ? 'opacity-50' : 'hover:border-indigo-500'} checked:bg-no-repeat checked:bg-center checked:border-indigo-500 checked:bg-indigo-100`}/>
                         <label htmlFor={subject.name + 'passed'} className={`${!!subjectState[subject.name] ? 'line-through' : ''} text-sm font-norma cursor-pointer truncate max-w-[200px] text-gray-600`}>{subject.name}</label>
                       </div>
                     )
