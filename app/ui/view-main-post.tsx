@@ -53,7 +53,11 @@ export default function ViewMainPost({ id, type }: { id: string, type: string })
                     <div className="flex items-center gap-[20px]">
                       <p className=" text-black font-semibold w-[150px] "> {mainPost?.name} </p>
                     </div>
-                    <div className="text-gray-600 text-sm mt-2 w-[250px] bg-[#f4f4ff] rounded-lg p-2">{mainPost?.description}</div>
+                    {
+                      mainPost.description && (
+                        <div className="text-gray-600 text-sm mt-2 w-[250px] bg-[#f4f4ff] rounded-lg p-2">{mainPost?.description}</div>
+                      )
+                    }
                   </div>
                 </div>
             </>

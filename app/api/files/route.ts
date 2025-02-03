@@ -38,6 +38,15 @@ export async function GET(request: Request) {
       headers: { "Content-Type": "application/json" },
     });
   } catch (error: any) {
+    if (error.status === 403) {
+      return new Response(
+        JSON.stringify({ error: "GitHub API rate limit exceeded" }),
+        {
+          status: 429,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
     console.error("Error fetching GitHub repo contents:", error);
     return new Response(
       JSON.stringify({ error: "Failed to fetch GitHub repo contents" }),
@@ -137,6 +146,11 @@ async function fetchGitHubRepoContents(token: string): Promise<GitHubContent[]> 
     },
     body: JSON.stringify({ query: rootQuery }),
   });
+
+  if (!rootResponse.ok) {
+    console.error("GitHub API Request Failed:", rootResponse.status, rootResponse.statusText);
+    throw new Error(`GitHub API request failed: ${rootResponse.statusText}`);
+  }
 
   const rootJson = await rootResponse.json();
   const rootTree = rootJson.data?.repository?.object;

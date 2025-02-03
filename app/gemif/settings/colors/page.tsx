@@ -201,7 +201,7 @@ export default function Page() {
               </div>
           </div>
           <div className="flex gap-3 justify-center">
-            <button type="button" disabled={!user || isLoadingUser} onClick={() => setResetColors(!resetUserColor)} className={`${!user || isLoadingUser ? 'opacity-30' : 'opacity-100'} w-full text-center p-1.5 py-2 rounded-md bg-red-600 text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-red-700`}>
+            <button type="button" disabled={!user || isLoadingUser} onClick={() => setResetUserColor(!resetUserColor)} className={`${!user || isLoadingUser ? 'opacity-30' : 'opacity-100'} w-full text-center p-1.5 py-2 rounded-md bg-red-600 text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-red-700`}>
               Reestablecer color
             </button>
             <UpdateButton disabled={!user || isLoadingUser} />

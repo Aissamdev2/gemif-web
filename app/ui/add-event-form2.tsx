@@ -65,7 +65,7 @@ export default function AddEventForm() {
             <div className="flex flex-col gap-8 overflow-auto scrollbar-hidden py-5 md:flex-row">
               <div className="flex flex-col gap-4">
                 <div className="relative">
-                  <label className="flex  items-center mb-1 text-gray-600 text-xs font-medium">Título</label>
+                  <label className="flex  items-center mb-1 text-gray-600 text-xs font-medium">Título <span className='text-red-500'>*</span></label>
                   <input type="text" name="name"
                     className="block w-full  pl-4 pr-3.5 py-2.5 text-sm font-normal shadow-xs text-gray-900 bg-transparent border border-gray-200 rounded-lg placeholder-gray-400 focus:outline-none leading-relaxed"
                     placeholder="Añade un titulo" required />
@@ -79,14 +79,14 @@ export default function AddEventForm() {
               </div>
               <div className="flex flex-col gap-4">
                 <div className="relative">
-                  <label className="flex  items-center mb-1 text-gray-600 text-xs font-medium">Fecha del evento</label>
+                  <label className="flex  items-center mb-1 text-gray-600 text-xs font-medium">Fecha del evento <span className='text-red-500'>*</span></label>
                   <input type="date" name="date"
                     defaultValue={new Date().toISOString().split('T')[0]}
                     className="block w-full  pl-4 pr-3.5 py-2.5 text-sm font-normal shadow-xs text-gray-900 bg-transparent border border-gray-200 rounded-lg placeholder-gray-400 focus:outline-none leading-relaxed"
                     placeholder="Añade un titulo" required />
                 </div>
                 <div className="relative">
-                  <label className="flex  items-center mb-1 text-gray-600 text-xs font-medium">Hora del evento</label>
+                  <label className="flex  items-center mb-1 text-gray-600 text-xs font-medium">Hora del evento <span className='text-red-500'>*</span></label>
                   <input type="time" name="time"
                     defaultValue={new Date().toLocaleTimeString().slice(0, 5)}
                     className="block w-full  pl-4 pr-3.5 py-2.5 text-sm font-normal shadow-xs text-gray-900 bg-transparent border border-gray-200 rounded-lg placeholder-gray-400 focus:outline-none leading-relaxed"
@@ -100,7 +100,7 @@ export default function AddEventForm() {
                 {
                   user && user.role === 'admin' && (
                     <div className="flex flex-col">
-                      <label htmlFor="options" className=" mb-2 text-sm font-medium text-gray-600 w-full">Visibilidad</label>
+                      <label htmlFor="options" className=" mb-2 text-sm font-medium text-gray-600 w-full">Visibilidad <span className='text-red-500'>*</span></label>
                       <select 
                       id="options"
                       name="scope"
@@ -116,7 +116,7 @@ export default function AddEventForm() {
                 {
                   user && user.role === 'dev' && (
                     <div className="flex flex-col">
-                      <label htmlFor="options" className=" mb-2 text-sm font-medium text-gray-600 w-full">Vsiibilidad</label>
+                      <label htmlFor="options" className=" mb-2 text-sm font-medium text-gray-600 w-full">Visibilidad <span className='text-red-500'>*</span></label>
                       <select 
                       id="options"
                       name="scope"

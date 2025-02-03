@@ -40,7 +40,7 @@ export default function Page() {
     <div className="flex absolute justify-center items-center bg-[#eaf3ff] h-screen w-screen backdrop-blur-[2px] z-10">
       <form
         onSubmit={handleSubmit}
-        className="flex flex-col gap-[10px] bg-white w-fit h-fit rounded-[30px] border-[#6c9ded] py-10 px-10"
+        className="flex flex-col gap-[10px] bg-white w-fit h-fit rounded-lg border-[#6c9ded] py-10 px-10"
       >
         <h2 className="text-3xl font-semibold text-center mt-4">Registrarse</h2>
         <p className="text-red-500 font-bold text-center min-h-6">
@@ -54,7 +54,7 @@ export default function Page() {
                   htmlFor="name"
                   className="block w-fit mb-2 text-sm font-medium text-gray-900 dark:text-white"
                 >
-                  Nombre de usuario
+                  Nombre de usuario <span className='text-red-500'>*</span>
                 </label>
                 <input
                   autoComplete="off"
@@ -70,7 +70,7 @@ export default function Page() {
                   htmlFor="year"
                   className="block w-fit mb-2 text-sm font-medium text-gray-900 dark:text-white"
                 >
-                  Curso
+                  Curso <span className='text-red-500'>*</span>
                 </label>
                 <input
                   autoComplete="off"
@@ -90,7 +90,7 @@ export default function Page() {
                 htmlFor="email"
                 className="block w-fit mb-2 text-sm font-medium text-gray-900 dark:text-white"
               >
-                Correo electrónico
+                Correo electrónico <span className='text-red-500'>*</span>
               </label>
               <input
                 autoComplete="on"
@@ -108,7 +108,7 @@ export default function Page() {
                 htmlFor="confirmEmail"
                 className="block w-fit mb-2 text-sm font-medium text-gray-900 dark:text-white"
               >
-                Confirma tu correo electrónico
+                Confirma tu correo electrónico <span className='text-red-500'>*</span>
               </label>
               <input
                 autoComplete="on"
@@ -128,7 +128,7 @@ export default function Page() {
                 htmlFor="password"
                 className="block w-fit mb-2 text-sm font-medium text-gray-900 dark:text-white"
               >
-                Crea tu contraseña
+                Crea tu contraseña <span className='text-red-500'>*</span>
               </label>
               <input
                 type="password"
@@ -145,7 +145,7 @@ export default function Page() {
                 htmlFor="confirmPassword"
                 className="block w-fit mb-2 text-sm font-medium text-gray-900 dark:text-white"
               >
-                Confirma tu contraseña
+                Confirma tu contraseña <span className='text-red-500'>*</span>
               </label>
               <input
                 type="password"
@@ -162,7 +162,7 @@ export default function Page() {
                 htmlFor="key"
                 className="block w-fit mb-2 text-sm font-medium text-gray-900 dark:text-white"
               >
-                Clave
+                Clave <span className='text-red-500'>*</span>
               </label>
               <input
                 type="password"

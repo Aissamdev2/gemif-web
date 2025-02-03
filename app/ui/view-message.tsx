@@ -53,7 +53,11 @@ export default function ViewMessage({ id }: { id: string}) {
               <div className="flex items-center gap-[20px]">
                 <p className=" text-black font-semibold w-[150px] "> {message?.name} </p>
               </div>
-              <div className="text-gray-600 text-sm mt-2 w-[250px] bg-[#f4f4ff] rounded-lg p-2">{message?.description}</div>
+              {
+                message.description && (
+                  <div className="text-gray-600 text-sm mt-2 w-[250px] bg-[#f4f4ff] rounded-lg p-2">{message?.description}</div>
+                )
+              }
             </div>
           </div>
         <div className="flex items-center justify-end gap-4">

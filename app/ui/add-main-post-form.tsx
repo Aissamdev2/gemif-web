@@ -63,7 +63,7 @@ export default function AddMainPostForm({ type }: { type: string }) {
                 <div className="flex flex-col lg:justify-center gap-8 overflow-auto scrollbar-hidden py-5 lg:flex-row">
                   <div className="flex flex-col gap-4">
                     <div className="relative">
-                      <label className="flex  items-center mb-1 text-gray-600 text-xs font-medium">Título</label>
+                      <label className="flex  items-center mb-1 text-gray-600 text-xs font-medium">Título <span className='text-red-500'>*</span></label>
                       <input type="text" name="name"
                         className="block w-full  pl-4 pr-3.5 py-2.5 text-sm font-normal shadow-xs text-gray-900 bg-transparent border border-gray-200 rounded-lg placeholder-gray-400 focus:outline-none leading-relaxed"
                         placeholder="Añade un titulo" required />
@@ -86,7 +86,7 @@ export default function AddMainPostForm({ type }: { type: string }) {
                         </div>
                       ) : (
                       <div className="flex flex-col">
-                        <label htmlFor="fileName" className="flex  items-center mb-1 text-gray-600 text-xs font-medium">Archivo en GitHub</label>
+                        <label htmlFor="fileName" className="flex  items-center mb-1 text-gray-600 text-xs font-medium">Archivo en GitHub <span className='text-red-500'>*</span></label>
                         <select 
                         id="fileName"
                         name="fileName"
@@ -106,7 +106,7 @@ export default function AddMainPostForm({ type }: { type: string }) {
                       )
                     ) : (
                       <div className="relative">
-                        <label className="flex  items-center mb-1 text-gray-600 text-xs font-medium">{'Enlace (importante poner el protocolo http:// o https://)'}</label>
+                        <label className="flex  items-center mb-1 text-gray-600 text-xs font-medium">{'Enlace'}<span className='text-red-500'>*</span>{' (importante poner el protocolo http:// o https://)'}</label>
                         <input type="text" name="link"
                           className="block w-full  pl-4 pr-3.5 py-2.5 text-sm font-normal shadow-xs text-gray-900 bg-transparent border border-gray-200 rounded-lg placeholder-gray-400 focus:outline-none leading-relaxed"
                           placeholder="Ejemplo: https://google.com" required />

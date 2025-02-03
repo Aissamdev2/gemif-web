@@ -56,7 +56,7 @@ export default function AddMessageForm() {
             <div className="flex flex-col gap-8 overflow-auto scrollbar-hidden py-5 md:flex-row">
               <div className="flex flex-col gap-4">
                 <div className="relative">
-                  <label className="flex  items-center mb-1 text-gray-600 text-xs font-medium">Título</label>
+                  <label className="flex  items-center mb-1 text-gray-600 text-xs font-medium">Título <span className='text-red-500'>*</span></label>
                   <input type="text" name="name"
                     className="block w-full  pl-4 pr-3.5 py-2.5 text-sm font-normal shadow-xs text-gray-900 bg-transparent border border-gray-200 rounded-lg placeholder-gray-400 focus:outline-none leading-relaxed"
                     placeholder="Añade un titulo" required />
@@ -70,7 +70,7 @@ export default function AddMessageForm() {
               </div>
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col">
-                  <label htmlFor="options" className=" mb-2 text-sm font-medium text-gray-600 w-full">Vsiibilidad</label>
+                  <label htmlFor="options" className=" mb-2 text-sm font-medium text-gray-600 w-full">Visibilidad <span className='text-red-500'>*</span></label>
                   <select 
                   id="options"
                   name="scope"

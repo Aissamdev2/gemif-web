@@ -85,7 +85,7 @@ export default function EditEventClient({ event }: { event: Event }) {
                 {
                   user.role === 'admin' && (
                     <div className="flex flex-col">
-                      <label htmlFor="options" className=" mb-2 text-sm font-medium text-gray-600 w-full">Vsibilidad</label>
+                      <label htmlFor="options" className=" mb-2 text-sm font-medium text-gray-600 w-full">Visibilidad</label>
                       <select 
                       id="options"
                       name="scope"
@@ -101,7 +101,7 @@ export default function EditEventClient({ event }: { event: Event }) {
                 {
                   user.role === 'dev' && (
                     <div className="flex flex-col">
-                      <label htmlFor="options" className=" mb-2 text-sm font-medium text-gray-600 w-full">Vsiibilidad</label>
+                      <label htmlFor="options" className=" mb-2 text-sm font-medium text-gray-600 w-full">Visibilidad</label>
                       <select 
                       id="options"
                       name="scope"

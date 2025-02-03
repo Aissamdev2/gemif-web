@@ -15,11 +15,11 @@ export default function Page() {
         <p className="text-red-500 font-bold text-center min-h-6">{errorMessage}</p>
         <div className='flex flex-col gap-[20px] mb-[25px] px-[20px]'>
           <div className='flex flex-col '>
-            <label htmlFor="email" className="block w-fit mb-2 text-sm font-medium text-gray-900 dark:text-white">Correo electrónico</label>
+            <label htmlFor="email" className="block w-fit mb-2 text-sm font-medium text-gray-900 dark:text-white">Correo electrónico <span className='text-red-500'>*</span></label>
             <input autoComplete='on' type="email" name="email" id="email" className="bg-[white] border outline-none border-blue-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[90%] p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 transition-[border-color] duration-100" required />
           </div>
           <div>
-            <label htmlFor="password" className="block w-fit mb-2 text-sm font-medium text-gray-900 dark:text-white">Contraseña</label>
+            <label htmlFor="password" className="block w-fit mb-2 text-sm font-medium text-gray-900 dark:text-white">Contraseña <span className='text-red-500'>*</span></label>
             <input type="password" name="password" id="password" className="bg-[white] border outline-none border-blue-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[90%] p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 transition-[border-color] duration-100" required />
           </div>
         </div>

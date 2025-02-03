@@ -77,7 +77,7 @@ export default function EditMessage({ id }: { id: string }) {
               </div>
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col">
-                  <label htmlFor="options" className=" mb-2 text-sm font-medium text-gray-600 w-full">Vsiibilidad</label>
+                  <label htmlFor="options" className=" mb-2 text-sm font-medium text-gray-600 w-full">Visibilidad</label>
                   <select 
                   id="options"
                   name="scope"

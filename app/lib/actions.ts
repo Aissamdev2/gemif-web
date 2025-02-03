@@ -282,9 +282,8 @@ export async function updateUser(formData: FormData) {
   const year = formData.get('year') as string | null;
   const role = formData.get('role') as string | null;
   const color = formData.get('userColor') as string | null;
-
   const payload = { name, email, year, role, color }
-  const filteredPayload = Object.fromEntries(Object.entries(payload).filter(([_, v]) => v !== 'null'))
+  const filteredPayload = Object.fromEntries(Object.entries(payload).filter(([_, v]) => v !== null))
 
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/user/', {
     method: 'PATCH',
@@ -617,7 +616,9 @@ export async function addMessage(formData: FormData) {
   const scope = formData.get('scope') as string
   const year = formData.get('year') as string | null
   const message = { name, description, year, scope }
+  console.log(message)
   const filteredMessage = Object.fromEntries(Object.entries(message).filter(([_, v]) => v !== 'null'))
+  console.log(filteredMessage)
   
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/messages', {
     method: 'POST',
