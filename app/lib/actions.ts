@@ -170,11 +170,21 @@ export async function getSubjects() {
 export async function updateSubjects(formData: FormData) {
   const subjectsToAddRaw = formData.get("subjectsToAdd") as string;
   const subjectsToRemoveRaw = formData.get("subjectsToRemove") as string || undefined;
-  const subjectsToAdd: PrimitiveSubject[] = JSON.parse(subjectsToAddRaw)
+  const subjectsToAdd: PrimitiveSubject[] = JSON.parse(subjectsToAddRaw);
 
-  subjectsToAdd.forEach(async (subject: PrimitiveSubject) => {
-    const payload = { name: subject.name, color: subject.color, bgcolor: subject.bgcolor, bordercolor: subject.bordercolor, year:subject.year, quadri: subject.quadri, archived: false, score: null, primitiveid: subject.id }
-    console.log('payload', payload)
+  // Wait for all POST requests to complete
+  await Promise.all(subjectsToAdd.map(async (subject: PrimitiveSubject) => {
+    const payload = { 
+      name: subject.name, 
+      color: subject.color, 
+      bgcolor: subject.bgcolor, 
+      bordercolor: subject.bordercolor, 
+      year: subject.year, 
+      quadri: subject.quadri, 
+      archived: false, 
+      score: null, 
+      primitiveid: subject.id 
+    };
     const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/subjects/', {
       method: 'POST',
       headers: {
@@ -182,30 +192,31 @@ export async function updateSubjects(formData: FormData) {
         Cookie: cookies().toString(),
       },
       body: JSON.stringify(payload)
-    })
+    });
     if (!response.ok) {
-      throw new Error('Failed to add subject: ' + subject)
+      throw new Error('Failed to add subject: ' + subject.name);
     }
-  })
-    
+  }));
+
+  // Handle subjects to remove if present
   if (subjectsToRemoveRaw) {
-    const subjectsToRemove: Subject[] = JSON.parse(formData.get("subjectsToRemove") as string);
-    subjectsToRemove.forEach(async (subject: Subject) => {
+    const subjectsToRemove: Subject[] = JSON.parse(subjectsToRemoveRaw);
+    await Promise.all(subjectsToRemove.map(async (subject: Subject) => {
       const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/subjects/' + subject.id, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
           Cookie: cookies().toString(),
         },
-      })
+      });
       if (!response.ok) {
-        throw new Error('Failed to remove subject: ' + subject.name)
+        throw new Error('Failed to remove subject: ' + subject.name);
       }
-    })
+    }));
   }
 
-    revalidateTag('subjects')
-    return getSubjects()
+  revalidateTag('subjects');
+  return getSubjects();
 }
 
 export async function updateSubject( formData: FormData) {
@@ -419,44 +430,52 @@ export async function getSubjectInfo(formData: FormData) {
 
 
 export async function archiveSubjects(formData: FormData) {
-  const subjectsToArchiveRaw = formData.get("subjectsToArchive") as string;
-  const subjectsToArchive: Subject[] = JSON.parse(subjectsToArchiveRaw)
-  
-  
-  subjectsToArchive.forEach(async (subject: Subject) => {
-    const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/subjects/' + subject.id, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Cookie: cookies().toString(),
-      },
-      body: JSON.stringify({ archived: true })
-    })
-    if (!response.ok) {
-      throw new Error('Failed to archive subject: ' + subject)
-    }
-  });
+  try {
+    const subjectsToArchiveRaw = formData.get("subjectsToArchive") as string;
+    const subjectsToArchive: Subject[] = JSON.parse(subjectsToArchiveRaw);
 
-  const subjectsToUnarchiveRaw = formData.get("subjectsToUnarchive") as string || undefined;
-
-  if (subjectsToUnarchiveRaw) {
-    const subjectsToUnarchive: Subject[] = JSON.parse(formData.get("subjectsToUnarchive") as string)
-    subjectsToUnarchive.forEach(async (subject: Subject) => {
-      const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/subjects/' + subject.id, {
+    // Process archive operations in parallel
+    await Promise.all(subjectsToArchive.map(async (subject: Subject) => {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL}/api/subjects/${subject.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           Cookie: cookies().toString(),
         },
-        body: JSON.stringify({ archived: false })
-      })
+        body: JSON.stringify({ archived: true })
+      });
       if (!response.ok) {
-        throw new Error('Failed to unarchive subject: ' + subject.name)
+        throw new Error(`Failed to archive subject: ${subject.name}`);
       }
-    })
+    }));
+
+    const subjectsToUnarchiveRaw = formData.get("subjectsToUnarchive") as string || undefined;
+    
+    if (subjectsToUnarchiveRaw) {
+      const subjectsToUnarchive: Subject[] = JSON.parse(subjectsToUnarchiveRaw);
+      
+      // Process unarchive operations in parallel
+      await Promise.all(subjectsToUnarchive.map(async (subject: Subject) => {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL}/api/subjects/${subject.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Cookie: cookies().toString(),
+          },
+          body: JSON.stringify({ archived: false })
+        });
+        if (!response.ok) {
+          throw new Error(`Failed to unarchive subject: ${subject.name}`);
+        }
+      }));
+    }
+
+    revalidateTag('subjects');
+    return await getSubjects();
+  } catch (error) {
+    console.error('Error in archiveSubjects:', error);
+    throw error; // Propagate the error to the client
   }
-  revalidateTag('subjects')
-  return getSubjects()
 }
 
 

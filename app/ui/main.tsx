@@ -44,7 +44,7 @@ export default function Main() {
                   <Loader />
                 </div>
                 ) : (
-                  <ul className="flex flex-col gap-4 overflow-auto scrollbar-hidden max-lg:max-h-[400px] max-h-full">
+                  <ul className="flex flex-col gap-4 overflow-auto scrollbar-hidden max-h-full">
                     { mainPosts &&
                       mainPosts?.filter((post) => post.filename).map((post) => (
                       <li key={post.filename} className="border border-[#4d30e0] max-w-full cursor-pointer flex justify-between rounded-lg">

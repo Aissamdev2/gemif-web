@@ -141,7 +141,7 @@ export default function AddEventForm() {
                   </div>
                 ) : (
                   <div className="flex flex-col gap-[5px]">
-                    <SubjectRadios subjects={subjects} setDisabled={setDisabled}/>
+                    <SubjectRadios subjects={subjects.filter((subject) => subject.archived === false)} setDisabled={setDisabled}/>
                   </div>
                 )
               }

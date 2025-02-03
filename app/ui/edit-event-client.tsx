@@ -117,7 +117,7 @@ export default function EditEventClient({ event }: { event: Event }) {
                 }
               </div>
               <div className="flex flex-col gap-[5px]">
-                <SubjectRadios subjects={subjects} event={event}/>
+                <SubjectRadios subjects={subjects.filter((subject) => subject.archived === false)} event={event}/>
               </div>
             </div>
             

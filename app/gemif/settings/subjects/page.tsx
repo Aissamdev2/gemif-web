@@ -45,14 +45,12 @@ export default function Page() {
 
   useEffect(() => {
     if (state === 'Subjects updated') {
-      router.refresh();
     } else if (state === 'Failed to update subjects') {
     }
   }, [state, router]);
 
   useEffect(() => {
     if (archive === 'Subjects archived') {
-      router.refresh();
     } else if (archive === 'Failed to update subjects') {
     }
   }, [archive, router]);
@@ -148,7 +146,7 @@ export default function Page() {
             ) : (
                 <div className="flex flex-col py-2 px-4 gap-3 max-h-[397.6px]">
                   <div className="flex gap-2 grow-0 shrink-0">
-                    <p className="[writing-mode:vertical-lr]  text-sm flex justify-center items-center text-gray-500">Activas</p>
+                    <p className="[writing-mode:vertical-lr]  text-sm flex justify-center items-center text-gray-500">Cursando</p>
                     <div className="flex flex-col overflow-auto scrollbar-hidden max-h-[200px] gap-3">
                       {
                         subjects.map((subject, index) => {
@@ -166,7 +164,7 @@ export default function Page() {
                   </div>
                   <div className="w-full border-b border-[#5f3fbe3c]"></div>
                   <div className="flex gap-2 border-b py-1 border-[#5f3fbe2a] grow-[1] shrink-[1] min-h-[0]">
-                    <p className="[writing-mode:vertical-lr] text-sm flex justify-start items-center text-gray-500">Inactivas</p>
+                    <p className="[writing-mode:vertical-lr] text-sm flex justify-start items-center text-gray-500">Por cursar</p>
                     <div className="flex flex-col gap-3 overflow-auto scrollbar-hidden max-h-[200px] pb-2">
                       {
                         primitiveSubjects.map((subject, index) => {
@@ -206,7 +204,7 @@ export default function Page() {
             ) : (
               <div className="flex flex-col py-2 px-4 gap-3 max-h-[397.6px]">
                   <div className="flex gap-2 grow-0 shrink-0">
-                    <p className="[writing-mode:vertical-lr]  text-sm flex justify-center items-center text-gray-500">No archivadas</p>
+                    <p className="[writing-mode:vertical-lr]  text-sm flex justify-center items-center text-gray-500">Cursando</p>
                     <div className="flex flex-col overflow-auto scrollbar-hidden max-h-[200px] gap-3">
                       {
                         subjects.filter((subject) => !subject.archived).map((subject, index) => {
@@ -223,7 +221,7 @@ export default function Page() {
                   </div>
                   <div className="w-full border-b border-[#5f3fbe3c]"></div>
                   <div className="flex gap-2 border-b py-1 border-[#5f3fbe2a] grow-[1] shrink-[1] min-h-[0]">
-                    <p className="[writing-mode:vertical-lr] text-sm flex justify-start items-center text-gray-500">Archivadas</p>
+                    <p className="[writing-mode:vertical-lr] text-sm flex justify-start items-center text-gray-500">Superadas</p>
                     <div className="flex flex-col gap-3 overflow-auto scrollbar-hidden max-h-[200px] pb-2">
                       {
                         subjects.filter((subject) => subject.archived).map((subject, index) => {
@@ -245,7 +243,7 @@ export default function Page() {
             <button type="button" disabled={!subjects || !primitiveSubjects || isLoadingPrimitiveSubjects || isLoadingSubjects || !archiveState} onClick={() => setArchiveReset(!reset)} className={`${!subjects || !primitiveSubjects || isLoadingPrimitiveSubjects || isLoadingSubjects || !archiveState ? 'opacity-30' : 'opacity-100'} w-full text-center p-1.5 py-2 rounded-md bg-red-600 text-white text-xs font-medium close-modal-button transition-all text-nowrap duration-300 hover:bg-red-700`}>
               Reestablecer selección
             </button>
-            <UpdateButton text="Archivar seleccion" disabled={(!subjects || !primitiveSubjects || isLoadingPrimitiveSubjects || isLoadingSubjects || !archiveState)}/>
+            <UpdateButton text="Marcar como superadas" disabled={(!subjects || !primitiveSubjects || isLoadingPrimitiveSubjects || isLoadingSubjects || !archiveState)}/>
           </div>
         </form>
       </div>
@@ -263,7 +261,7 @@ function UpdateButton({ text, disabled }: { text?: string, disabled: boolean }) 
   }
 
   return (
-    <button disabled={pending || disabled } type="submit" onClick={handleClick} className={`${disabled || pending ? 'opacity-30' : 'opacity-100'} w-full text-center p-1.5 py-2 rounded-md bg-indigo-600 text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-indigo-700`}>
+    <button disabled={pending || disabled } type="submit" onClick={handleClick} className={`${disabled || pending ? 'opacity-30' : 'opacity-100'} w-full text-center text-nowrap p-1.5 py-2 rounded-md bg-indigo-600 text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-indigo-700`}>
       {text}
     </button>
   )
