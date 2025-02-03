@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySession } from './app/lib/helpers';
 
-
 const API_ENDPOINTS = [
-  '/api/ranking', 
+  '/api/ranking',
   '/api/main-data',
   '/api/main-posts',
   '/api/events',
@@ -15,40 +14,45 @@ const API_ENDPOINTS = [
   '/api/users',
 ];
 
-
 export async function middleware(request: NextRequest) {
   try {
-    // Handle session verification for all requests
     const verification = await verifySession();
     const sessionError = verification.error;
+    const hasSession = !sessionError; // User is authenticated if no session error
 
-    // Skip session check for login and register pages
-    if ((sessionError === 'No session' || sessionError === 'No token') &&
-        !request.nextUrl.pathname.startsWith('/login') &&
-        !request.nextUrl.pathname.startsWith('/register') &&
-        !request.nextUrl.pathname.startsWith('/') 
-      )  {
-      return NextResponse.redirect(new URL('/login', request.nextUrl));
+    // Redirect authenticated users away from login/register
+    if (hasSession && (request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/register'))) {
+      return NextResponse.redirect(new URL('/gemif/main', request.url));
+    }
+
+    // Redirect unauthenticated users to login (except on login/register pages)
+    if (!hasSession && !request.nextUrl.pathname.startsWith('/login') && !request.nextUrl.pathname.startsWith('/register')) {
+      return NextResponse.redirect(new URL('/login', request.url));
     }
 
     // Handle redirect if session exists but login count is 0
-    if (!sessionError && verification.session?.logincount === 0 && 
-        !request.nextUrl.pathname.startsWith('/initial-setup') && 
-        !API_ENDPOINTS.some((endpoint) => !request.nextUrl.pathname.startsWith(endpoint))) {
-      return NextResponse.redirect(new URL('/initial-setup', request.nextUrl));
+    if (hasSession && verification.session?.logincount === 0 &&
+        !request.nextUrl.pathname.startsWith('/initial-setup') &&
+        !API_ENDPOINTS.some((endpoint) => request.nextUrl.pathname.startsWith(endpoint))) {
+      return NextResponse.redirect(new URL('/initial-setup', request.url));
     }
 
-    // Redirect to '/gemif/calendar' if session exists and page is not '/gemif' or '/initial-setup'
-    if (!sessionError && !request.nextUrl.pathname.startsWith('/gemif') &&
-        !request.nextUrl.pathname.startsWith('/initial-setup') && !API_ENDPOINTS.some((endpoint) => !request.nextUrl.pathname.startsWith(endpoint))) {
-      return NextResponse.redirect(new URL('/gemif/calendar', request.nextUrl));
+    // Redirect to '/gemif/calendar' if session exists and user is not in '/gemif' or '/initial-setup'
+    if (hasSession &&
+        !request.nextUrl.pathname.startsWith('/gemif') &&
+        !request.nextUrl.pathname.startsWith('/initial-setup') &&
+        !API_ENDPOINTS.some((endpoint) => request.nextUrl.pathname.startsWith(endpoint))) {
+      return NextResponse.redirect(new URL('/gemif/main', request.url));
     }
 
-    // Let the request continue if no redirect or session check fails
-    
+    if (hasSession && request.nextUrl.pathname.startsWith('/initial-setup') && verification.session?.logincount !== 0) {
+      return NextResponse.redirect(new URL('/gemif/main', request.url));
+    }
+
+    // Allow request to proceed
     const response = NextResponse.next();
     if (verification.session) {
-      response.headers.set('X-User-Id', verification.session.id); // Set the userId in a custom header
+      response.headers.set('X-User-Id', verification.session.id);
       response.headers.set('X-User-Github-Token', verification.session.githubtoken);
     }
     return response;
@@ -61,4 +65,3 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: ['/((?!_next/static|_next/image|.*\\.png$).*)', '/api/(.*)'], // Match all API routes
 };
-
