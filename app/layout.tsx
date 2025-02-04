@@ -22,7 +22,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <head>
-        <meta name="google-site-verification" content="vRq6go1xrzjxByoh4eWmCoJJCefv6bCzcCfTFN8GSdo" />
+        <meta name="google-site-verification" content="BuUjUrMXjcobaS_shfW4lsUoMZ3teEvFnLiFf_0Gy9U" />
       </head>
       <body className={inter.className + ' h-screen'}>{children}</body>
     </html>
