@@ -9,6 +9,10 @@
   overflow: hidden; /* Prevents any unwanted scrollbars */
 }
 
+body {
+  background-color: #eaf3ff;
+}
+
 .bg-fullscreen::before {
   content: "";
   position: absolute;
