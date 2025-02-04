@@ -4,7 +4,7 @@ import { BlockMath } from 'react-katex';
 
 export default function Home() {
   return (
-    <main className="flex flex-col justify-center items-center gap-20 md:gap-32 h-screen w-screen bg-white overflow-hidden" >
+    <main className="relative flex flex-col justify-center items-center gap-20 md:gap-32 h-screen w-screen bg-white overflow-hidden" >
       <div className="absolute top-[5%] left-[20%] lg:top-[10%] lg:right-1/2 lg:translate-x-1/2 rotate-[-10deg] opacity-50">
         <BlockMath math="\frac{\partial \mathcal{L}}{\partial q} - \frac{d}{dt}\left( \frac{\partial \mathcal{L}}{\partial \dot{q}} \right) = 0" />
       </div>
