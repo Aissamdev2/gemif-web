@@ -30,7 +30,6 @@ export default function Page() {
     if (passwordError || emailError) {
       return
     }
-    console.log('Signuppp')
     setFormError('')
     const formData = new FormData(event.currentTarget)
     dispatch(formData) // Dispatch the form data

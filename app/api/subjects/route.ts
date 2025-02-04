@@ -6,7 +6,7 @@ export async function GET(request: Request) {
     if (!userId) {
       return new Response('Unauthorized', { status: 401 });
     }
-    const subjects = (await sql`SELECT * FROM subjects WHERE userId = ${userId};`).rows
+    const subjects = (await sql`SELECT * FROM subjects WHERE userId = ${userId} ORDER BY createdat;`).rows
     return new Response(JSON.stringify(subjects))
 
   } catch (error) {

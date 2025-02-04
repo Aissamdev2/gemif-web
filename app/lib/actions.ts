@@ -138,7 +138,6 @@ export async function getEvent(id: string) {
 }
 
 export async function getPrimitiveSubjects() {
-  console.log('getPrimitiveSubjects() url: ', (process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/primitive-subjects')
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/primitive-subjects', {
     headers: {
       Cookie: cookies().toString()
@@ -147,7 +146,6 @@ export async function getPrimitiveSubjects() {
   if (!response.ok) {
     throw new Error('Failed to fetch primitive subjects');
   }
-  console.log('response', response)
   const primitive_subjects: PrimitiveSubject[] = await response.json();
   return primitive_subjects;
 }
@@ -226,8 +224,6 @@ export async function updateSubject( formData: FormData) {
   const score = formData.get('score') as string | null
   const payload = { color, bgcolor, bordercolor, score }
   const filteredpayload = Object.fromEntries(Object.entries(payload).filter(([_, v]) => v !== 'null'))
-
-  console.log('filteredpayload', filteredpayload)
 
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/subjects/' + id, {
     method: 'PATCH',
@@ -616,9 +612,7 @@ export async function addMessage(formData: FormData) {
   const scope = formData.get('scope') as string
   const year = formData.get('year') as string | null
   const message = { name, description, year, scope }
-  console.log(message)
   const filteredMessage = Object.fromEntries(Object.entries(message).filter(([_, v]) => v !== 'null'))
-  console.log(filteredMessage)
   
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/messages', {
     method: 'POST',

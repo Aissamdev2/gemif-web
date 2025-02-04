@@ -131,5 +131,5 @@ export async function signOut(): Promise<string> {
   } catch (error) {
   return "NO_SESSION_TO_DELETE";
   }
-  redirect('/login');
+  redirect('/');
 }

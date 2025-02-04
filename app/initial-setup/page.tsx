@@ -30,13 +30,20 @@ export default function InitialSetup() {
 
   useEffect(() => {
       if (primitiveSubjects) {
-        const initialState = Object.fromEntries(
+        const initialSubjectState = Object.fromEntries(
+          primitiveSubjects.map((subject) => {
+            if (subject.id === '00000000') return [subject.name, true];
+            return [subject.name, false];
+          })
+        );
+        const initialPassedSubjectState = Object.fromEntries(
           primitiveSubjects.map((subject) => {
             return [subject.name, false];
           })
         );
-        setSubjectState(initialState);
-        setPassedSubjectState(initialState);
+
+        setSubjectState(initialSubjectState);
+        setPassedSubjectState(initialPassedSubjectState);
       }
     }, [primitiveSubjects]);
 
@@ -95,7 +102,7 @@ export default function InitialSetup() {
             <div className="flex border-b border-gray-200">
               <div className="flex flex-col gap-3 overflow-auto scrollbar-hidden max-h-[200px] pb-2">
                 {
-                  primitiveSubjects.map((subject, index) => {
+                  primitiveSubjects.filter((subject) => subject.id !== '00000000').map((subject, index) => {
                     return (
                       <div key={subject.id + 'taking'} title={subject.name} className="flex items-center">
                         <input checked={!!subjectState[subject.name]} disabled={!!passedSubjectState[subject.name]} id={subject.name + 'taking'} type="checkbox" name="subject" value={subject.name} onChange={handleChange} className={`w-[21.6px] h-[21.6px] appearance-none border cursor-pointer border-gray-300  rounded-md mr-2 ${!!passedSubjectState[subject.name] ? 'opacity-50' : 'hover:border-indigo-500'} checked:bg-no-repeat checked:bg-center checked:border-indigo-500 checked:bg-indigo-100`}/>
@@ -119,7 +126,7 @@ export default function InitialSetup() {
             <div className="flex border-b border-gray-200">
               <div className="flex flex-col gap-3 overflow-auto scrollbar-hidden max-h-[200px] pb-2">
                 {
-                  primitiveSubjects.map((subject, index) => {
+                  primitiveSubjects.filter((subject) => subject.id !== '00000000').map((subject, index) => {
                     return (
                       <div key={subject.id + 'passed'} title={subject.name} className="flex items-center">
                         <input checked={!!passedSubjectState[subject.name]} disabled={!!subjectState[subject.name]} id={subject.name + 'passed'} type="checkbox" name="subject" value={subject.name} onChange={handlePassedChange} className={`w-[21.6px] h-[21.6px] appearance-none border cursor-pointer border-gray-300  rounded-md mr-2 ${!!subjectState[subject.name] ? 'opacity-50' : 'hover:border-indigo-500'} checked:bg-no-repeat checked:bg-center checked:border-indigo-500 checked:bg-indigo-100`}/>

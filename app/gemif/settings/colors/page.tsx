@@ -139,7 +139,6 @@ export default function Page() {
                     <option value="Seleccione una asignatura">Seleccione una asignatura</option>
                     {
                       subjects.map((subject) => {
-                        if (subject.name === 'Otros') return null
                         return (
                           <option key={subject.id + 'color'} value={subject.name}>{subject.name}</option>
                         )

@@ -215,8 +215,6 @@ const SUBJECTS_OBJ = [
 ];
 
 
-
-
 export const SUBJECTS_COLORS_OBJ: Record<string, string> = {
   "Otros": "#000000",
   ...SUBJECTS_COLORS_11,
@@ -332,7 +330,6 @@ export const TITLES: Record<string, string> = {
   'file': 'archivo',
   'link': 'enlace'
 }
-
 
 
 

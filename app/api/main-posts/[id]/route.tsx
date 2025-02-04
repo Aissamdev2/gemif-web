@@ -73,8 +73,6 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       WHERE id = $${fieldsToUpdate.length + 1}
     `;
 
-    console.log('query: ',query, 'values: ', values);
-
     // Execute the SQL query using sql.query()
     await sql.query(query, values);
 

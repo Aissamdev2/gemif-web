@@ -65,7 +65,6 @@ export default function SubjectsPage() {
     setScoreSelectedOption(targetSubject)
   };
 
-  console.log('subjects: ', isLoadingSubjects, 'primitive: ', isLoadingPrimitive, 'ranking: ', isLoadingRanking )
 
   return (
     <section className="z-50 w-full h-full flex flex-col lg:mb-0 px-2 lg:px-10 gap-12 pt-[80px] pb-[20px] lg:gap-12 lg:flex-row">
@@ -99,8 +98,7 @@ export default function SubjectsPage() {
                   className="block w-full  pl-4 pr-3.5 py-2.5 text-sm font-normal shadow-xs text-gray-900 bg-transparent border border-gray-200 rounded-lg placeholder-gray-400 focus:outline-none leading-relaxed">
                     <option value="Seleccione una asignatura">Seleccione una asignatura</option>
                     {
-                      primitiveSubjects.map((subject) => {
-                        if (subject.name === 'Otros') return null
+                      primitiveSubjects.filter((subject) => subject.id !== '00000000').map((subject) => {
                         return (
                           <option key={subject.id + 'color'} value={subject.id}>{subject.name}</option>
                         )
@@ -171,8 +169,7 @@ export default function SubjectsPage() {
                   className="block w-full  pl-4 pr-3.5 py-2.5 text-sm font-normal shadow-xs text-gray-900 bg-transparent border border-gray-200 rounded-lg placeholder-gray-400 focus:outline-none leading-relaxed">
                     <option value="Seleccione una asignatura">Seleccione una asignatura</option>
                     {
-                      subjects.map((subject) => {
-                        if (subject.name === 'Otros') return null
+                      subjects.filter((subject) => subject.primitiveid !== '00000000').map((subject) => {
                         return (
                           <option key={subject.id + 'score'} value={subject.id}>{subject.name}</option>
                         )

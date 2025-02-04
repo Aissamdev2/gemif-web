@@ -75,8 +75,6 @@ export async function PATCH(request: Request) {
       RETURNING *
     `;
 
-    console.log('query: ',query, 'values: ', values);
-
     // Execute the SQL query using sql.query()
     const user = await sql.query(query, values);
 

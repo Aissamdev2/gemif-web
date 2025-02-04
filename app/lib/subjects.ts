@@ -426,6 +426,7 @@ export const OPTATIVES_OBJ = [
 ];
 
 export const SBJ_FINAL = [
+  {name: 'Otro', color: '#734d1d', bgcolor: '#fff4e9', bordercolor: '#cba152', id: '00000000' },
   // Year 1, Quadri 1
   {professors: ['Hebert Pérez Rosés', 'Carlos García Gómez'], emails: ['hebert.perez@urv.cat', 'carlos.garciag@urv.cat'], credits: '7.5', name: 'Álgebra Lineal', color: '#ff0000', bgcolor: '#fef2f2', bordercolor: '#f87171', year: '1', quadri: '1', id: '17274001' },
   {professors: ['Alejandro Arenas Moreno', 'Sergio Gómez Jiménez'], emails: ['alexandre.arenas@urv.cat', 'sergio.gomez@urv.cat'], credits: '7.5', name: 'Análisis Matemático I', color: '#4f46e5', bgcolor: '#eef2ff', bordercolor: '#818cf8', year: '1', quadri: '1', id: '17274002' },

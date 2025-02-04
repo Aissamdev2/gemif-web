@@ -9,7 +9,6 @@ export default function Modal({
 
   const router = useRouter()
   const handleOutsideClick = () => {
-    console.log('click')
     router.back()
   }
 

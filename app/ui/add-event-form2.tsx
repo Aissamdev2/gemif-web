@@ -49,7 +49,6 @@ export default function AddEventForm() {
     if (!user || !subjects) return
     const formData = new FormData(event.currentTarget);
     const eventSubject = subjects.find(subject => subject.id === formData.get('subjectid'))
-    console.log(eventSubject)
     formData.append('primitiveid', eventSubject?.primitiveid as string);
     dispatch(formData);
   };
@@ -202,6 +201,7 @@ function SubjectRadios({ subjects, setDisabled }: { subjects: Subject[], setDisa
     if (isChecked[target]) {
       setIsChecked(() => {
         let state = emptyState()
+        state["Otro"] = true
         return state
       });
     }

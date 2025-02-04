@@ -31,12 +31,12 @@ export default function EditEventClient({ event }: { event: Event }) {
   const handleScopeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setScope(event.target.value)
   }
+  console.log(subjects)
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const eventSubject = subjects.find(subject => subject.id === formData.get('subjectid'))
-    console.log(eventSubject)
     formData.append('primitiveid', eventSubject?.primitiveid as string);
     formData.append('scope', scope);
     dispatch(formData);
@@ -174,7 +174,7 @@ export default function EditEventClient({ event }: { event: Event }) {
       if (isChecked[target]) {
         setIsChecked(() => {
           let state = emptyState()
-          state["Otros"] = true
+          state["Otro"] = true
           return state
         });
       }

@@ -31,10 +31,14 @@ export async function GET(request: Request) {
       return new Response('Unauthorized', { status: 401 });
     }
     // Fetch subjects and extract primitive IDs
+    const users = (await sql`SELECT id, year FROM users`).rows;
     const subjects = (await sql`SELECT * FROM subjects WHERE userId = ${userId};`).rows;
     const primitiveIds = subjects
+      .filter((subject) => !subject.archived && subject.primitiveid !== '00000000')
       .map(subject => subject.primitiveid)
       .filter((id): id is string => !!id); // Ensure primitiveIds is string[]
+
+    const years = subjects.filter((subject) => !subject.archived && subject.primitiveid !== '00000000').map(subject => subject.year);
 
     // Fetch individual events for the user
     const individualEvents = (await sql`SELECT * FROM events WHERE userId = ${userId};`).rows;
@@ -42,7 +46,7 @@ export async function GET(request: Request) {
     // Fetch class events using a dynamically constructed query
     let classEvents = [];
     if (primitiveIds.length > 0) {
-      const placeholders = primitiveIds.map((_, index) => `$${index + 1}`).join(', ');
+      const placeholders = primitiveIds.filter((id) => id !== '00000000').map((_, index) => `$${index + 1}`).join(', ');
       const query = `
         SELECT * FROM events 
         WHERE primitiveId IN (${placeholders}) 
@@ -52,11 +56,14 @@ export async function GET(request: Request) {
       classEvents = (await sql.query(query, [...primitiveIds, userId])).rows;
     }
 
+    const otherEvents = (await sql`SELECT * FROM events WHERE primitiveId = '00000000' AND userId != ${userId} AND scope = 'admin';`).rows;
+    const otherEventsYear = otherEvents.filter((event) => years.includes(users.find((user) => user.id === event.userid)?.year));
+
     // Fetch global events
     const globalEvents = (await sql`SELECT * FROM events WHERE scope = 'dev' AND userId != ${userId};`).rows;
 
     // Combine all events
-    const allEvents = [...individualEvents, ...classEvents, ...globalEvents];
+    const allEvents = [...individualEvents, ...classEvents,...otherEventsYear, ...globalEvents];
 
     return new Response(JSON.stringify(allEvents));
   } catch (error) {

@@ -20,7 +20,7 @@ export default function Page() {
   useEffect(() => {
     if (subjects) {
       const initialState = Object.fromEntries(
-        subjects.map((subject) => [subject.name, false]) // Initialize all subjects as false
+        subjects.filter((subject) => subject.primitiveid !== '00000000').map((subject) => [subject.name, false]) // Initialize all subjects as false
       );
       setArchiveState(initialState);
       
@@ -149,8 +149,7 @@ export default function Page() {
                     <p className="[writing-mode:vertical-lr]  text-sm flex justify-center items-center text-gray-500">Cursando</p>
                     <div className="flex flex-col overflow-auto scrollbar-hidden max-h-[200px] gap-3">
                       {
-                        subjects.map((subject, index) => {
-                          if (subject.name === 'Otros') return null
+                        subjects.filter((subject) => subject.primitiveid !== '00000000').map((subject, index) => {
                           if (subject.archived) return null
                           return (
                             <div key={subject.id} title={subject.name} className="flex items-center">
@@ -167,8 +166,8 @@ export default function Page() {
                     <p className="[writing-mode:vertical-lr] text-sm flex justify-start items-center text-gray-500">Por cursar</p>
                     <div className="flex flex-col gap-3 overflow-auto scrollbar-hidden max-h-[200px] pb-2">
                       {
-                        primitiveSubjects.map((subject, index) => {
-                          if (subjects?.map((subject) => subject.name)?.includes(subject.name) || subject.name === 'Otros') return null
+                        primitiveSubjects.filter((subject) => subject.id !== '00000000').map((subject, index) => {
+                          if (subjects?.map((subject) => subject.name)?.includes(subject.name)) return null
                           return (
                             <div key={subject.id} title={subject.name} className="flex items-center">
                               <input checked={!!subjectState[subject.name]} id={subject.name + 'inactive'} type="checkbox" name="subject" value={subject.name} onChange={handleChange} className="w-[21.6px] h-[21.6px] appearance-none border cursor-pointer border-gray-300  rounded-md mr-2 hover:border-indigo-500 checked:bg-no-repeat checked:bg-center checked:border-indigo-500 checked:bg-indigo-100"/>
@@ -207,8 +206,7 @@ export default function Page() {
                     <p className="[writing-mode:vertical-lr]  text-sm flex justify-center items-center text-gray-500">Cursando</p>
                     <div className="flex flex-col overflow-auto scrollbar-hidden max-h-[200px] gap-3">
                       {
-                        subjects.filter((subject) => !subject.archived).map((subject, index) => {
-                          if (subject.name === 'Otros') return null
+                        subjects.filter((subject) => !subject.archived && subject.primitiveid !== '00000000').map((subject, index) => {
                           return (
                             <div key={subject.id} title={subject.name} className="flex items-center">
                               <input checked={!!archiveState[subject.name]} id={subject.name + 'unarchived'} type="checkbox" name="archive" value={subject.name} onChange={handleArchiveChange} className="w-[21.6px] h-[21.6px] appearance-none border cursor-pointer border-gray-300  rounded-md mr-2 hover:border-indigo-500 checked:bg-no-repeat checked:bg-center checked:border-indigo-500 checked:bg-indigo-100"/>
@@ -224,8 +222,7 @@ export default function Page() {
                     <p className="[writing-mode:vertical-lr] text-sm flex justify-start items-center text-gray-500">Superadas</p>
                     <div className="flex flex-col gap-3 overflow-auto scrollbar-hidden max-h-[200px] pb-2">
                       {
-                        subjects.filter((subject) => subject.archived).map((subject, index) => {
-                          if (subject.name === 'Otros') return null
+                        subjects.filter((subject) => subject.archived && subject.primitiveid !== '00000000').map((subject, index) => {
                           return (
                             <div key={subject.id} title={subject.name} className="flex items-center">
                               <input checked={!!archiveState[subject.name]} id={subject.name + 'archived'} type="checkbox" name="archive" value={subject.name} onChange={handleArchiveChange} className="w-[21.6px] h-[21.6px] appearance-none border cursor-pointer border-gray-300  rounded-md mr-2 hover:border-indigo-500 checked:bg-no-repeat checked:bg-center checked:border-indigo-500 checked:bg-indigo-100"/>
