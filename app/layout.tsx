@@ -17,12 +17,20 @@ export const metadata: Metadata = {
     siteName: "GEMiFWeb URV",
     locale: "es_ES",
     type: "website",
+    images: [
+      {
+        url: "https://gemif-web.vercel.app/preview_og.png",
+        width: 1200,
+        height: 630,
+        alt: "Comunidad GEMiF URV - Ingeniería Matemático-Física",
+      }
+    ]
   },
   twitter: {
     card: "summary_large_image",
-    title: "GEMiF URV: Recursos para Ingenieros Matemático-Físicos",
-    description: "Apuntes, tutoriales y apoyo académico para estudiantes de GEMiF en la URV",
-    images: ["https://your-project.vercel.app/twitter-image.jpg"],
+    title: "GEMiFWeb URV: Matemáticas y Física | Comunidad de Estudiantes",
+    description: "Pagina web de GEMiF, Universitat Rovira i Virgili (URV) NO OFICIAL",
+    images: ["https://gemif-web.vercel.app/preview_twitter.png"],
   },
   icons: [
     {
@@ -33,7 +41,7 @@ export const metadata: Metadata = {
     },
     {
       rel: "apple-touch-icon",
-      sizes: "180x180",
+      sizes: "144x144",
       type: "image/png",
       url: "/apple-touch-icon.png",
     },
