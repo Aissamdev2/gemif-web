@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:mobile="http://www.google.com/schemas/sitemap-mobile/1.0" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+<url><loc>https://gemif-web.vercel.app/gemif/archive</loc><lastmod>2025-02-05T18:38:00.747Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://gemif-web.vercel.app/gemif/main</loc><lastmod>2025-02-05T18:38:00.747Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://gemif-web.vercel.app/gemif/calendar/add-event</loc><lastmod>2025-02-05T18:38:00.747Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://gemif-web.vercel.app/gemif/settings/account</loc><lastmod>2025-02-05T18:38:00.747Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://gemif-web.vercel.app/gemif/messages</loc><lastmod>2025-02-05T18:38:00.747Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://gemif-web.vercel.app/gemif/settings</loc><lastmod>2025-02-05T18:38:00.747Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://gemif-web.vercel.app/gemif/settings/colors</loc><lastmod>2025-02-05T18:38:00.747Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://gemif-web.vercel.app/gemif/calendar</loc><lastmod>2025-02-05T18:38:00.747Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://gemif-web.vercel.app/gemif/subjects</loc><lastmod>2025-02-05T18:38:00.747Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://gemif-web.vercel.app/initial-setup</loc><lastmod>2025-02-05T18:38:00.747Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://gemif-web.vercel.app/login</loc><lastmod>2025-02-05T18:38:00.747Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://gemif-web.vercel.app/register</loc><lastmod>2025-02-05T18:38:00.747Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://gemif-web.vercel.app/gemif/settings/subjects</loc><lastmod>2025-02-05T18:38:00.747Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://gemif-web.vercel.app/gemif/messages/add-message</loc><lastmod>2025-02-05T18:38:00.747Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://gemif-web.vercel.app</loc><lastmod>2025-02-05T18:38:00.747Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+</urlset>

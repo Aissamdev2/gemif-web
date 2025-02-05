@@ -1,2 +1,9 @@
+# *
 User-agent: *
 Allow: /
+
+# Host
+Host: https://gemif-web.vercel.app
+
+# Sitemaps
+Sitemap: https://gemif-web.vercel.app/sitemap.xml
