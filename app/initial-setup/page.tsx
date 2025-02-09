@@ -167,7 +167,7 @@ function UpdateButton({ text }: { text?: string }) {
 
   return (
     <button disabled={pending} type="submit" onClick={handleClick} className={`${pending ? 'pointer-events-none opacity-30' : ''} w-full text-center p-1.5 py-2 rounded-md bg-indigo-600 text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-indigo-700`}>
-      {text}
+      {pending ? 'Cargando...' : text}
     </button>
   )
 }

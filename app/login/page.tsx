@@ -42,8 +42,8 @@ function LoginButton() {
   }
 
   return (
-    <button aria-disabled={pending} type="submit" onClick={handleClick} className="flex justify-center items-center bg-[#592baf] text-white outline-none w-[200px] self-center hover:bg-[#4c41c3] font-semibold hover:text-white py-2 px-4 border border-blue-500 hover:border-transparent rounded-[10px] transition-[background-color, border-color, color] duration-300">
-      {pending ? <div className='w-[20px] h-[20px] rounded-[50%] border-l-[3px] border-t-[3px] border-white animate-spin'></div> : 'Iniciar sesión'}
+    <button disabled={pending} type="submit" onClick={handleClick} className="flex justify-center items-center bg-[#592baf] text-white outline-none w-[200px] self-center hover:bg-[#4c41c3] font-semibold hover:text-white py-2 px-4 border border-blue-500 hover:border-transparent rounded-[10px] transition-[background-color, border-color, color] duration-300">
+      {pending ? 'Iniciando sesión...' : 'Iniciar sesión'}
     </button>
   )
 }

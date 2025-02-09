@@ -203,11 +203,7 @@ function LoginButton() {
       onClick={handleClick}
       className="flex justify-center items-center bg-[#ad3939] text-white outline-none w-[200px] self-center hover:bg-[#b95353] font-semibold hover:text-white py-2 px-4 border border-red-500 hover:border-transparent rounded-[10px] transition-[background-color, border-color, color] duration-300"
     >
-      {pending ? (
-        <div className="w-[20px] h-[20px] rounded-[50%] border-l-[3px] border-t-[3px] border-white animate-spin"></div>
-      ) : (
-        'Registrarse'
-      )}
+      {pending ? 'Registrando...' : 'Registrarse'}
     </button>
   )
 }
