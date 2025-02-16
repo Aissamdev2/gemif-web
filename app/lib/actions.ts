@@ -3,7 +3,7 @@
 import { increaseLoginCount, setCookie, signIn, signOut, signUp } from '@/app/lib/auth'
 import { cookies } from 'next/headers'
 import { revalidateTag } from "next/cache";
-import { Event, GitHubContent, Subject, PrimitiveSubject, User, Ranking, MainPost, Message, FetchedUser } from "@/app/lib/definitions";
+import { Event, GitHubContent, Subject, PrimitiveSubject, User, Ranking, MainPost, Message, FetchedUser, Survey } from "@/app/lib/definitions";
 import { redirect } from 'next/navigation';
 
 
@@ -645,7 +645,33 @@ export async function checkUnseenMessages() {
   
 }
 
+export async function getSurveys() {
+  const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/surveys', {
+    headers: {
+      Cookie: cookies().toString()
+    },
+    next: { tags: ['surveys'] }
+  });
+  if (!response.ok) {
+    throw new Error('Failed to fetch surveys');
+  }
+  const surveys: Survey[] = await response.json();
+  return surveys;
+}
 
 
+export async function updateOption() {
+  const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/surveys', {
+    headers: {
+      Cookie: cookies().toString()
+    },
+    next: { tags: ['surveys'] }
+  });
+  if (!response.ok) {
+    throw new Error('Failed to fetch surveys');
+  }
+  const surveys: Survey[] = await response.json();
+  return surveys;
+}
 
 

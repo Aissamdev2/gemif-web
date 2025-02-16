@@ -119,4 +119,31 @@ export type Message = {
   userid: string;
 }
 
+export type SurveyInfo = {
+  id: string,
+  name: string;
+  multi: boolean;
+  primitiveid: string;
+  userid: string;
+}
+
+export type SurveyOption = {
+  id: string,
+  name: string;
+  votedid: string[];
+  surveyid: string;
+  userid: string;
+}
+
+export type Survey = {
+  surveyInfo: SurveyInfo;
+  surveyOptions: SurveyOption[];
+}
+
+export type SurveyAnswer = {
+  id: string,
+  optionid: string[];
+  surveyid: string;
+  userid: string;
+}
 

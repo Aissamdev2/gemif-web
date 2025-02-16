@@ -273,6 +273,10 @@ export const HEADER_OPTIONS = [
     href: 'subjects',
   },
   {
+    name: 'Encuestas',
+    href: 'surveys',
+  },
+  {
     name: 'Archivo',
     href: 'archive',
   }
