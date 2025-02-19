@@ -177,8 +177,15 @@ function SubjectRadios({ subjects, setDisabled }: { subjects: Subject[], setDisa
     return state
   }
 
+  const initialState = () => {
+    const subjectsName = subjects.map((subject) => subject.name)
+    const values = subjects.map((subject) => false)
+    const state: Record<string, boolean> = Object.fromEntries(subjectsName.map((subject, index) => [subject, values[index]]))
+    return state
+  }
+
   const [isChecked, setIsChecked] = useState(() => {
-    let state = emptyState()
+    let state = initialState()
     return state
   });
 
@@ -200,8 +207,7 @@ function SubjectRadios({ subjects, setDisabled }: { subjects: Subject[], setDisa
   const handleClick = (event: React.MouseEvent<HTMLElement>, target: string) => {
     if (isChecked[target]) {
       setIsChecked(() => {
-        let state = emptyState()
-        state["Otro"] = true
+        let state = initialState();
         return state
       });
     }

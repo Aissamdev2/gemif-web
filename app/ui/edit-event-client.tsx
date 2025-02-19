@@ -147,6 +147,12 @@ export default function EditEventClient({ event }: { event: Event }) {
   }
   
   function SubjectRadios({ subjects, event }: { subjects: Subject[], event: Event }) {
+    const initialState = () => {
+      const subjectsName = subjects.map((subject) => subject.name)
+      const values = subjects.map((subject) => false)
+      const state: Record<string, boolean> = Object.fromEntries(subjectsName.map((subject, index) => [subject, values[index]]))
+      return state
+    }
     const emptyState = () => {
       const subjectsName = subjects.map((subject) => subject.name)
       const values = subjects.map((subject) => subject.primitiveid === '00000000' ? true : false)
@@ -173,8 +179,7 @@ export default function EditEventClient({ event }: { event: Event }) {
     const handleClick = (event: React.MouseEvent<HTMLElement>, target: string) => {
       if (isChecked[target]) {
         setIsChecked(() => {
-          let state = emptyState()
-          state["Otro"] = true
+          let state = initialState()
           return state
         });
       }
