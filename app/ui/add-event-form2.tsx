@@ -170,14 +170,14 @@ function AddButton({disabled}:{disabled: boolean}) {
 }
 
 function SubjectRadios({ subjects, setDisabled }: { subjects: Subject[], setDisabled: React.Dispatch<React.SetStateAction<boolean>> }) {
-  const emptyState = () => {
+  const initialState = () => {
     const subjectsName = subjects.map((subject) => subject.name)
     const values = subjects.map((subject) => subject.primitiveid === '00000000' ? true : false)
     const state: Record<string, boolean> = Object.fromEntries(subjectsName.map((subject, index) => [subject, values[index]]))
     return state
   }
 
-  const initialState = () => {
+  const emptyState = () => {
     const subjectsName = subjects.map((subject) => subject.name)
     const values = subjects.map((subject) => false)
     const state: Record<string, boolean> = Object.fromEntries(subjectsName.map((subject, index) => [subject, values[index]]))
