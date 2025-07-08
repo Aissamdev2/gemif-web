@@ -1,0 +1,228 @@
+Date : 2025-07-03 13:05:27
+Directory : c:\Users\admin\Desktop\Next-js\agenda\app
+Total : 117 files,  6512 codes, 1359 comments, 1118 blanks, all 8989 lines
+
+Languages
++----------------+------------+------------+------------+------------+------------+
+| language       | files      | code       | comment    | blank      | total      |
++----------------+------------+------------+------------+------------+------------+
+| TypeScript JSX |        100 |      4,172 |        918 |        689 |      5,779 |
+| TypeScript     |         15 |      2,300 |        441 |        420 |      3,161 |
+| PostCSS        |          1 |         39 |          0 |          9 |         48 |
+| XML            |          1 |          1 |          0 |          0 |          1 |
++----------------+------------+------------+------------+------------+------------+
+
+Directories
++----------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                                               | files      | code       | comment    | blank      | total      |
++----------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                                                  |        117 |      6,512 |      1,359 |      1,118 |      8,989 |
+| . (Files)                                                                                          |          3 |        160 |          0 |         15 |        175 |
+| api                                                                                                |         15 |        841 |        425 |        220 |      1,486 |
+| api\events                                                                                         |          2 |        139 |         31 |         29 |        199 |
+| api\events (Files)                                                                                 |          1 |         53 |         27 |         13 |         93 |
+| api\events\[id]                                                                                    |          1 |         86 |          4 |         16 |        106 |
+| api\files                                                                                          |          1 |        186 |        369 |         97 |        652 |
+| api\main-data                                                                                      |          1 |         52 |          1 |          9 |         62 |
+| api\main-posts                                                                                     |          2 |         96 |          4 |         20 |        120 |
+| api\main-posts (Files)                                                                             |          1 |         31 |          0 |          4 |         35 |
+| api\main-posts\[id]                                                                                |          1 |         65 |          4 |         16 |         85 |
+| api\messages                                                                                       |          3 |        161 |         12 |         33 |        206 |
+| api\messages (Files)                                                                               |          1 |         51 |          4 |         10 |         65 |
+| api\messages\[id]                                                                                  |          1 |         74 |          4 |         15 |         93 |
+| api\messages\unseen                                                                                |          1 |         36 |          4 |          8 |         48 |
+| api\primitive-subjects                                                                             |          1 |         13 |          0 |          1 |         14 |
+| api\ranking                                                                                        |          1 |         15 |          0 |          1 |         16 |
+| api\subjects                                                                                       |          2 |         95 |          4 |         16 |        115 |
+| api\subjects (Files)                                                                               |          1 |         31 |          0 |          3 |         34 |
+| api\subjects\[id]                                                                                  |          1 |         64 |          4 |         13 |         81 |
+| api\user                                                                                           |          1 |         70 |          4 |         12 |         86 |
+| api\users                                                                                          |          1 |         14 |          0 |          2 |         16 |
+| gemif                                                                                              |         35 |      1,219 |          0 |        179 |      1,398 |
+| gemif (Files)                                                                                      |          1 |         11 |          0 |          1 |         12 |
+| gemif\archive                                                                                      |          1 |         44 |          0 |          4 |         48 |
+| gemif\calendar                                                                                     |          9 |         90 |          0 |         24 |        114 |
+| gemif\calendar (Files)                                                                             |          2 |         25 |          0 |          7 |         32 |
+| gemif\calendar\@modal                                                                              |          4 |         38 |          0 |         10 |         48 |
+| gemif\calendar\@modal (Files)                                                                      |          1 |          4 |          0 |          2 |          6 |
+| gemif\calendar\@modal\(.)add-event                                                                 |          1 |         16 |          0 |          3 |         19 |
+| gemif\calendar\@modal\(.)edit-event                                                                |          1 |          9 |          0 |          3 |         12 |
+| gemif\calendar\@modal\(.)edit-event\[id]                                                           |          1 |          9 |          0 |          3 |         12 |
+| gemif\calendar\@modal\(.)view-event                                                                |          1 |          9 |          0 |          2 |         11 |
+| gemif\calendar\@modal\(.)view-event\[id]                                                           |          1 |          9 |          0 |          2 |         11 |
+| gemif\calendar\add-event                                                                           |          1 |          9 |          0 |          2 |         11 |
+| gemif\calendar\edit-event                                                                          |          1 |          9 |          0 |          3 |         12 |
+| gemif\calendar\edit-event\[id]                                                                     |          1 |          9 |          0 |          3 |         12 |
+| gemif\calendar\view-event                                                                          |          1 |          9 |          0 |          2 |         11 |
+| gemif\calendar\view-event\[id]                                                                     |          1 |          9 |          0 |          2 |         11 |
+| gemif\main                                                                                         |          9 |         83 |          0 |         25 |        108 |
+| gemif\main (Files)                                                                                 |          2 |         25 |          0 |         11 |         36 |
+| gemif\main\@modal                                                                                  |          4 |         31 |          0 |          8 |         39 |
+| gemif\main\@modal (Files)                                                                          |          1 |          4 |          0 |          2 |          6 |
+| gemif\main\@modal\(.)add-main-post                                                                 |          1 |          9 |          0 |          2 |         11 |
+| gemif\main\@modal\(.)add-main-post\[type]                                                          |          1 |          9 |          0 |          2 |         11 |
+| gemif\main\@modal\(.)edit-main-post                                                                |          1 |          9 |          0 |          2 |         11 |
+| gemif\main\@modal\(.)edit-main-post\[id]                                                           |          1 |          9 |          0 |          2 |         11 |
+| gemif\main\@modal\(.)edit-main-post\[id]\[type]                                                    |          1 |          9 |          0 |          2 |         11 |
+| gemif\main\@modal\(.)view-main-post                                                                |          1 |          9 |          0 |          2 |         11 |
+| gemif\main\@modal\(.)view-main-post\[id]                                                           |          1 |          9 |          0 |          2 |         11 |
+| gemif\main\@modal\(.)view-main-post\[id]\[type]                                                    |          1 |          9 |          0 |          2 |         11 |
+| gemif\main\add-main-post                                                                           |          1 |          9 |          0 |          2 |         11 |
+| gemif\main\add-main-post\[type]                                                                    |          1 |          9 |          0 |          2 |         11 |
+| gemif\main\edit-main-post                                                                          |          1 |          9 |          0 |          2 |         11 |
+| gemif\main\edit-main-post\[id]                                                                     |          1 |          9 |          0 |          2 |         11 |
+| gemif\main\edit-main-post\[id]\[type]                                                              |          1 |          9 |          0 |          2 |         11 |
+| gemif\main\view-main-post                                                                          |          1 |          9 |          0 |          2 |         11 |
+| gemif\main\view-main-post\[id]                                                                     |          1 |          9 |          0 |          2 |         11 |
+| gemif\main\view-main-post\[id]\[type]                                                              |          1 |          9 |          0 |          2 |         11 |
+| gemif\messages                                                                                     |          9 |        146 |          0 |         29 |        175 |
+| gemif\messages (Files)                                                                             |          2 |         88 |          0 |         15 |        103 |
+| gemif\messages\@modal                                                                              |          4 |         31 |          0 |          8 |         39 |
+| gemif\messages\@modal (Files)                                                                      |          1 |          4 |          0 |          2 |          6 |
+| gemif\messages\@modal\(.)add-message                                                               |          1 |          9 |          0 |          2 |         11 |
+| gemif\messages\@modal\(.)edit-message                                                              |          1 |          9 |          0 |          2 |         11 |
+| gemif\messages\@modal\(.)edit-message\[id]                                                         |          1 |          9 |          0 |          2 |         11 |
+| gemif\messages\@modal\(.)view-message                                                              |          1 |          9 |          0 |          2 |         11 |
+| gemif\messages\@modal\(.)view-message\[id]                                                         |          1 |          9 |          0 |          2 |         11 |
+| gemif\messages\add-message                                                                         |          1 |          9 |          0 |          2 |         11 |
+| gemif\messages\edit-message                                                                        |          1 |          9 |          0 |          2 |         11 |
+| gemif\messages\edit-message\[id]                                                                   |          1 |          9 |          0 |          2 |         11 |
+| gemif\messages\view-message                                                                        |          1 |          9 |          0 |          2 |         11 |
+| gemif\messages\view-message\[id]                                                                   |          1 |          9 |          0 |          2 |         11 |
+| gemif\settings                                                                                     |          5 |        599 |          0 |         73 |        672 |
+| gemif\settings (Files)                                                                             |          2 |         39 |          0 |          7 |         46 |
+| gemif\settings\account                                                                             |          1 |        118 |          0 |         15 |        133 |
+| gemif\settings\colors                                                                              |          1 |        202 |          0 |         26 |        228 |
+| gemif\settings\subjects                                                                            |          1 |        240 |          0 |         25 |        265 |
+| gemif\subjects                                                                                     |          1 |        246 |          0 |         23 |        269 |
+| icons                                                                                              |          1 |          1 |          0 |          0 |          1 |
+| initial-setup                                                                                      |          1 |        149 |          0 |         24 |        173 |
+| lib                                                                                                |         19 |      1,830 |         29 |        300 |      2,159 |
+| login                                                                                              |          1 |         42 |          0 |          7 |         49 |
+| register                                                                                           |          1 |        199 |          0 |         11 |        210 |
+| ui                                                                                                 |         41 |      2,071 |        905 |        362 |      3,338 |
++----------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++----------------------------------------------------------------------------------------------------+----------------+------------+------------+------------+------------+
+| filename                                                                                           | language       | code       | comment    | blank      | total      |
++----------------------------------------------------------------------------------------------------+----------------+------------+------------+------------+------------+
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\events\[id]\route.ts                                 | TypeScript     |         86 |          4 |         16 |        106 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\events\route.ts                                      | TypeScript     |         53 |         27 |         13 |         93 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\files\route.ts                                       | TypeScript     |        186 |        369 |         97 |        652 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\main-data\route.tsx                                  | TypeScript JSX |         52 |          1 |          9 |         62 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\main-posts\[id]\route.tsx                            | TypeScript JSX |         65 |          4 |         16 |         85 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\main-posts\route.tsx                                 | TypeScript JSX |         31 |          0 |          4 |         35 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\messages\[id]\route.ts                               | TypeScript     |         74 |          4 |         15 |         93 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\messages\route.tsx                                   | TypeScript JSX |         51 |          4 |         10 |         65 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\messages\unseen\route.tsx                            | TypeScript JSX |         36 |          4 |          8 |         48 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\primitive-subjects\route.ts                          | TypeScript     |         13 |          0 |          1 |         14 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\ranking\route.tsx                                    | TypeScript JSX |         15 |          0 |          1 |         16 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\subjects\[id]\route.ts                               | TypeScript     |         64 |          4 |         13 |         81 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\subjects\route.ts                                    | TypeScript     |         31 |          0 |          3 |         34 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\user\route.ts                                        | TypeScript     |         70 |          4 |         12 |         86 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\users\route.tsx                                      | TypeScript JSX |         14 |          0 |          2 |         16 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\archive\page.tsx                                   | TypeScript JSX |         44 |          0 |          4 |         48 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\calendar\@modal\(.)add-event\page.tsx              | TypeScript JSX |         16 |          0 |          3 |         19 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\calendar\@modal\(.)edit-event\[id]\page.tsx        | TypeScript JSX |          9 |          0 |          3 |         12 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\calendar\@modal\(.)view-event\[id]\page.tsx        | TypeScript JSX |          9 |          0 |          2 |         11 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\calendar\@modal\default.tsx                        | TypeScript JSX |          4 |          0 |          2 |          6 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\calendar\add-event\page.tsx                        | TypeScript JSX |          9 |          0 |          2 |         11 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\calendar\edit-event\[id]\page.tsx                  | TypeScript JSX |          9 |          0 |          3 |         12 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\calendar\layout.tsx                                | TypeScript JSX |         19 |          0 |          6 |         25 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\calendar\page.tsx                                  | TypeScript JSX |          6 |          0 |          1 |          7 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\calendar\view-event\[id]\page.tsx                  | TypeScript JSX |          9 |          0 |          2 |         11 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\layout.tsx                                         | TypeScript JSX |         11 |          0 |          1 |         12 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\main\@modal\(.)add-main-post\[type]\page.tsx       | TypeScript JSX |          9 |          0 |          2 |         11 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\main\@modal\(.)edit-main-post\[id]\[type]\page.tsx | TypeScript JSX |          9 |          0 |          2 |         11 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\main\@modal\(.)view-main-post\[id]\[type]\page.tsx | TypeScript JSX |          9 |          0 |          2 |         11 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\main\@modal\default.tsx                            | TypeScript JSX |          4 |          0 |          2 |          6 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\main\add-main-post\[type]\page.tsx                 | TypeScript JSX |          9 |          0 |          2 |         11 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\main\edit-main-post\[id]\[type]\page.tsx           | TypeScript JSX |          9 |          0 |          2 |         11 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\main\layout.tsx                                    | TypeScript JSX |         19 |          0 |          6 |         25 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\main\page.tsx                                      | TypeScript JSX |          6 |          0 |          5 |         11 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\main\view-main-post\[id]\[type]\page.tsx           | TypeScript JSX |          9 |          0 |          2 |         11 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\messages\@modal\(.)add-message\page.tsx            | TypeScript JSX |          9 |          0 |          2 |         11 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\messages\@modal\(.)edit-message\[id]\page.tsx      | TypeScript JSX |          9 |          0 |          2 |         11 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\messages\@modal\(.)view-message\[id]\page.tsx      | TypeScript JSX |          9 |          0 |          2 |         11 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\messages\@modal\default.tsx                        | TypeScript JSX |          4 |          0 |          2 |          6 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\messages\add-message\page.tsx                      | TypeScript JSX |          9 |          0 |          2 |         11 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\messages\edit-message\[id]\page.tsx                | TypeScript JSX |          9 |          0 |          2 |         11 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\messages\layout.tsx                                | TypeScript JSX |         19 |          0 |          6 |         25 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\messages\page.tsx                                  | TypeScript JSX |         69 |          0 |          9 |         78 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\messages\view-message\[id]\page.tsx                | TypeScript JSX |          9 |          0 |          2 |         11 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\settings\account\page.tsx                          | TypeScript JSX |        118 |          0 |         15 |        133 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\settings\colors\page.tsx                           | TypeScript JSX |        202 |          0 |         26 |        228 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\settings\layout.tsx                                | TypeScript JSX |         32 |          0 |          7 |         39 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\settings\page.tsx                                  | TypeScript JSX |          7 |          0 |          0 |          7 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\settings\subjects\page.tsx                         | TypeScript JSX |        240 |          0 |         25 |        265 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\subjects\page.tsx                                  | TypeScript JSX |        246 |          0 |         23 |        269 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\globals.css                                              | PostCSS        |         39 |          0 |          9 |         48 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\icons\logo.svg                                           | XML            |          1 |          0 |          0 |          1 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\initial-setup\page.tsx                                   | TypeScript JSX |        149 |          0 |         24 |        173 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\layout.tsx                                               | TypeScript JSX |         75 |          0 |          4 |         79 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions.ts                                           | TypeScript     |        573 |          6 |         73 |        652 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\auth.ts                                              | TypeScript     |        108 |          0 |         27 |        135 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\date-context.tsx                                     | TypeScript JSX |         30 |          0 |          6 |         36 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\definitions.ts                                       | TypeScript     |        104 |          0 |         19 |        123 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\dotlottie.d.ts                                       | TypeScript     |         25 |          0 |          2 |         27 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\helpers.ts                                           | TypeScript     |         42 |          0 |          3 |         45 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\subjects.ts                                          | TypeScript     |        492 |          9 |         61 |        562 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\use-events.tsx                                       | TypeScript JSX |          7 |          0 |          4 |         11 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\use-files.tsx                                        | TypeScript JSX |          7 |          0 |          4 |         11 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\use-main-data.tsx                                    | TypeScript JSX |          7 |          0 |          4 |         11 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\use-main-posts.tsx                                   | TypeScript JSX |          7 |          0 |          4 |         11 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\use-messages.tsx                                     | TypeScript JSX |          7 |          0 |          4 |         11 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\use-primitive-subjects.tsx                           | TypeScript JSX |          7 |          0 |          4 |         11 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\use-ranking.tsx                                      | TypeScript JSX |          7 |          0 |          4 |         11 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\use-subjects.tsx                                     | TypeScript JSX |          7 |          0 |          4 |         11 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\use-unseen-messages.tsx                              | TypeScript JSX |          7 |          0 |          4 |         11 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\use-user.tsx                                         | TypeScript JSX |          7 |          0 |          4 |         11 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\use-users.tsx                                        | TypeScript JSX |          7 |          0 |          4 |         11 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\utils.ts                                             | TypeScript     |        379 |         14 |         65 |        458 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\login\page.tsx                                           | TypeScript JSX |         42 |          0 |          7 |         49 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\page.tsx                                                 | TypeScript JSX |         46 |          0 |          2 |         48 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\register\page.tsx                                        | TypeScript JSX |        199 |          0 |         11 |        210 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\account-button.tsx                                    | TypeScript JSX |         92 |          0 |          6 |         98 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\add-event-button.tsx                                  | TypeScript JSX |          8 |          0 |          1 |          9 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\add-event-button2.tsx                                 | TypeScript JSX |          8 |          0 |          1 |          9 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\add-event-form.tsx                                    | TypeScript JSX |          0 |        195 |         17 |        212 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\add-event-form2.tsx                                   | TypeScript JSX |        239 |          0 |         28 |        267 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\add-main-post-form.tsx                                | TypeScript JSX |        128 |          0 |         16 |        144 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\add-message-form.tsx                                  | TypeScript JSX |        103 |          0 |         15 |        118 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\calendar-client-skeleton.tsx                          | TypeScript JSX |         27 |          0 |          3 |         30 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\calendar-client.tsx                                   | TypeScript JSX |          0 |         62 |         10 |         72 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\calendar-client2.tsx                                  | TypeScript JSX |         78 |          2 |          7 |         87 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\calendar-events.tsx                                   | TypeScript JSX |          0 |          6 |          2 |          8 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\calendar-header.tsx                                   | TypeScript JSX |          0 |         34 |          6 |         40 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\calendar-header2.tsx                                  | TypeScript JSX |         40 |          0 |          6 |         46 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\calendar-skeleton.tsx                                 | TypeScript JSX |         12 |          0 |          0 |         12 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\calendar.tsx                                          | TypeScript JSX |          0 |         30 |          5 |         35 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\calendar2.tsx                                         | TypeScript JSX |          0 |         71 |          0 |         71 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\calendar3.tsx                                         | TypeScript JSX |         50 |         10 |          9 |         69 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\dashboard-skeleton.tsx                                | TypeScript JSX |         13 |         22 |          2 |         37 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\dashboard.tsx                                         | TypeScript JSX |         58 |          0 |          6 |         64 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\edit-event-client.tsx                                 | TypeScript JSX |        222 |        157 |         30 |        409 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\edit-event.tsx                                        | TypeScript JSX |         22 |          0 |          4 |         26 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\edit-main-post.tsx                                    | TypeScript JSX |        139 |          0 |         16 |        155 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\edit-message.tsx                                      | TypeScript JSX |        109 |          0 |         16 |        125 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\file-tree.tsx                                         | TypeScript JSX |         33 |          1 |          6 |         40 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\folder-toggle.tsx                                     | TypeScript JSX |         22 |          0 |          5 |         27 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\header.tsx                                            | TypeScript JSX |          0 |         35 |          3 |         38 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\header2.tsx                                           | TypeScript JSX |        129 |        129 |         51 |        309 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\loader.tsx                                            | TypeScript JSX |         13 |          0 |          2 |         15 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\main-files.tsx                                        | TypeScript JSX |          0 |         25 |          5 |         30 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\main.tsx                                              | TypeScript JSX |        125 |          0 |          8 |        133 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\modal.tsx                                             | TypeScript JSX |         19 |          0 |          4 |         23 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\subject-box-info.tsx                                  | TypeScript JSX |         14 |          0 |          3 |         17 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\subject-tag.tsx                                       | TypeScript JSX |         15 |          0 |          2 |         17 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\subject-tag2.tsx                                      | TypeScript JSX |          0 |         15 |          2 |         17 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\timer.tsx                                             | TypeScript JSX |         31 |          0 |          1 |         32 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\view-event-client.tsx                                 | TypeScript JSX |          0 |        111 |         16 |        127 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\view-event-client2.tsx                                | TypeScript JSX |        109 |          0 |         18 |        127 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\view-event-skeleton.tsx                               | TypeScript JSX |         41 |          0 |          1 |         42 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\view-event.tsx                                        | TypeScript JSX |          6 |          0 |          2 |          8 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\view-main-post.tsx                                    | TypeScript JSX |         85 |          0 |         13 |         98 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\view-message.tsx                                      | TypeScript JSX |         81 |          0 |         14 |         95 |
+| Total                                                                                              |                |      6,512 |      1,359 |      1,118 |      8,989 |
++----------------------------------------------------------------------------------------------------+----------------+------------+------------+------------+------------+

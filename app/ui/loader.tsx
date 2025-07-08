@@ -5,10 +5,10 @@ import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 export default function Loader() {
   return (
       <DotLottieReact
-        src="https://lottie.host/a7387f17-5279-4d77-9535-21cad5f95569/mf6PaFvcin.lottie" // Ensure the file is inside /public
+        src="https://lottie.host/a329b8fd-6d56-4e38-8f0b-60dbe252aa8f/6TgEFFA4I4.lottie" 
         loop
         autoplay
-        style={{ width: "40px", height: "30px" }}
+        style={{ width: "40px"}}
       />
   );
 }

@@ -67,7 +67,8 @@ export type Subject = {
   quadri?: string | null;
   primitiveid: string;
   archived: boolean;
-  score?: number;
+  scorequal?: number;
+  scorediff?: number;
   userid?: string;
 }
 

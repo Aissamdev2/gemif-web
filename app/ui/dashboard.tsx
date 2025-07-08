@@ -27,8 +27,8 @@ export default function Dashboard({events, subjects}:{ events: Event[] | undefin
   })
 
   return (
-    <div className="flex flex-col gap-5 lg:w-[350px] bg-white p-2 rounded-2xl rounded-tl-none max-h-full overflow-hidden lg:max-w-[350px] shrink-0 ">
-        <h2 className="text-3xl font-extrabold tracking-tight text-black leading-tight md:text-3xl">
+    <div className="flex flex-col gap-5 lg:w-[350px] shadow-[0_2px_4px_rgba(16,42,83,0.08)] bg-[#f4f9ff] border border-[#DCEBFF] hover:bg-[#EEF5FF] transition-[background-color] duration-300 p-2 rounded-2xl rounded-tl-none lg:max-h-full max-h-[450px] overflow-hidden lg:max-w-[350px] shrink-0 ">
+        <h2 className="text-3xl font-extrabold tracking-tight text-slate-700 leading-tight md:text-3xl">
           Próximos Eventos
         </h2>
         {
@@ -38,26 +38,28 @@ export default function Dashboard({events, subjects}:{ events: Event[] | undefin
             sortedEvents.map((event, index) => {
               const subject = subjects?.find((subject) => subject.primitiveid === event.primitiveid)
               return (
-                <Link href={`/gemif/calendar/view-event/${event.id}`} key={event.id} className="p-3 truncate grow-0 border border-[#e8dbff] shadow-[0px_3px_6px_#0000001a] shrink-0 rounded-xl bg-white hover:bg-[#f8f5fd] transition-[background-color] duration-200">
+                <Link href={`/gemif/calendar/view-event/${event.id}`} key={event.id} className="p-3 truncate grow-0 bg-white border border-[#e0e7ff] 
+                                    shadow-sm hover:shadow-md hover:border-blue-400 
+                                    transition-all duration-200 ease-in-out rounded-xl hover:bg-[#f8f5fd]">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2.5">
                       <span 
                       title={subject?.name}
                       style={{ backgroundColor: subject?.bgcolor, borderColor: subject?.bordercolor }}
                       className="w-2.5 h-2.5 rounded-full border-[2px]"></span>
-                      <p className="font-medium text-sm text-gray-900">{dateToString(event.date)  + (event.time ? (' a las ' + event.time) : '')}</p>
+                      <p className="font-medium text-sm text-slate-700">{dateToString(event.date)  + (event.time ? (' a las ' + event.time) : '')}</p>
                     </div>
                     
                   </div>
-                  <h6 className="text-xl leading-8 font-semibold text-black mb-1 truncate">{event.name}</h6>
-                  <p className="text-base font-normal text-gray-600 truncate">{event.description}</p>
+                  <h6 className="text-xl leading-8 font-semibold text-slate-700 mb-1 truncate">{event.name}</h6>
+                  <p className="text-base font-normal text-slate-600 truncate">{event.description}</p>
                 </Link>
               )
             })
           }
         </div>
         :
-        <p className="text-base font-normal text-gray-600">No hay eventos próximos</p>
+        <p className="text-base font-normal text-slate-600">No hay eventos próximos</p>
       }
     </div>
   )

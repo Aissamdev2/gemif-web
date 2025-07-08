@@ -140,8 +140,8 @@ export default function EditEventClient({ event }: { event: Event }) {
     }
   
     return (
-      <button aria-disabled={pending} type="submit" onClick={handleClick} className="w-full text-center p-1.5 py-2 rounded-md bg-indigo-600 text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-indigo-700">
-        Actualizar
+      <button aria-disabled={pending} type="submit" onClick={handleClick} className="w-full text-center p-1.5 py-2 rounded-md bg-[#4A90E2] text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-[#3A7BC4]">
+        {pending ? 'Cargando...' : 'Editar'}
       </button>
     )
   }

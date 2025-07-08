@@ -23,9 +23,9 @@ export async function POST(request: Request) {
     }
     const body = await request.json()
     if (!body)return new Response('Invalid request body', { status: 400 })
-    const { name, color, bgcolor, bordercolor, primitiveid, year, quadri, archived, score } = body
+    const { name, color, bgcolor, bordercolor, primitiveid, year, quadri, archived, scoreQual, scoreDiff } = body
     if (!name) return new Response('Missing required fields', { status: 400 })
-    await sql`INSERT INTO subjects (name, color, bgColor, borderColor, year, quadri, primitiveid, archived, score, userId) VALUES (${name}, ${color}, ${bgcolor}, ${bordercolor}, ${year}, ${quadri}, ${primitiveid}, ${archived}, ${score}, ${userId});`
+    await sql`INSERT INTO subjects (name, color, bgColor, borderColor, year, quadri, primitiveid, archived, scorequal, scorediff, userId) VALUES (${name}, ${color}, ${bgcolor}, ${bordercolor}, ${year}, ${quadri}, ${primitiveid}, ${archived}, ${scoreQual}, ${scoreDiff}, ${userId});`
     return new Response('Subject created')
   } catch (error) {
     console.log(error)

@@ -12,11 +12,11 @@ export default function FilesPage() {
 
   return (
     <section className="z-50 w-full h-full flex flex-col lg:mb-0 px-2 lg:px-10 gap-24 pt-[80px] pb-[20px] lg:gap-12 lg:flex-row">
-    <div className="p-5 grow  bg-white rounded-2xl flex flex-col gap-4">
-      <h2 className="text-3xl font-extrabold tracking-tight text-black leading-tight md:text-3xl">
+    <div className="p-5 grow bg-[#f4f9ff] border border-[#DCEBFF] hover:bg-[#EEF5FF] transition-[background-color] duration-300 rounded-2xl flex flex-col gap-4">
+      <h2 className="text-3xl font-extrabold tracking-tight text-slate-700 leading-tight md:text-3xl">
         Archivo de GEMiF
       </h2>
-      <h3>Aquí se muestra el registro de los archivos subidos al moodle en años anteriores</h3>
+      <h3 className="text-slate-700">Aquí se muestra el registro de los archivos subidos al moodle en años anteriores</h3>
       {
         files && files?.error === 'Rate limit exceeded' && (
           <div className="flex items-center gap-1 p-3 rounded-lg bg-red-100">
@@ -30,8 +30,12 @@ export default function FilesPage() {
       { 
         !files || isLoading ? (
           <div className="w-full pt-8 flex flex-col justify-center items-center ">
-            <Loader />
-            <p className="text-gray-400 text-sm">Esto puede tardar un poco</p>
+            <div className="flex justify-center items-center w-full min-h-[4rem]">
+              <div className="w-[40px] h-[30px]">
+                <Loader />
+              </div>
+            </div>
+            <p className="text-slate-500 text-sm">Esto puede tardar un poco</p>
           </div>
         ) : (
           files.error !== 'Rate limit exceeded' && (

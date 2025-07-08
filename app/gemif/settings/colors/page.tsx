@@ -106,9 +106,9 @@ export default function Page() {
   if (subjectsError) return <div>Error: {subjectsError}</div>
 
   return (
-    <div className="h-fit lg:h-full w-full flex bg-[#eaf3ff] py-3 text-gray-900 font-medium justify-center items-center">
+    <div className="h-fit lg:h-full w-full flex bg-white py-3 text-gray-900 font-medium justify-center items-center">
       <div className="w-[95%] h-fit lg:h-[85%] lg:mt-5 flex flex-col grow lg:flex-row gap-10 lg:gap-10 justify-start px-1 lg:px-[60px]">
-        <form onSubmit={onSubmitColorForm} className="flex flex-col p-5 grow shrink basis-1/2 bg-white rounded-lg gap-3">
+        <form onSubmit={onSubmitColorForm} className="flex flex-col p-5 grow shrink basis-1/2 bg-[#f4f9ff] border border-[#DCEBFF] hover:bg-[#EEF5FF] transition-[background-color] duration-300 rounded-lg gap-3">
           <p className="text-sm border-b px-2 py-2 border-[#5f3fbe61]">Colores de asignatura</p>
           <div className="flex flex-col lg:flex-row items-center gap-[50px]">
             {
@@ -177,7 +177,7 @@ export default function Page() {
             <UpdateButton disabled={!subjects || isLoadingSubjects}/>
           </div>
         </form>
-        <form action={dispatchUserColor} className="flex flex-col p-5 grow shrink basis-1/2 bg-white rounded-lg gap-3">
+        <form action={dispatchUserColor} className="flex flex-col p-5 grow shrink basis-1/2 bg-[#f4f9ff] border border-[#DCEBFF] hover:bg-[#EEF5FF] transition-[background-color] duration-300 rounded-lg gap-3">
           <p className="text-sm border-b px-2 py-2 border-[#5f3fbe61]">Color de perfil de usuario</p>
           <div className="flex lg:flex-row items-center justify-center gap-3">
             {

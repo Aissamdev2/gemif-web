@@ -54,8 +54,10 @@ export default function AddMainPostForm({ type }: { type: string }) {
           <div className="flex flex-col gap-5 w-full lg:w-fit md:h-auto bg-white p-6">
             {
               !mainData || isLoadingMainData  ? (
-                <div className="flex justify-center items-center w-full">
-                  <Loader />
+                <div className="flex justify-center items-center w-full min-h-[4rem]">
+                  <div className="w-[40px] h-[30px]">
+                    <Loader />
+                  </div>
                 </div>
               ) : (
                 <>
@@ -134,10 +136,11 @@ function AddButton({selectedFile, user, disabled, type}:{selectedFile: string, u
       event.preventDefault()
     }
   }
+  console.log(pending)
 
   return (
-    <button disabled={!(user?.role === 'dev' || user?.role === 'admin') || pending || disabled || (selectedFile === 'Seleccione un archivo' && type === 'file') } type="submit" onClick={handleClick} className={`${!(user?.role === 'dev' || user?.role === 'admin') || pending || disabled || (selectedFile === 'Seleccione un archivo' && type === 'file') ? 'pointer-events-none opacity-30' : ''} w-full text-center p-1.5 py-2 rounded-md bg-indigo-600 text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-indigo-700`}>
-      Crear publicación
+    <button disabled={!(user?.role === 'dev' || user?.role === 'admin') || pending || disabled || (selectedFile === 'Seleccione un archivo' && type === 'file') } type="submit" onClick={handleClick} className={`${!(user?.role === 'dev' || user?.role === 'admin') || pending || disabled || (selectedFile === 'Seleccione un archivo' && type === 'file') ? 'pointer-events-none opacity-30' : ''} w-full text-center p-1.5 py-2 rounded-md bg-[#4A90E2] text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-[#3A7BC4]`}>
+      {pending ? 'Cargando...' : 'Crear Publicación'}
     </button>
   )
 }

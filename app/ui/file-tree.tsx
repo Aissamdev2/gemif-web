@@ -24,7 +24,7 @@ const FileTree = ({ structure }: { structure: GitHubContent[] }) => {
                   className="flex"
                 >
                   <File className="min-w-[24px]"/>
-                  <p className="truncate">
+                  <p className="truncate text-slate-700">
                     {item.name}
                   </p>
                 </a>

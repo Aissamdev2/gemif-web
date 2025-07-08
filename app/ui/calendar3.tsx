@@ -39,14 +39,20 @@ export default function Calendar() {
               <Dashboard events={events} subjects={subjects} />
 
               {/* Calendar */}
-              <div className="flex min-h-[550px] shrink-0 lg:min-h-auto lg:basis-[60%] h-full flex-col px-2.5 py-2 grow-[6] bg-white rounded-2xl">
+              <div className="flex min-h-[550px] shrink-0 lg:min-h-auto lg:basis-[60%] h-full flex-col px-2.5 py-2 grow-[6] shadow-[0_2px_4px_rgba(16,42,83,0.08)] bg-[#f4f9ff] border border-[#DCEBFF] hover:bg-[#EEF5FF] transition-[background-color] duration-300 rounded-2xl">
                 <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-5">
                   <CalendarHeader />
                   <AddEventButton />
                 </div>
                 <div className="border flex flex-col grow border-indigo-200 rounded-xl">
                   <div className="grid grid-cols-7 rounded-t-3xl border-b border-indigo-200">
-                    {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map((day) => (
+                    <div
+                        key={"Lun"}
+                        className="py-3.5 rounded-tl-xl border-r last:border-r-0  border-indigo-200 bg-indigo-50 flex items-center justify-center text-sm font-medium text-indigo-600"
+                      >
+                        {"Lun"}
+                      </div>
+                    {["Mar", "Mié", "Jue", "Vie", "Sáb"].map((day) => (
                       <div
                         key={day}
                         className="py-3.5 border-r last:border-r-0  border-indigo-200 bg-indigo-50 flex items-center justify-center text-sm font-medium text-indigo-600"
@@ -54,6 +60,12 @@ export default function Calendar() {
                         {day}
                       </div>
                     ))}
+                    <div
+                        key={"Dom"}
+                        className="py-3.5 rounded-tl-xl border-r last:border-r-0  border-indigo-200 bg-indigo-50 flex items-center justify-center text-sm font-medium text-indigo-600"
+                      >
+                        {"Dom"}
+                      </div>
                   </div>
                   <CalendarClient
                     subjects={subjects}

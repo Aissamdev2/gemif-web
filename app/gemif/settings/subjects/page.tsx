@@ -134,8 +134,8 @@ export default function Page() {
     
   
   return (
-    <div className="h-fit lg:h-full w-full flex bg-[#eaf3ff] py-3 text-gray-900 font-medium justify-center items-center">
-      <div className="w-[95%] h-fit lg:h-[85%] lg:mt-5 bg-white rounded-sm border border-[#a19aff6b] flex flex-col lg:flex-row gap-16 lg:gap-0 justify-around px-1 lg:px-[60px] py-4">
+    <div className="h-fit lg:h-full w-full flex bg-white py-3 text-gray-900 font-medium justify-center items-center">
+      <div className="w-[95%] h-fit lg:h-[85%] lg:mt-5 bg-[#f4f9ff] border border-[#DCEBFF] hover:bg-[#EEF5FF] transition-[background-color] duration-300 rounded-sm  flex flex-col lg:flex-row gap-16 lg:gap-0 justify-around px-1 lg:px-[60px] py-4">
         <form onSubmit={onSubmitForm} className="flex flex-col gap-3 lg:max-w-[40%]">
           <p className="text-sm border-b px-2 py-2 border-[#5f3fbe61]">Asignaturas cursando actualmente</p>
           {

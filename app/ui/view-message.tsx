@@ -80,7 +80,7 @@ export default function ViewMessage({ id }: { id: string}) {
   
     return (
       <button disabled={!(user.id === message.userid) || pending} type="submit" onClick={handleClick} className={`${!(user.id === message.userid) || pending ? 'pointer-events-none opacity-30' : ''} w-full text-center p-1.5 py-2 rounded-md bg-red-600 text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-red-700`}>
-        Eliminar
+        {pending ? 'Eliminando...' : 'Eliminar'}
       </button>
     )
   }
@@ -88,7 +88,7 @@ export default function ViewMessage({ id }: { id: string}) {
 function EditButton({ message, user, router }: { message: Message, user: User, router: AppRouterInstance }) {
     const { pending } = useFormStatus()  
     return (
-      <button type="button" disabled={!(user.id === message.userid) || pending} onClick={() => router.push(`/gemif/messages/edit-message/${message.id}`, { scroll: false })} className={`${!(user.id === message.userid) || pending ? 'pointer-events-none opacity-30' : ''} w-full text-center p-1.5 py-2 rounded-md bg-indigo-600 text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-indigo-700`}>
+      <button type="button" disabled={!(user.id === message.userid) || pending} onClick={() => router.push(`/gemif/messages/edit-message/${message.id}`, { scroll: false })} className={`${!(user.id === message.userid) || pending ? 'pointer-events-none opacity-30' : ''} w-full text-center p-1.5 py-2 rounded-md bg-[#4A90E2] text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-[#3A7BC4]`}>
         Editar
       </button>
     )

@@ -41,7 +41,7 @@ export default function CalendarClient({
             <span
               className={`text-gray-400 ${
                 item.isToday
-                  ? " text-white after:content-[''] after:w-[19px] after:h-[19px] after:rounded-md after:z-[-1] z-[1] after:absolute after:top-0 after:left-0  after:bg-indigo-600"
+                  ? " text-white after:content-[''] after:w-[19px] after:h-[19px] after:rounded-md after:z-[-1] z-[1] after:absolute after:top-0 after:left-0  after:bg-[#4A90E2]"
                   : ""
               } text-xs w-[19px] h-[19px] font-semibold flex justify-center items-center`}
             >

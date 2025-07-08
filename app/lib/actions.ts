@@ -144,7 +144,7 @@ export async function getPrimitiveSubjects() {
     },
   });
   if (!response.ok) {
-    throw new Error('Failed to fetch primitive subjects');
+    throw new Error('Failed to fetch primitive subjects ' + response.statusText);
   }
   const primitive_subjects: PrimitiveSubject[] = await response.json();
   return primitive_subjects;
@@ -179,7 +179,8 @@ export async function updateSubjects(formData: FormData) {
       year: subject.year, 
       quadri: subject.quadri, 
       archived: false, 
-      score: null, 
+      scoreQual: null,
+      scoreDiff: null, 
       primitiveid: subject.id 
     };
     const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/subjects/', {
@@ -221,8 +222,9 @@ export async function updateSubject( formData: FormData) {
   const color = formData.get('color') as string
   const bgcolor = formData.get('bgcolor') as string | null
   const bordercolor = formData.get('bordercolor') as string | null
-  const score = formData.get('score') as string | null
-  const payload = { color, bgcolor, bordercolor, score }
+  const scoreQual = formData.get('scorequal') as string | null
+  const scoreDiff = formData.get('scorediff') as string | null
+  const payload = { color, bgcolor, bordercolor, scoreQual, scoreDiff }
   const filteredpayload = Object.fromEntries(Object.entries(payload).filter(([_, v]) => v !== 'null'))
 
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/subjects/' + id, {
@@ -235,7 +237,7 @@ export async function updateSubject( formData: FormData) {
   })
   if (response.ok) {
     revalidateTag('subjects')
-    if (filteredpayload.score) {
+    if (filteredpayload.scoreQual || filteredpayload.scoreDiff) {
       revalidateTag('ranking')
       return getRanking()
     }
@@ -487,35 +489,68 @@ export async function getRanking() {
   }
   const subjects: Subject[] = await response.json();
 
-  const scoresMap = new Map<string, { totalScore: number; count: number }>();
+  // Quality
 
-  for (const { primitiveid, score } of subjects) {
-    if (!score) {
-      throw new Error(`Missing score for primitiveid: ${primitiveid}`);
+  const scoresQualMap = new Map<string, { totalScore: number; count: number }>();
+
+  for (const { primitiveid, scorequal: scoreQual } of subjects) {
+    if (scoreQual == null || scoreQual === undefined) {
+      continue
     }
 
-    const numericScore = Number(score);
-    if (isNaN(numericScore)) {
-      throw new Error(`Invalid score: ${score}`);
+    const numericScoreQual = Number(scoreQual);
+    if (isNaN(numericScoreQual)) {
+      throw new Error(`Invalid score: ${scoreQual}`);
     }
 
     // Fetch or initialize entry in the map
-    const entry = scoresMap.get(primitiveid);
+    const entry = scoresQualMap.get(primitiveid);
     if (entry) {
-      entry.totalScore += numericScore;
+      entry.totalScore += numericScoreQual;
       entry.count += 1;
     } else {
-      scoresMap.set(primitiveid, { totalScore: numericScore, count: 1 });
+      scoresQualMap.set(primitiveid, { totalScore: numericScoreQual, count: 1 });
     }
   }
 
   // Convert the map to the final result
-  const result: Ranking = Array.from(scoresMap, ([primitiveid, { totalScore, count }]) => ({
+  const resultQual: Ranking = Array.from(scoresQualMap, ([primitiveid, { totalScore, count }]) => ({
     primitiveid,
     score: totalScore / count,
   }));
 
-  return result;
+
+  // Difficulty
+
+  const scoresDiffMap = new Map<string, { totalScore: number; count: number }>();
+
+  for (const { primitiveid, scorediff: scoreDiff } of subjects) {
+    if (scoreDiff == null || scoreDiff === undefined) {
+      continue
+    }
+
+    const numericScoreDiff = Number(scoreDiff);
+    if (isNaN(numericScoreDiff)) {
+      throw new Error(`Invalid score: ${scoreDiff}`);
+    }
+
+    // Fetch or initialize entry in the map
+    const entry = scoresDiffMap.get(primitiveid);
+    if (entry) {
+      entry.totalScore += numericScoreDiff;
+      entry.count += 1;
+    } else {
+      scoresDiffMap.set(primitiveid, { totalScore: numericScoreDiff, count: 1 });
+    }
+  }
+
+  // Convert the map to the final result
+  const resultDiff: Ranking = Array.from(scoresDiffMap, ([primitiveid, { totalScore, count }]) => ({
+    primitiveid,
+    score: totalScore / count,
+  }));
+
+  return [resultQual, resultDiff] as [Ranking, Ranking];
 
 }
 

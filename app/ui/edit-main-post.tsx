@@ -68,7 +68,7 @@ export default function EditMainPost({ id, type }: { id: string | undefined, typ
             ) : (
               <>
               <input type="hidden" name="id" value={mainPost.id} />
-                <h4 className="text-lg font-bold leading-8 text-gray-900 text-center">{`Añadir nuevo ${TITLES[type]}`}</h4>
+                <h4 className="text-lg font-bold leading-8 text-gray-900 text-center">{`Editar ${TITLES[type]}`}</h4>
                 <div className="flex flex-col gap-8 overflow-auto scrollbar-hidden py-5 md:flex-row">
                   <div className="flex flex-col gap-4">
                     <div className="relative">
@@ -147,8 +147,8 @@ function UpdateButton({ user, disabled}:{ user: User | undefined, disabled: bool
   }
 
   return (
-    <button disabled={!(user?.role === 'dev' || user?.role === 'admin') || pending || disabled} type="submit" onClick={handleClick} className={`${!(user?.role === 'dev' || user?.role === 'admin') || pending || disabled ? 'pointer-events-none opacity-30' : ''} w-full text-center p-1.5 py-2 rounded-md bg-indigo-600 text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-indigo-700`}>
-      Actualizar
+    <button disabled={!(user?.role === 'dev' || user?.role === 'admin') || pending || disabled} type="submit" onClick={handleClick} className={`${!(user?.role === 'dev' || user?.role === 'admin') || pending || disabled ? 'pointer-events-none opacity-30' : ''} w-full text-center p-1.5 py-2 rounded-md bg-[#4A90E2] text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-[#3A7BC4]`}>
+      {pending ? 'Cargando...' : 'Actualizar'}
     </button>
   )
 }

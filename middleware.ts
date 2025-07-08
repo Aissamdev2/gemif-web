@@ -20,6 +20,7 @@ export async function middleware(request: NextRequest) {
     const sessionError = verification.error;
     const hasSession = !sessionError; // User is authenticated if no session error
 
+    
     // Redirect authenticated users away from login/register
     if (hasSession && (request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/register') || request.nextUrl.pathname === '/')) {
       return NextResponse.redirect(new URL('/gemif/main', request.url));
@@ -34,7 +35,8 @@ export async function middleware(request: NextRequest) {
     if (hasSession && verification.session?.logincount === 0 &&
         !request.nextUrl.pathname.startsWith('/initial-setup') &&
         !API_ENDPOINTS.some((endpoint) => request.nextUrl.pathname.startsWith(endpoint))) {
-      return NextResponse.redirect(new URL('/initial-setup', request.url));
+
+      return NextResponse.redirect(new URL('/initial-setup', request.url));;
     }
 
     // Redirect to '/gemif/calendar' if session exists and user is not in '/gemif' or '/initial-setup'

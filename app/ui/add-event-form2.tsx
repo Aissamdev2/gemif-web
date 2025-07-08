@@ -1,7 +1,7 @@
 'use client'
 
 import { useFormStatus, useFormState } from "react-dom";
-import { addEvent } from "@/app/lib/actions";
+import { addEvent, getSubjects } from "@/app/lib/actions";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { mutate } from "swr";
@@ -10,6 +10,7 @@ import { Subject } from "../lib/definitions";
 import { useSubjects } from "../lib/use-subjects";
 import { usePrimitiveSubjects } from "../lib/use-primitive-subjects";
 import Loader from "./loader";
+import { get } from "http";
 
 
 
@@ -17,10 +18,17 @@ import Loader from "./loader";
 export default function AddEventForm() {
 
   const addNewEvent = async (_currentState: unknown, formData: FormData) => {
-    mutate((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + "/api/events", addEvent(formData))
+    const subjectId = formData.get('subjectid') as string;
+    const allSubjects = await getSubjects();
+    const eventSubject = allSubjects.find(subject => subject.id === subjectId);
+    
+    formData.append('primitiveid', eventSubject?.primitiveid || '');
+    
+    await mutate(`${process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL}/api/events`, addEvent(formData));
+    
+    return 'Event created';
+}
 
-    return 'Event created'
-  }
 
   const [state, dispatch] = useFormState(addNewEvent, undefined)
   const [errorMessage, setErrorMessage] = useState('')
@@ -43,21 +51,10 @@ export default function AddEventForm() {
   const handleScopeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setScope(event.target.value)
   }
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!user || !subjects) return
-    const formData = new FormData(event.currentTarget);
-    const eventSubject = subjects.find(subject => subject.id === formData.get('subjectid'))
-    formData.append('primitiveid', eventSubject?.primitiveid as string);
-    dispatch(formData);
-  };
-
   
 
-
     return (                                             
-        <form onSubmit={handleSubmit} id="modalBox-3"
+        <form action={dispatch} id="modalBox-3"
           className="starting:scale-[0] scale-[1] transition-[transform] duration-300 w-[90%] lg:w-fit h-fit max-h-screen flex justify-center items-center z-[1000] overflow-x-hidden overflow-y-auto">
           <div className="flex flex-col gap-5 w-full lg:w-fit md:h-auto bg-white p-6">
             <h4 className="text-lg font-bold leading-8 text-gray-900 text-center">Añadir nuevo evento</h4>
@@ -99,7 +96,7 @@ export default function AddEventForm() {
                 {
                   user && user.role === 'admin' && (
                     <div className="flex flex-col">
-                      <label htmlFor="options" className=" mb-2 text-sm font-medium text-gray-600 w-full">Visibilidad <span className='text-red-500'>*</span></label>
+                      <label htmlFor="options" className="flex  items-center mb-1 text-gray-600 text-xs font-medium">Visibilidad <span className='text-red-500'>*</span></label>
                       <select 
                       id="options"
                       name="scope"
@@ -115,7 +112,7 @@ export default function AddEventForm() {
                 {
                   user && user.role === 'dev' && (
                     <div className="flex flex-col">
-                      <label htmlFor="options" className=" mb-2 text-sm font-medium text-gray-600 w-full">Visibilidad <span className='text-red-500'>*</span></label>
+                      <label htmlFor="options" className="flex  items-center mb-1 text-gray-600 text-xs font-medium">Visibilidad <span className='text-red-500'>*</span></label>
                       <select 
                       id="options"
                       name="scope"
@@ -155,7 +152,6 @@ export default function AddEventForm() {
 
 function AddButton({disabled}:{disabled: boolean}) {
   const { pending } = useFormStatus()
-
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     if (pending) {
       event.preventDefault()
@@ -163,7 +159,7 @@ function AddButton({disabled}:{disabled: boolean}) {
   }
 
   return (
-    <button disabled={pending || disabled} type="submit" onClick={handleClick} className={`${disabled || pending ? 'pointer-events-none opacity-30' : 'opacity-100'} w-full text-center p-1.5 py-2 rounded-md bg-indigo-600 text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-indigo-700`}>
+    <button disabled={pending || disabled} type="submit" onClick={handleClick} className={`${disabled || pending ? 'pointer-events-none opacity-30' : 'opacity-100'} w-full text-center p-1.5 py-2 rounded-md bg-[#4A90E2] text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-[#3A7BC4]`}>
       Crear
     </button>
   )

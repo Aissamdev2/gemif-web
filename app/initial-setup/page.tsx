@@ -74,8 +74,9 @@ export default function InitialSetup() {
     e.preventDefault();
     if (!primitiveSubjects) return
     const formData = new FormData(e.currentTarget);
-    const subjectsToArchive = primitiveSubjects.filter((subject) => passedSubjectState[subject.name]);
-    const subjectsToAdd = primitiveSubjects.filter((subject) => subjectState[subject.name]).concat(subjectsToArchive);
+    const subjectsToArchive = primitiveSubjects.filter((subject) => passedSubjectState[subject.name] && subject.id !== '00000000');
+    const otrosSubject = primitiveSubjects.find((subject) => subject.id === '00000000');
+    const subjectsToAdd = [otrosSubject].concat(primitiveSubjects.filter((subject) => subjectState[subject.name] && subject.id !== '00000000')).concat(subjectsToArchive);
     formData.append("subjectsToAdd", JSON.stringify(subjectsToAdd));
     dispatch(formData);
 

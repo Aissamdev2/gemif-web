@@ -19,7 +19,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
 
   return (
     <div className="w-full h-full flex flex-col lg:flex-row">
-      <div className="lg:w-[15%] border-r border-[#a19aff6b] lg:p-4 pt-16 bg-white flex-row lg:flex-col justify-start items-start gap-6 inline-flex">
+      <div className="lg:w-[15%] border-[#a19aff6b] lg:p-4 pt-16 bg-white flex-row lg:flex-col justify-start items-start gap-6 inline-flex">
           <div className="w-full h-8 px-3 items-center hidden lg:flex ">
             <h6 className="text-gray-500 text-sm font-semibold leading-4">MENÚ DE AJUSTES</h6>
           </div>

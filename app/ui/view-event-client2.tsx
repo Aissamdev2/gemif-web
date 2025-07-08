@@ -101,7 +101,7 @@ export default function ViewEventClient({ id }: { id: string | undefined }) {
       </div>
       <div className="flex items-center justify-end gap-4">
         <DeleteButton  event={event} user={user}/>
-        <button type="button" aria-disabled={!(user.role === 'dev' || user.id === event.userid)} onClick={() => router.push(`/gemif/calendar/edit-event/${event.id}`)} className={`${!(user.role === 'dev' || user.id === event.userid) ? 'pointer-events-none opacity-30' : ''} w-full text-center p-1.5 py-2 rounded-md bg-indigo-600 text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-indigo-700`}>Editar</button>
+        <button type="button" aria-disabled={!(user.role === 'dev' || user.id === event.userid)} onClick={() => router.push(`/gemif/calendar/edit-event/${event.id}`)} className={`${!(user.role === 'dev' || user.id === event.userid) ? 'pointer-events-none opacity-30' : ''} w-full text-center p-1.5 py-2 rounded-md bg-[#4A90E2] text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-[#3A7BC4]`}>Editar</button>
 
         
       </div>
@@ -120,8 +120,8 @@ function DeleteButton({ event, user }: { event: Event, user: User }) {
   }
 
   return (
-    <button aria-disabled={!(user.role === 'dev' || user.id === event.userid) || pending} type="submit" onClick={handleClick} className={`${!(user.role === 'dev' || user.id === event.userid) ? 'pointer-events-none opacity-30' : ''} w-full text-center p-1.5 py-2 rounded-md bg-red-600 text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-red-700`}>
-      Eliminar
+    <button disabled={!(user.role === 'dev' || user.id === event.userid) || pending} type="submit" onClick={handleClick} className={`${!(user.role === 'dev' || user.id === event.userid) || pending ? 'pointer-events-none opacity-30' : ''} w-full text-center p-1.5 py-2 rounded-md bg-red-600 text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-red-700`}>
+      {pending ? 'Eliminando...' : 'Eliminar'}
     </button>
   )
 }

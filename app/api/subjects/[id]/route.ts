@@ -11,7 +11,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     const body = await request.json();
     if (!body) return new Response('Invalid request body', { status: 400 });
 
-    const { color, bgcolor, bordercolor, archived, score } = body;
+    const { color, bgcolor, bordercolor, archived, scoreQual, scoreDiff } = body;
 
     // Prepare the fields to update based on the provided fields
     const fieldsToUpdate: string[] = [];
@@ -29,9 +29,13 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       fieldsToUpdate.push(`bordercolor = $${fieldsToUpdate.length + 1}`);
       values.push(bordercolor);
     }
-    if (score) {
-      fieldsToUpdate.push(`score = $${fieldsToUpdate.length + 1}`);
-      values.push(score);
+    if (scoreQual) {
+      fieldsToUpdate.push(`scorequal = $${fieldsToUpdate.length + 1}`);
+      values.push(scoreQual);
+    }
+    if (scoreDiff) {
+      fieldsToUpdate.push(`scorediff = $${fieldsToUpdate.length + 1}`);
+      values.push(scoreDiff);
     }
     if (archived !== undefined) {
       fieldsToUpdate.push(`archived = $${fieldsToUpdate.length + 1}`);
