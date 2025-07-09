@@ -1,174 +1,186 @@
-'use client'
+'use client';
 
-import { useEffect, useState } from "react";
-import { usePrimitiveSubjects } from "../lib/use-primitive-subjects"
-import { useFormState, useFormStatus } from "react-dom";
-import { mutate } from "swr";
-import { archiveSubjects, initialize, updateSubjects } from "../lib/actions";
-import { getSubjects } from "../lib/actions";
+import { useEffect, useState } from 'react';
+import { usePrimitiveSubjects } from '../lib/use-primitive-subjects';
+import { useFormState, useFormStatus } from 'react-dom';
+import { mutate } from 'swr';
+import { archiveSubjects, initialize, updateSubjects, getSubjects } from '../lib/actions';
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 
+type Subject = {
+  id: string;
+  name: string;
+};
+
+type ColumnId = 'toTake' | 'taking' | 'passed';
+
+type Columns = {
+  toTake: Subject[];
+  taking: Subject[];
+  passed: Subject[];
+};
 
 export default function InitialSetup() {
+  const { primitiveSubjects, isLoading: isLoadingPrimitiveSubjects } = usePrimitiveSubjects();
 
-  const { primitiveSubjects, error, error: primitiveSubjectsError, isLoading: isLoadingPrimitiveSubjects } = usePrimitiveSubjects()
-  const [subjectState, setSubjectState] = useState<Record<string, boolean>>({});
-  const [passedSubjectState, setPassedSubjectState] = useState<Record<string, boolean>>({});
-
-
-  const changeSubjects = async (_currentState: unknown, formData: FormData) => {
-    mutate((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + "/api/subjects", await updateSubjects(formData))
-    return 'Subjects updated'
-  }
-
-  const changeArchiveSubjects = async (_currentState: unknown, formData: FormData) => {
-      mutate((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + "/api/subjects", await archiveSubjects(formData))
-      return 'Subjects archived'
-    }
-
-  const [addState, dispatch] = useFormState(changeSubjects, undefined)
-  const [archiveState, archiveDispatch] = useFormState(changeArchiveSubjects, undefined)
+  const [columns, setColumns] = useState<Columns>({ toTake: [], taking: [], passed: [] });
+  const [initialColumns, setInitialColumns] = useState<Columns>({ toTake: [], taking: [], passed: [] });
+  const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
-      if (primitiveSubjects) {
-        const initialSubjectState = Object.fromEntries(
-          primitiveSubjects.map((subject) => {
-            if (subject.id === '00000000') return [subject.name, true];
-            return [subject.name, false];
-          })
-        );
-        const initialPassedSubjectState = Object.fromEntries(
-          primitiveSubjects.map((subject) => {
-            return [subject.name, false];
-          })
-        );
+    if (primitiveSubjects) {
+      const subj = primitiveSubjects.filter(p => p.id !== '00000000');
 
-        setSubjectState(initialSubjectState);
-        setPassedSubjectState(initialPassedSubjectState);
-      }
-    }, [primitiveSubjects]);
+      const sorted = (arr: Subject[]) => [...arr].sort((a, b) => a.id.localeCompare(b.id));
 
+      const initial = {
+        toTake: sorted(subj),
+        taking: [],
+        passed: []
+      };
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = event.target as HTMLInputElement
-    setSubjectState((prevState) => {
-      if (!prevState) return prevState
+      setColumns(initial);
+      setInitialColumns(initial);
+      setHasChanges(false);
+    }
+  }, [primitiveSubjects]);
+
+  useEffect(() => {
+    const equal = JSON.stringify(columns) === JSON.stringify(initialColumns);
+    setHasChanges(!equal);
+  }, [columns, initialColumns]);
+
+  const onDragEnd = (result: DropResult) => {
+    const { source, destination } = result;
+    if (!destination) return;
+
+    const sourceCol = source.droppableId as ColumnId;
+    const destCol = destination.droppableId as ColumnId;
+
+    if (sourceCol === destCol) return;
+
+    setColumns(prev => {
+      const sourceItems = [...prev[sourceCol]];
+      const destItems = [...prev[destCol]];
+      const [moved] = sourceItems.splice(source.index, 1);
+
       return {
-        ...prevState,
-        [value]: !prevState[value]
-      }
-    })
-  }
+        ...prev,
+        [sourceCol]: sourceItems,
+        [destCol]: [...destItems, moved].sort((a, b) => a.id.localeCompare(b.id))
+      };
+    });
+  };
 
-  const handlePassedChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = event.target as HTMLInputElement
-    setPassedSubjectState((prevState) => {
-      if (!prevState) return prevState
-      return {
-        ...prevState,
-        [value]: !prevState[value]
-      }
-    })
-  }
+  const submitAll = async (_: unknown, formData: FormData) => {
+    if (!primitiveSubjects) return;
 
-  const onSubmitForm = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!primitiveSubjects) return
-    const formData = new FormData(e.currentTarget);
-    const subjectsToArchive = primitiveSubjects.filter((subject) => passedSubjectState[subject.name] && subject.id !== '00000000');
-    const otrosSubject = primitiveSubjects.find((subject) => subject.id === '00000000');
-    const subjectsToAdd = [otrosSubject].concat(primitiveSubjects.filter((subject) => subjectState[subject.name] && subject.id !== '00000000')).concat(subjectsToArchive);
-    formData.append("subjectsToAdd", JSON.stringify(subjectsToAdd));
-    dispatch(formData);
+    const otrosSubject = primitiveSubjects.find(subject => subject.id === '00000000');
 
-    const subjects = await getSubjects()
+    // 1. ✅ Add "otros" + currently taking + currently passed
+    const subjectsToAdd = [
+      ...(otrosSubject ? [otrosSubject] : []),
+      ...columns.taking,
+      ...columns.passed
+    ];
+    formData.set("subjectsToAdd", JSON.stringify(subjectsToAdd));
+    await mutate("/api/subjects", updateSubjects(formData));
 
-    formData.append("subjectsToArchive", JSON.stringify(subjects.filter((subject) => passedSubjectState[subject.name])));
-    archiveDispatch(formData);
+    // 2. ✅ Archive passed ones that already exist
+    const existingSubjects = await getSubjects();
+    const subjectsToArchive = existingSubjects.filter(subject =>
+      columns.passed.some(p => p.name === subject.name)
+    );
+
+    formData.set("subjectsToArchive", JSON.stringify(subjectsToArchive));
+
+    // 3. 🔁 Mutate and reset
+    await mutate("/api/subjects", archiveSubjects(formData));
 
     await initialize();
-  }
+    setInitialColumns(columns);
+    setHasChanges(false);
 
-  if (!primitiveSubjects) {
-    return null
-  }
+    return "Done";
+  };
+
+
+
+  const [_, dispatch] = useFormState(submitAll, undefined);
+
+  const Column = ({ id, title, items }: { id: ColumnId; title: string; items: Subject[] }) => (
+    <Droppable droppableId={id}>
+      {(provided, snapshot) => (
+        <div
+          {...provided.droppableProps}
+          ref={provided.innerRef}
+          className="flex flex-col gap-3 min-h-[300px] max-h-[calc(100vh-200px)] p-2"
+        >
+          <p className="text-2xl text-slate-700 border-b px-2 py-2">{title}</p>
+          <div
+            className={`flex flex-col gap-3 min-h-[300px] max-h-[calc(100vh-200px)] overflow-y-auto rounded-md p-2 transition-[background-color] ${
+              snapshot.isDraggingOver ? 'bg-[#ceddec]' : ''
+            }`}
+          >
+            {items.length === 0 ? (
+              <p className="text-slate-700 text-center py-8">No hay asignaturas</p>
+            ) : (
+              items.map((subject, index) => (
+                <Draggable key={subject.id} draggableId={subject.id} index={index}>
+                  {(provided, snapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      {...provided.dragHandleProps}
+                      className="max-w-full flex justify-between items-stretch rounded-md bg-white border border-[#e0e7ff] shadow-sm hover:shadow-md hover:border-blue-400 transition-all duration-200 ease-in-out p-1"
+                    >
+                      <div className="flex items-center w-full">
+                        <label className="text-sm cursor-pointer truncate max-w-[200px] text-slate-600">
+                          {subject.name}
+                        </label>
+                      </div>
+                    </div>
+                  )}
+                </Draggable>
+              ))
+            )}
+            {provided.placeholder}
+          </div>
+        </div>
+      )}
+    </Droppable>
+  );
 
   return (
-    <main className="w-full h-full flex justify-center items-center p-5 bg-[#eaf3ff]">
-      <form onSubmit={onSubmitForm} className="flex flex-col gap-5">
-        <div className="w-fit h-full flex justify-center items-center gap-5">
-          <div className="flex flex-col bg-white p-4 rounded-lg gap-5 items-start">
-            <h2 className="text-xl font-extrabold tracking-tight text-black leading-tight md:text-xl">
-              Seleccione las asignaturas que cursa actualmente
-            </h2>
-            <div className="flex border-b border-gray-200">
-              <div className="flex flex-col gap-3 overflow-auto scrollbar-hidden max-h-[200px] pb-2">
-                {
-                  primitiveSubjects.filter((subject) => subject.id !== '00000000').map((subject, index) => {
-                    return (
-                      <div key={subject.id + 'taking'} title={subject.name} className="flex items-center">
-                        <input checked={!!subjectState[subject.name]} disabled={!!passedSubjectState[subject.name]} id={subject.name + 'taking'} type="checkbox" name="subject" value={subject.name} onChange={handleChange} className={`w-[21.6px] h-[21.6px] appearance-none border cursor-pointer border-gray-300  rounded-md mr-2 ${!!passedSubjectState[subject.name] ? 'opacity-50' : 'hover:border-indigo-500'} checked:bg-no-repeat checked:bg-center checked:border-indigo-500 checked:bg-indigo-100`}/>
-                        <label htmlFor={subject.name + 'taking'} className={`${!!passedSubjectState[subject.name] ? 'line-through' : ''} text-sm font-norma cursor-pointer truncate max-w-[200px] text-gray-600`}>{subject.name}</label>
-                      </div>
-                    )
-                  })
-                }
-              </div>
-              <div className="flex items-end py-2">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 animate-bounce">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                </svg>
-              </div>
-            </div>
+    <main className="w-full h-full flex justify-center items-center p-5 bg-white">
+      <form action={dispatch} className="w-[95%]">
+        <DragDropContext onDragEnd={onDragEnd}>
+          <div className="h-fit lg:h-[85%] lg:mt-5 bg-[#f4f9ff] border border-[#DCEBFF] hover:bg-[#EEF5FF] transition-[background-color] duration-300 rounded-2xl grid grid-cols-1 md:grid-cols-3 gap-4 px-4 py-6">
+            <Column id="toTake" title="Por cursar" items={columns.toTake} />
+            <Column id="taking" title="Cursando" items={columns.taking} />
+            <Column id="passed" title="Superadas" items={columns.passed} />
           </div>
-          <div className="flex flex-col bg-white p-4 rounded-lg gap-5 items-start">
-          <h2 className="text-xl font-extrabold tracking-tight text-black leading-tight md:text-xl">
-              Seleccione las asignaturas que ha superado
-            </h2>
-            <div className="flex border-b border-gray-200">
-              <div className="flex flex-col gap-3 overflow-auto scrollbar-hidden max-h-[200px] pb-2">
-                {
-                  primitiveSubjects.filter((subject) => subject.id !== '00000000').map((subject, index) => {
-                    return (
-                      <div key={subject.id + 'passed'} title={subject.name} className="flex items-center">
-                        <input checked={!!passedSubjectState[subject.name]} disabled={!!subjectState[subject.name]} id={subject.name + 'passed'} type="checkbox" name="subject" value={subject.name} onChange={handlePassedChange} className={`w-[21.6px] h-[21.6px] appearance-none border cursor-pointer border-gray-300  rounded-md mr-2 ${!!subjectState[subject.name] ? 'opacity-50' : 'hover:border-indigo-500'} checked:bg-no-repeat checked:bg-center checked:border-indigo-500 checked:bg-indigo-100`}/>
-                        <label htmlFor={subject.name + 'passed'} className={`${!!subjectState[subject.name] ? 'line-through' : ''} text-sm font-norma cursor-pointer truncate max-w-[200px] text-gray-600`}>{subject.name}</label>
-                      </div>
-                    )
-                  })
-                }
-              </div>
-              <div className="flex items-end py-2">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 animate-bounce">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                </svg>
-              </div>
-            </div>
-          </div>
-          
+        </DragDropContext>
+        <div className="flex justify-center mt-6">
+          <SubmitButton hasChanges={hasChanges} />
         </div>
-        <div className="h-full bg-white p-4 rounded-lg flex justify-center items-center">
-          <div className="flex justify-center">
-            <UpdateButton text="Aceptar"/>
-          </div>
-        </div>
-
       </form>
     </main>
-  )
+  );
 }
 
-function UpdateButton({ text }: { text?: string }) {
-  const { pending } = useFormStatus()
-
-  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-    if (pending) {
-      event.preventDefault()
-    }
-  }
+function SubmitButton({ hasChanges }: { hasChanges: boolean }) {
+  const { pending } = useFormStatus();
 
   return (
-    <button disabled={pending} type="submit" onClick={handleClick} className={`${pending ? 'pointer-events-none opacity-30' : ''} w-full text-center p-1.5 py-2 rounded-md bg-indigo-600 text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-indigo-700`}>
-      {pending ? 'Cargando...' : text}
+    <button
+      type="submit"
+      disabled={!hasChanges || pending}
+      className={`${
+        !hasChanges || pending ? 'opacity-30' : 'opacity-100'
+      } w-full max-w-xs text-center text-nowrap p-1.5 py-2 rounded-md bg-[#4A90E2] text-white text-xs font-medium transition-all duration-300 hover:bg-[#3A7BC4]`}
+    >
+      {pending ? 'Cargando...' : 'Aceptar'}
     </button>
-  )
+  );
 }

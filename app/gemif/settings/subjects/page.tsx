@@ -1,265 +1,285 @@
-'use client'
-import { useSubjects } from "@/app/lib/use-subjects";
-import {  useEffect, useState } from "react";
-import { useFormState, useFormStatus } from "react-dom";
-import { archiveSubjects, updateSubjects } from "@/app/lib/actions";
-import { mutate } from "swr";
-import { useRouter } from "next/navigation";
-import { usePrimitiveSubjects } from "@/app/lib/use-primitive-subjects";
-import Loader from "@/app/ui/loader";
+'use client';
 
+import { useSubjects } from "@/app/lib/use-subjects";
+import { usePrimitiveSubjects } from "@/app/lib/use-primitive-subjects";
+import { useEffect, useState } from "react";
+import { useFormState, useFormStatus } from "react-dom";
+import { mutate } from "swr";
+import { archiveSubjects, updateSubjects } from "@/app/lib/actions";
+import Loader from "@/app/ui/loader";
+import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
+
+type Subject = {
+  id: string;
+  name: string;
+  archived: boolean;
+  primitiveid: string;
+};
+
+type ColumnId = 'toTake' | 'taking' | 'passed';
+
+type Columns = {
+  toTake: Subject[];
+  taking: Subject[];
+  passed: Subject[];
+};
+
+function areColumnsEqual(a: Columns, b: Columns): boolean {
+  const sameIds = (arr1: Subject[], arr2: Subject[]) =>
+    arr1.length === arr2.length && arr1.every((s, i) => s.id === arr2[i].id);
+  return sameIds(a.toTake, b.toTake) && sameIds(a.taking, b.taking) && sameIds(a.passed, b.passed);
+}
 
 export default function Page() {
   const { subjects, error: subjectsError, isLoading: isLoadingSubjects } = useSubjects();
-  const { primitiveSubjects, error, error: primitiveSubjectsError, isLoading: isLoadingPrimitiveSubjects } = usePrimitiveSubjects()
-  const router = useRouter()
-  const [subjectState, setSubjectState] = useState<Record<string, boolean>>({});
-  const [archiveState, setArchiveState] = useState<Record<string, boolean>>({});
+  const { primitiveSubjects, error: primitiveSubjectsError, isLoading: isLoadingPrimitiveSubjects } = usePrimitiveSubjects();
 
+  const [columns, setColumns] = useState<Columns>({ toTake: [], taking: [], passed: [] });
+  const [initialColumns, setInitialColumns] = useState<Columns>({ toTake: [], taking: [], passed: [] });
+  const [hasChanges, setHasChanges] = useState(false);
 
-  useEffect(() => {
-    if (subjects) {
-      const initialState = Object.fromEntries(
-        subjects.filter((subject) => subject.primitiveid !== '00000000').map((subject) => [subject.name, false]) // Initialize all subjects as false
-      );
-      setArchiveState(initialState);
-      
-    }
-  },[subjects])
+  const sortByPrimitiveId = (a: Subject, b: Subject) =>
+    a.primitiveid.localeCompare(b.primitiveid);
 
-
-  const changeSubjects = async (_currentState: unknown, formData: FormData) => {
-    mutate((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + "/api/subjects", await updateSubjects(formData))
-    return 'Subjects updated'
-  }
-
-  const changeArchiveSubjects = async (_currentState: unknown, formData: FormData) => {
-    mutate((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + "/api/subjects", await archiveSubjects(formData))
-    return 'Subjects archived'
-  }
-
-  const [reset, setReset] = useState(false)
-  const [state, dispatch] = useFormState(changeSubjects, undefined)
-  const [resetArchive, setArchiveReset] = useState(false)
-  const [archive, archiveDispatch] = useFormState(changeArchiveSubjects, undefined)
-
-  useEffect(() => {
-    if (state === 'Subjects updated') {
-    } else if (state === 'Failed to update subjects') {
-    }
-  }, [state, router]);
-
-  useEffect(() => {
-    if (archive === 'Subjects archived') {
-    } else if (archive === 'Failed to update subjects') {
-    }
-  }, [archive, router]);
-
+  const deduplicate = (arr: Subject[]) => {
+    const seen = new Set();
+    return arr.filter(item => {
+      if (seen.has(item.id)) return false;
+      seen.add(item.id);
+      return true;
+    });
+  };
 
   useEffect(() => {
     if (subjects && primitiveSubjects) {
-      const subjectsNames = subjects.map((subject) => subject.name);
-      const initialState = Object.fromEntries(
-        primitiveSubjects.map((subject) => {
-          const isActive = subjectsNames.includes(subject.name);
-          return [subject.name, isActive];
-        })
-      );
-      setSubjectState(initialState);
+      const toTake: Subject[] = [];
+      const taking: Subject[] = [];
+      const passed: Subject[] = [];
+
+      const subjectNames = new Set(subjects.map(s => s.name));
+
+      primitiveSubjects
+        .filter(p => p.id !== '00000000')
+        .forEach(p => {
+          if (!subjectNames.has(p.name)) {
+            toTake.push({ id: p.id, name: p.name, archived: false, primitiveid: p.id });
+          }
+        });
+
+      subjects.filter(s => s.primitiveid !== '00000000').forEach(s => {
+        if (s.archived) passed.push({ id: s.id??'', name: s.name, archived: true, primitiveid: s.primitiveid });
+        else taking.push({ id: s.id??'', name: s.name, archived: false, primitiveid: s.primitiveid });
+      });
+
+      const newColumns = {
+        toTake: toTake.sort(sortByPrimitiveId),
+        taking: taking.sort(sortByPrimitiveId),
+        passed: passed.sort(sortByPrimitiveId)
+      };
+
+      setColumns(newColumns);
+      setInitialColumns(newColumns);
+      setHasChanges(false);
     }
-  }, [subjects, reset, primitiveSubjects]);
+  }, [subjects, primitiveSubjects]);
 
   useEffect(() => {
-    if (subjects && primitiveSubjects) {
-      const initialState = Object.fromEntries(subjects.map((subject) => {
-        return [subject.name, subject.archived];
-      }))
-      setArchiveState(initialState);
-    }
-  }, [subjects, resetArchive, primitiveSubjects]);
+    setHasChanges(!areColumnsEqual(columns, initialColumns));
+  }, [columns, initialColumns]);
 
-  
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = event.target as HTMLInputElement
-    setSubjectState((prevState) => {
-      if (!prevState) return prevState
-      return {
-        ...prevState,
-        [value]: !prevState[value]
-      }
-    })
-  }
+  const onDragEnd = (result: DropResult) => {
+    const { source, destination } = result;
+    if (!destination) return;
 
-  const handleArchiveChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = event.target as HTMLInputElement
-    setArchiveState((prevState) => {
-      if (!prevState) return prevState
+    const sourceCol = source.droppableId as ColumnId;
+    const destCol = destination.droppableId as ColumnId;
+
+    if (sourceCol === destCol) return; // ⛔ Reordering disallowed
+
+    setColumns(prev => {
+      const sourceItems = [...prev[sourceCol]];
+      const destItems = [...prev[destCol]];
+      const [moved] = sourceItems.splice(source.index, 1);
+
+      const updatedItem = { ...moved, archived: destCol === 'passed' };
+
+      const updatedSource = deduplicate(sourceItems);
+      const updatedDest = deduplicate([...destItems, updatedItem]);
+
       return {
-        ...prevState,
-        [value]: !prevState[value]
-      }
-    })
-  }
-  
-  const onSubmitForm = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!primitiveSubjects) return
-    if (!subjects) return
-    const subjectsNames = subjects.map((subject) => subject.name);
-    const selectedSubjects = primitiveSubjects.filter((subject) => subjectState[subject.name]);
-    const formData = new FormData(e.currentTarget);
-    const subjectsToAdd = selectedSubjects.filter((subject) => !subjectsNames.includes(subject.name));
-    const subjectsToRemove = subjects.filter((subject) => !subjectState[subject.name]);
-    formData.append("subjectsToAdd", JSON.stringify(subjectsToAdd));
-    formData.append("subjectsToRemove", JSON.stringify(subjectsToRemove));
-    dispatch(formData);
-  }
-  
-  const onSubmitArchiveForm = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!subjects) return
-    const preArchivedSubjects = subjects.filter((subject) => subject.archived);
-    const preArchivedSubjectsNames = preArchivedSubjects.map((subject) => subject.name);
-    const selectedSubjects = subjects.filter((subject) => archiveState[subject.name]);
-    const formData = new FormData(e.currentTarget);
-    const subjectsToArchive = selectedSubjects.filter((subject) => !preArchivedSubjectsNames.includes(subject.name));
-    const subjectsToUnarchive = preArchivedSubjects.filter((subject) => !archiveState[subject.name]);
-    formData.append("subjectsToArchive", JSON.stringify(subjectsToArchive));
-    formData.append("subjectsToUnarchive", JSON.stringify(subjectsToUnarchive));
-    archiveDispatch(formData);
-  }
-  
-  if (subjectsError) return <div>Error: {subjectsError}</div>
-  if (primitiveSubjectsError) return <div>Error: {primitiveSubjectsError}</div>
-    
-  
+        ...prev,
+        [sourceCol]: updatedSource.sort(sortByPrimitiveId),
+        [destCol]: updatedDest.sort(sortByPrimitiveId)
+      };
+    });
+  };
+
+  const changeSubjectsAndArchives = async (_: unknown, formData: FormData) => {
+    if (!primitiveSubjects || !subjects) return;
+
+    const initialTakingNames = new Set(initialColumns.taking.map(s => s.name));
+    const currentTakingNames = new Set(columns.taking.map(s => s.name));
+
+    const subjectsToAdd = columns.taking
+      .filter(s => !initialTakingNames.has(s.name))
+      .map(s => primitiveSubjects.find(p => p.name === s.name)!)
+      .filter(Boolean);
+
+    const subjectsToRemove = initialColumns.taking
+      .filter(s => !currentTakingNames.has(s.name) && !columns.passed.some(p => p.name === s.name))
+      .map(s => subjects.find(sub => sub.name === s.name)!)
+      .filter(Boolean);
+
+    const initialPassedNames = new Set(initialColumns.passed.map(s => s.name));
+    const currentPassedNames = new Set(columns.passed.map(s => s.name));
+
+    const subjectsToArchive = columns.passed
+      .filter(s => !initialPassedNames.has(s.name))
+      .map(s => subjects.find(sub => sub.name === s.name)!)
+      .filter(Boolean);
+
+    const subjectsToUnarchive = initialColumns.passed
+      .filter(s => !currentPassedNames.has(s.name))
+      .map(s => subjects.find(sub => sub.name === s.name)!)
+      .filter(Boolean);
+
+    formData.set("subjectsToAdd", JSON.stringify(subjectsToAdd));
+    formData.set("subjectsToRemove", JSON.stringify(subjectsToRemove));
+    formData.set("subjectsToArchive", JSON.stringify(subjectsToArchive));
+    formData.set("subjectsToUnarchive", JSON.stringify(subjectsToUnarchive));
+
+    await mutate("/api/subjects", updateSubjects(formData));
+    await mutate("/api/subjects", archiveSubjects(formData));
+
+    // ✅ Sync initial state to new
+    const updatedInitial = {
+      toTake: [...columns.toTake],
+      taking: [...columns.taking],
+      passed: [...columns.passed]
+    };
+    setInitialColumns(updatedInitial);
+    setHasChanges(false);
+
+    return "Subjects updated";
+  };
+
+  const [_, dispatch] = useFormState(changeSubjectsAndArchives, undefined);
+  const { pending } = useFormStatus();
+
+  const handleReset = () => {
+    setColumns(initialColumns);
+    setHasChanges(false);
+  };
+
+  const Column = ({ id, title, items }: { id: ColumnId; title: string; items: Subject[] }) => (
+    <Droppable droppableId={id}>
+      {(provided, snapshot) => (
+        <div
+          {...provided.droppableProps}
+          ref={provided.innerRef}
+          className={`flex flex-col gap-3 min-h-[300px] max-h-[calc(100vh-200px)] p-2`}
+        >
+          <p className="text-2xl text-slate-700 border-b px-2 py-2 ">{title}</p>
+          <div className={`flex flex-col gap-3 min-h-[300px] max-h-[calc(100vh-200px)] overflow-y-auto rounded-md p-2 transition-[background-color] ${snapshot.isDraggingOver ? 'bg-[#ceddec]' : ''}`}>
+            {items.length === 0 && !isLoadingSubjects && (
+              <p className="text-slate-700 text-center py-8">No hay asignaturas</p>
+            )}
+            {isLoadingSubjects ? (
+              <div className="flex items-center justify-center h-full"><Loader /></div>
+            ) : (
+              items.map((subject, index) => (
+                <Draggable key={subject.id} draggableId={subject.id} index={index}>
+                  {(provided, snapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      {...provided.dragHandleProps}
+                      className={`max-w-full flex justify-between items-stretch 
+                                    rounded-md bg-white border border-[#e0e7ff] 
+                                    shadow-sm hover:shadow-md hover:border-blue-400 
+                                    transition-all duration-200 ease-in-out p-1`}
+                    >
+                      <div className="flex items-center w-full">
+                        <label className="text-sm cursor-pointer truncate max-w-[200px] text-slate-600">
+                          {subject.name}
+                        </label>
+                      </div>
+                    </div>
+                  )}
+                </Draggable>
+              ))
+            )}
+            {provided.placeholder}
+          </div>
+          </div>
+      )}
+    </Droppable>
+  );
+
+  if (subjectsError || primitiveSubjectsError) return <div>Error loading subjects.</div>;
+
   return (
     <div className="h-fit lg:h-full w-full flex bg-white py-3 text-gray-900 font-medium justify-center items-center">
-      <div className="w-[95%] h-fit lg:h-[85%] lg:mt-5 bg-[#f4f9ff] border border-[#DCEBFF] hover:bg-[#EEF5FF] transition-[background-color] duration-300 rounded-sm  flex flex-col lg:flex-row gap-16 lg:gap-0 justify-around px-1 lg:px-[60px] py-4">
-        <form onSubmit={onSubmitForm} className="flex flex-col gap-3 lg:max-w-[40%]">
-          <p className="text-sm border-b px-2 py-2 border-[#5f3fbe61]">Asignaturas cursando actualmente</p>
-          {
-            !subjects || !primitiveSubjects || isLoadingPrimitiveSubjects || isLoadingSubjects || !subjectState ? (
-              <div className="flex items-center justify-center">
-                <Loader />
-              </div>
-            ) : (
-                <div className="flex flex-col py-2 px-4 gap-3 max-h-[397.6px]">
-                  <div className="flex gap-2 grow-0 shrink-0">
-                    <p className="[writing-mode:vertical-lr]  text-sm flex justify-center items-center text-gray-500">Cursando</p>
-                    <div className="flex flex-col overflow-auto scrollbar-hidden max-h-[200px] gap-3">
-                      {
-                        subjects.filter((subject) => subject.primitiveid !== '00000000').map((subject, index) => {
-                          if (subject.archived) return null
-                          return (
-                            <div key={subject.id} title={subject.name} className="flex items-center">
-                              <input checked={!!subjectState[subject.name]} id={subject.name + 'active'} type="checkbox" name="subject" value={subject.name} onChange={handleChange} className="w-[21.6px] h-[21.6px] appearance-none border cursor-pointer border-gray-300  rounded-md mr-2 hover:border-indigo-500 checked:bg-no-repeat checked:bg-center checked:border-indigo-500 checked:bg-indigo-100"/>
-                              <label htmlFor={subject.name + 'active'} className="text-sm font-norma cursor-pointer truncate max-w-[200px] text-gray-600">{subject.name}</label>
-                            </div>
-                          )
-                        })
-                      }
+      <form action={dispatch} className="w-[95%]">
+        <DragDropContext onDragEnd={onDragEnd}>
+          <div className="h-fit lg:h-[85%] lg:mt-5 bg-[#f4f9ff] border border-[#DCEBFF] hover:bg-[#EEF5FF] transition-[background-color] duration-300 rounded-2xl  grid grid-cols-1 md:grid-cols-3 gap-4 px-4 py-6">
+            {
+              isLoadingSubjects || isLoadingPrimitiveSubjects ? (
+                <>
+                  <div className="flex justify-center items-center w-full min-h-[4rem]">
+                    <div className="w-[40px] h-[30px]">
+                      <Loader />
                     </div>
                   </div>
-                  <div className="w-full border-b border-[#5f3fbe3c]"></div>
-                  <div className="flex gap-2 border-b py-1 border-[#5f3fbe2a] grow-[1] shrink-[1] min-h-[0]">
-                    <p className="[writing-mode:vertical-lr] text-sm flex justify-start items-center text-gray-500">Por cursar</p>
-                    <div className="flex flex-col gap-3 overflow-auto scrollbar-hidden max-h-[200px] pb-2">
-                      {
-                        primitiveSubjects.filter((subject) => subject.id !== '00000000').map((subject, index) => {
-                          if (subjects?.map((subject) => subject.name)?.includes(subject.name)) return null
-                          return (
-                            <div key={subject.id} title={subject.name} className="flex items-center">
-                              <input checked={!!subjectState[subject.name]} id={subject.name + 'inactive'} type="checkbox" name="subject" value={subject.name} onChange={handleChange} className="w-[21.6px] h-[21.6px] appearance-none border cursor-pointer border-gray-300  rounded-md mr-2 hover:border-indigo-500 checked:bg-no-repeat checked:bg-center checked:border-indigo-500 checked:bg-indigo-100"/>
-                              <label htmlFor={subject.name + 'inactive'} className="text-sm font-norma cursor-pointer truncate max-w-[200px] text-gray-600">{subject.name}</label>
-                            </div>
-                          )
-                        })
-                      }
-                    </div>
-                    <div className="flex items-end py-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 animate-bounce">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                      </svg>
-                    </div>
-                </div>
-              </div>
-            )
-          }
-          <div className="flex gap-3 justify-center">
-            <button type="button" disabled={!subjects || !primitiveSubjects || isLoadingPrimitiveSubjects || isLoadingSubjects || !subjectState} onClick={() => setReset(!reset)} className={`${!subjects || !primitiveSubjects || isLoadingPrimitiveSubjects || isLoadingSubjects || !subjectState ? 'opacity-30' : 'opacity-100'} w-full text-center p-1.5 py-2 rounded-md bg-red-600 text-white text-xs font-medium close-modal-button transition-all text-nowrap duration-300 hover:bg-red-700`}>
-              Reestablecer selección
-            </button>
-            <UpdateButton text="Aplicar" disabled={!subjects || !primitiveSubjects || isLoadingPrimitiveSubjects || isLoadingSubjects || !subjectState}/>
-          </div>
-        </form>
-        <form onSubmit={onSubmitArchiveForm} className="flex flex-col gap-3 lg:max-w-[40%]">
-          <p className="text-sm border-b px-2 py-2 border-[#5f3fbe61]">Archivar asignaturas superadas</p>
-          {
-            !subjects || !primitiveSubjects || isLoadingPrimitiveSubjects || isLoadingSubjects || !archiveState ? (
-              <div className="flex items-center justify-center">
-                <Loader />
-              </div>
-            ) : (
-              <div className="flex flex-col py-2 px-4 gap-3 max-h-[397.6px]">
-                  <div className="flex gap-2 grow-0 shrink-0">
-                    <p className="[writing-mode:vertical-lr]  text-sm flex justify-center items-center text-gray-500">Cursando</p>
-                    <div className="flex flex-col overflow-auto scrollbar-hidden max-h-[200px] gap-3">
-                      {
-                        subjects.filter((subject) => !subject.archived && subject.primitiveid !== '00000000').map((subject, index) => {
-                          return (
-                            <div key={subject.id} title={subject.name} className="flex items-center">
-                              <input checked={!!archiveState[subject.name]} id={subject.name + 'unarchived'} type="checkbox" name="archive" value={subject.name} onChange={handleArchiveChange} className="w-[21.6px] h-[21.6px] appearance-none border cursor-pointer border-gray-300  rounded-md mr-2 hover:border-indigo-500 checked:bg-no-repeat checked:bg-center checked:border-indigo-500 checked:bg-indigo-100"/>
-                              <label htmlFor={subject.name + 'unarchived'} className="text-sm font-norma cursor-pointer truncate max-w-[200px] text-gray-600">{subject.name}</label>
-                            </div>
-                          )
-                        })
-                      }
+                  <div className="flex justify-center items-center w-full min-h-[4rem]">
+                    <div className="w-[40px] h-[30px]">
+                      <Loader />
                     </div>
                   </div>
-                  <div className="w-full border-b border-[#5f3fbe3c]"></div>
-                  <div className="flex gap-2 border-b py-1 border-[#5f3fbe2a] grow-[1] shrink-[1] min-h-[0]">
-                    <p className="[writing-mode:vertical-lr] text-sm flex justify-start items-center text-gray-500">Superadas</p>
-                    <div className="flex flex-col gap-3 overflow-auto scrollbar-hidden max-h-[200px] pb-2">
-                      {
-                        subjects.filter((subject) => subject.archived && subject.primitiveid !== '00000000').map((subject, index) => {
-                          return (
-                            <div key={subject.id} title={subject.name} className="flex items-center">
-                              <input checked={!!archiveState[subject.name]} id={subject.name + 'archived'} type="checkbox" name="archive" value={subject.name} onChange={handleArchiveChange} className="w-[21.6px] h-[21.6px] appearance-none border cursor-pointer border-gray-300  rounded-md mr-2 hover:border-indigo-500 checked:bg-no-repeat checked:bg-center checked:border-indigo-500 checked:bg-indigo-100"/>
-                              <label htmlFor={subject.name + 'archived'} className="text-sm font-norma cursor-pointer truncate max-w-[200px] text-gray-600">{subject.name}</label>
-                            </div>
-                          )
-                        })
-                      }
+                  <div className="flex justify-center items-center w-full min-h-[4rem]">
+                    <div className="w-[40px] h-[30px]">
+                      <Loader />
                     </div>
-                </div>
-              </div>
-            )
-          }
-          <div className="flex gap-3 justify-center">
-            <button type="button" disabled={!subjects || !primitiveSubjects || isLoadingPrimitiveSubjects || isLoadingSubjects || !archiveState} onClick={() => setArchiveReset(!reset)} className={`${!subjects || !primitiveSubjects || isLoadingPrimitiveSubjects || isLoadingSubjects || !archiveState ? 'opacity-30' : 'opacity-100'} w-full text-center p-1.5 py-2 rounded-md bg-red-600 text-white text-xs font-medium close-modal-button transition-all text-nowrap duration-300 hover:bg-red-700`}>
-              Reestablecer selección
-            </button>
-            <UpdateButton text="Marcar como superadas" disabled={(!subjects || !primitiveSubjects || isLoadingPrimitiveSubjects || isLoadingSubjects || !archiveState)}/>
+                  </div>   
+                </>
+              ) : (
+                <>
+                  <Column id="toTake" title="Por cursar" items={columns.toTake} />
+                  <Column id="taking" title="Cursando" items={columns.taking} />
+                  <Column id="passed" title="Superadas" items={columns.passed} />
+                </>
+              )
+            }
           </div>
-        </form>
-      </div>
+        </DragDropContext>
+        <div className="flex gap-3 justify-center mt-6">
+          <button
+            type="button"
+            onClick={handleReset}
+            className="w-full max-w-xs text-center p-1.5 py-2 rounded-md bg-red-600 text-white text-xs font-medium transition-all text-nowrap duration-300 hover:bg-red-700"
+          >
+            Reestablecer selección
+          </button>
+          <SubmitButton hasChanges={hasChanges} />
+        </div>
+      </form>
     </div>
   );
 }
 
-function UpdateButton({ text, disabled }: { text?: string, disabled: boolean }) {
-  const { pending } = useFormStatus()
 
-  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-    if (pending) {
-      event.preventDefault()
-    }
-  }
+function SubmitButton({ hasChanges }: { hasChanges: boolean }) {
+  const { pending } = useFormStatus();
 
   return (
-    <button disabled={pending || disabled } type="submit" onClick={handleClick} className={`${disabled || pending ? 'opacity-30' : 'opacity-100'} w-full text-center text-nowrap p-1.5 py-2 rounded-md bg-indigo-600 text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-indigo-700`}>
-      {text}
+    <button
+      type="submit"
+      disabled={!hasChanges || pending}
+      className={`${
+        !hasChanges || pending ? 'opacity-30' : 'opacity-100'
+      } w-full max-w-xs text-center text-nowrap p-1.5 py-2 rounded-md bg-[#4A90E2] text-white text-xs font-medium transition-all duration-300 hover:bg-[#3A7BC4]`}
+    >
+      {pending ? 'Cargando...' : 'Guardar cambios'}
     </button>
-  )
+  );
 }

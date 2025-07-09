@@ -647,7 +647,8 @@ export async function addMessage(formData: FormData) {
   const scope = formData.get('scope') as string
   const year = formData.get('year') as string | null
   const message = { name, description, year, scope }
-  const filteredMessage = Object.fromEntries(Object.entries(message).filter(([_, v]) => v !== 'null'))
+  const filteredMessage = Object.fromEntries(Object.entries(message).filter(([_, v]) => v !== 'null' && v !== null))
+  console.log(filteredMessage)
   
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/messages', {
     method: 'POST',
