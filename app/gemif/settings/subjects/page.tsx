@@ -8,6 +8,7 @@ import { mutate } from "swr";
 import { archiveSubjects, updateSubjects } from "@/app/lib/actions";
 import Loader from "@/app/ui/loader";
 import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
+import { useRouter } from "next/navigation";
 
 type Subject = {
   id: string;
@@ -130,6 +131,8 @@ export default function Page() {
       .map(s => subjects.find(sub => sub.name === s.name)!)
       .filter(Boolean);
 
+    console.log({ subjectsToAdd, subjectsToRemove });
+
     const initialPassedNames = new Set(initialColumns.passed.map(s => s.name));
     const currentPassedNames = new Set(columns.passed.map(s => s.name));
 
@@ -148,8 +151,8 @@ export default function Page() {
     formData.set("subjectsToArchive", JSON.stringify(subjectsToArchive));
     formData.set("subjectsToUnarchive", JSON.stringify(subjectsToUnarchive));
 
-    await mutate("/api/subjects", updateSubjects(formData));
-    await mutate("/api/subjects", archiveSubjects(formData));
+    mutate((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + "/api/subjects", await updateSubjects(formData))
+    mutate((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + "/api/subjects", await archiveSubjects(formData))
 
     // ✅ Sync initial state to new
     const updatedInitial = {
@@ -163,8 +166,17 @@ export default function Page() {
     return "Subjects updated";
   };
 
-  const [_, dispatch] = useFormState(changeSubjectsAndArchives, undefined);
-  const { pending } = useFormStatus();
+  const [state, dispatch] = useFormState(changeSubjectsAndArchives, undefined);
+  const router = useRouter()
+
+    useEffect(() => {
+      if (state === 'Subjects updated') {
+        if (!subjects) return
+
+        router.refresh();
+      } else if (state === 'Failed to update subjects') {
+      }
+    }, [router, state, subjects]);
 
   const handleReset = () => {
     setColumns(initialColumns);

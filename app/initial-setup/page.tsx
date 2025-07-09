@@ -84,7 +84,8 @@ export default function InitialSetup() {
       ...columns.passed
     ];
     formData.set("subjectsToAdd", JSON.stringify(subjectsToAdd));
-    await mutate("/api/subjects", updateSubjects(formData));
+    mutate((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + "/api/subjects", await updateSubjects(formData))
+
 
     // 2. ✅ Archive passed ones that already exist
     const existingSubjects = await getSubjects();
@@ -95,7 +96,7 @@ export default function InitialSetup() {
     formData.set("subjectsToArchive", JSON.stringify(subjectsToArchive));
 
     // 3. 🔁 Mutate and reset
-    await mutate("/api/subjects", archiveSubjects(formData));
+    mutate((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + "/api/subjects", await archiveSubjects(formData))
 
     await initialize();
     setInitialColumns(columns);
