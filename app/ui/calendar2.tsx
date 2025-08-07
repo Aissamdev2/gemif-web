@@ -24,7 +24,7 @@ export default function Calendar() {
     return compareDates(new Date(event.date), selectedDate);
   }) : [];
 
-  console.log(selectedDate)
+  
 
   return (
       <DateProvider>

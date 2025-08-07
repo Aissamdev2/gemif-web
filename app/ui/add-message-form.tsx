@@ -1,32 +1,37 @@
 'use client'
 
 import { useFormStatus, useFormState } from "react-dom";
-import {  addMessage } from "@/app/lib/actions";
+import {  addMessage } from "@/app/lib/actions/messages/actions";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { mutate } from "swr";
 import { useUser } from "../lib/use-user";
+import ErrorPage from "./error";
+import { CircleAlert } from "lucide-react";
 
 export default function AddMessageForm() {
 
   const addNewMessage = async (_currentState: unknown, formData: FormData) => {
-    mutate((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + "/api/messages", addMessage(formData))
+    const { data, error, errorCode } = await addMessage(formData);
 
-    return 'Message created'
+    if (!error)
+      await mutate((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + "/api/messages", data)
+
+    return { data, error, errorCode }
   }
 
   const [state, dispatch] = useFormState(addNewMessage, undefined)
-  const [errorMessage, setErrorMessage] = useState('')
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const router = useRouter()
   const [scope, setScope] = useState('year')
   const [year, setYear] = useState<string>('')
   const { user, error, isLoading } = useUser();
 
   useEffect(() => {
-    if (state === 'Message created') {
+    if (state?.data) {
       router.back();
-    } else if (state === 'Failed to create message') {
-      setErrorMessage('No se pudo crear el mensaje');
+    } else if (state?.error) {
+      setErrorMessage(`${state?.error}, código de error: ${state?.errorCode}`);
     }
   }, [state, setErrorMessage, router]);
 
@@ -44,15 +49,23 @@ export default function AddMessageForm() {
     setYear(event.target.value)
   }
 
-  if (!user) {
-    return null
-  }
+  if (error) return <ErrorPage error={error? error.message : ''} />
 
     return (                                          
         <form action={dispatch} id="modalBox-3"
           className="starting:scale-[0] scale-[1] transition-[transform] duration-300 w-[90%] lg:w-fit h-fit max-h-screen z-[1000] overflow-x-hidden overflow-y-auto">
           <div className="flex flex-col gap-5 w-full lg:w-fit md:h-auto bg-white p-6">
             <h4 className="text-lg font-bold leading-8 text-gray-900 text-center">Enviar mensaje</h4>
+            {
+              errorMessage && (
+                <div className="flex items-center gap-1 p-3 rounded-lg bg-red-200">
+                  <div className="flex items-center justify-center basis-6 shrink-0">
+                    <CircleAlert className="text-red-800 w-6 h-6" />
+                  </div>
+                  <h4 className="text-red-600 text-sm">{errorMessage}</h4>
+                </div>
+              )
+            }
             <div className="flex flex-col gap-8 overflow-auto scrollbar-hidden py-5 md:flex-row">
               <div className="flex flex-col gap-4">
                 <div className="relative">

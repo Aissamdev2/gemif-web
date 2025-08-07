@@ -2,6 +2,7 @@
 import { useMessages } from "@/app/lib/use-messages";
 import { useUsers } from "@/app/lib/use-users";
 import { timeAgo } from "@/app/lib/utils";
+import ErrorPage from "@/app/ui/error";
 import Loader from "@/app/ui/loader";
 import Link from "next/link";
 
@@ -10,8 +11,7 @@ export default function MessagesPage() {
   const { users, error: usersError, isLoading: isLoadingUsers } = useUsers();
   const { messages, error: messagesError, isLoading: isLoadingMessages } = useMessages();
 
-  if (messagesError) return <div>Error: {messagesError.message}</div>;
-  if (messagesError) return <div>Error: {messagesError.message}</div>;
+  if (usersError || messagesError) return <ErrorPage error={usersError?.message || messagesError?.message} />
 
   return (
     <section className="z-50 w-full h-full flex flex-col lg:mb-0 px-2 lg:px-10 gap-12 pt-[80px] pb-[20px] lg:gap-4 lg:flex-col">
@@ -50,7 +50,7 @@ export default function MessagesPage() {
                             <div className="flex items-center justify-between mb-1 min-w-0">
                               <p className="text-xs text-gray-500 truncate min-w-0">
                                 {'Enviado por ' +
-                                  users.find((user) => user.id === message.userid)?.name}
+                                  users.find((user) => user.id === message.userid)?.publicname}
                               </p>
                               <p className="text-xs text-gray-400 truncate whitespace-nowrap flex-shrink-0">
                                 {timeAgo(messageDate)}

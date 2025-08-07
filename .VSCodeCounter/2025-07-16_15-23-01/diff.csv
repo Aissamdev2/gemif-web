@@ -1,0 +1,140 @@
+"filename", "language", "TypeScript", "JavaScript", "JSON with Comments", "Markdown", "JavaScript JSX", "JSON", "TypeScript JSX", "XML", "YAML", "PostCSS", "comment", "blank", "total"
+"c:\Users\admin\Desktop\Next-js\agenda\.eslintrc.json", "JSON with Comments", 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4
+"c:\Users\admin\Desktop\Next-js\agenda\README.md", "Markdown", 0, 0, 0, 23, 0, 0, 0, 0, 0, 0, 0, 14, 37
+"c:\Users\admin\Desktop\Next-js\agenda\app\api\events\[id]\route.ts", "TypeScript", 67, 0, 0, 0, 0, 0, 0, 0, 0, 0, -4, 6, 69
+"c:\Users\admin\Desktop\Next-js\agenda\app\api\events\route.ts", "TypeScript", 59, 0, 0, 0, 0, 0, 0, 0, 0, 0, -27, 9, 41
+"c:\Users\admin\Desktop\Next-js\agenda\app\api\files\route.ts", "TypeScript", -186, 0, 0, 0, 0, 0, 0, 0, 0, 0, -369, -97, -652
+"c:\Users\admin\Desktop\Next-js\agenda\app\api\history\[section]\route.ts", "TypeScript", 185, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 35, 221
+"c:\Users\admin\Desktop\Next-js\agenda\app\api\history\route.ts", "TypeScript", 239, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 35, 274
+"c:\Users\admin\Desktop\Next-js\agenda\app\api\main-data\route.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 147, 0, 0, 0, 3, 34, 184
+"c:\Users\admin\Desktop\Next-js\agenda\app\api\main-posts\[id]\route.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 95, 0, 0, 0, -2, 9, 102
+"c:\Users\admin\Desktop\Next-js\agenda\app\api\main-posts\route.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 65, 0, 0, 0, 2, 8, 75
+"c:\Users\admin\Desktop\Next-js\agenda\app\api\messages\[id]\route.ts", "TypeScript", 83, 0, 0, 0, 0, 0, 0, 0, 0, 0, -4, 9, 88
+"c:\Users\admin\Desktop\Next-js\agenda\app\api\messages\route.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 76, 0, 0, 0, -4, 10, 82
+"c:\Users\admin\Desktop\Next-js\agenda\app\api\messages\unseen\route.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 39, 0, 0, 0, 1, 7, 47
+"c:\Users\admin\Desktop\Next-js\agenda\app\api\primitive-subjects\route.ts", "TypeScript", 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 21
+"c:\Users\admin\Desktop\Next-js\agenda\app\api\ranking\route.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 17, 0, 0, 0, 0, 5, 22
+"c:\Users\admin\Desktop\Next-js\agenda\app\api\subjects\[id]\route.ts", "TypeScript", 43, 0, 0, 0, 0, 0, 0, 0, 0, 0, -4, 4, 43
+"c:\Users\admin\Desktop\Next-js\agenda\app\api\subjects\route.ts", "TypeScript", 52, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 63
+"c:\Users\admin\Desktop\Next-js\agenda\app\api\user\route.ts", "TypeScript", 34, 0, 0, 0, 0, 0, 0, 0, 0, 0, -4, 4, 34
+"c:\Users\admin\Desktop\Next-js\agenda\app\api\users\route.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 11, 0, 0, 0, 0, 2, 13
+"c:\Users\admin\Desktop\Next-js\agenda\app\api\weekly-challenge-answers\[id]\route.ts", "TypeScript", 110, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20, 130
+"c:\Users\admin\Desktop\Next-js\agenda\app\api\weekly-challenge-answers\route.ts", "TypeScript", 45, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 53
+"c:\Users\admin\Desktop\Next-js\agenda\app\api\weekly-challenges\[id]\route.ts", "TypeScript", 143, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 17, 160
+"c:\Users\admin\Desktop\Next-js\agenda\app\api\weekly-challenges\route.ts", "TypeScript", 94, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 106
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\archive\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, -44, 0, 0, 0, 0, -4, -48
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\calendar\@modal\(.)add-event\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, -6, 0, 0, 0, 0, 0, -6
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\history\@modal\(.)add-file\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 13, 0, 0, 0, 0, 4, 17
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\history\@modal\(.)add-folder\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 13, 0, 0, 0, 0, 3, 16
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\history\@modal\default.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 2, 6
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\history\add-file\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 13, 0, 0, 0, 0, 3, 16
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\history\add-folder\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 13, 0, 0, 0, 0, 3, 16
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\history\layout.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 19, 0, 0, 0, 0, 6, 25
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\history\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 84, 0, 0, 0, 0, 6, 90
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\layout.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\main\@modal\(.)add-main-post\[type]\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, -9, 0, 0, 0, 0, -2, -11
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\main\@modal\(.)add-main-post\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 2, 11
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\main\@modal\(.)edit-main-post\[id]\[type]\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, -9, 0, 0, 0, 0, -2, -11
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\main\@modal\(.)edit-main-post\[id]\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 2, 11
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\main\@modal\(.)view-main-post\[id]\[type]\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, -9, 0, 0, 0, 0, -2, -11
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\main\@modal\(.)view-main-post\[id]\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 2, 11
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\main\add-main-post\[type]\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, -9, 0, 0, 0, 0, -2, -11
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\main\add-main-post\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 2, 11
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\main\edit-main-post\[id]\[type]\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, -9, 0, 0, 0, 0, -2, -11
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\main\edit-main-post\[id]\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 2, 11
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\main\view-main-post\[id]\[type]\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, -9, 0, 0, 0, 0, -2, -11
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\main\view-main-post\[id]\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 2, 11
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\messages\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 15, 0, 0, 0, 0, 0, 15
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\settings\account\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 1, 5
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\settings\colors\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 3, 10
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\settings\layout.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 33, 0, 0, 0, 1, 1, 35
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\settings\subjects\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 18, 0, 0, 0, 5, 20, 43
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\subjects\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 38, 0, 0, 0, 0, 5, 43
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\weekly-challenges\@modal\(.)add-weekly-challenge\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 2, 11
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\weekly-challenges\@modal\(.)edit-weekly-challenge\[id]\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 2, 11
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\weekly-challenges\@modal\default.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 2, 6
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\weekly-challenges\add-weekly-challenge\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 2, 11
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\weekly-challenges\edit-weekly-challenge\[id]\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 2, 11
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\weekly-challenges\layout.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 19, 0, 0, 0, 0, 6, 25
+"c:\Users\admin\Desktop\Next-js\agenda\app\gemif\weekly-challenges\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 5, 11
+"c:\Users\admin\Desktop\Next-js\agenda\app\globals.css", "PostCSS", 0, 0, 0, 0, 0, 0, 0, 0, 0, -16, 0, 1, -15
+"c:\Users\admin\Desktop\Next-js\agenda\app\initial-setup\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 22, 0, 0, 0, 5, 11, 38
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions.ts", "TypeScript", -567, 0, 0, 0, 0, 0, 0, 0, 0, 0, -6, -69, -642
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions\events\actions.ts", "TypeScript", 111, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 13, 124
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions\events\validation.ts", "TypeScript", 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 21
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions\history\actions.ts", "TypeScript", 122, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 22, 145
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions\main-data\actions.ts", "TypeScript", 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 24
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions\main-posts\actions.ts", "TypeScript", 161, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 35, 198
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions\messages\actions.ts", "TypeScript", 123, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 24, 147
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions\primitive-subjects\actions.ts", "TypeScript", 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 19
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions\ranking\actions.ts", "TypeScript", 60, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 18, 84
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions\session\actions.ts", "TypeScript", 34, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 45
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions\subjects\actions.ts", "TypeScript", 155, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 30, 189
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions\user\actions.ts", "TypeScript", 39, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 47
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions\users\actions.ts", "TypeScript", 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 22
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions\weekly-challenge-answers\actions.ts", "TypeScript", 86, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 28, 114
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions\weekly-challenges\actions.ts", "TypeScript", 114, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 29, 143
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\auth.ts", "TypeScript", 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 6
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\definitions.ts", "TypeScript", 92, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 97
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\helpers.ts", "TypeScript", 30, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 37
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\secrets\placeholder-data.ts", "TypeScript", 79, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 84
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\secrets\tokens.ts", "TypeScript", 94, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 94
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\use-events.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 1, 9
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\use-files.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, -7, 0, 0, 0, 0, -4, -11
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\use-history.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 17, 0, 0, 0, 1, 6, 24
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\use-main-data.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 1, 9
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\use-main-posts.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 1, 9
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\use-messages.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 1, 9
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\use-primitive-subjects.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 1, 9
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\use-ranking.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 1, 9
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\use-subjects.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 1, 9
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\use-unseen-messages.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 2, 10
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\use-user.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 1, 9
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\use-users.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 1, 9
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\use-weekly-challenge-answers.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 15, 0, 0, 0, 0, 5, 20
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\use-weekly-challenges.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 15, 0, 0, 0, 0, 5, 20
+"c:\Users\admin\Desktop\Next-js\agenda\app\lib\utils.ts", "TypeScript", 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 9
+"c:\Users\admin\Desktop\Next-js\agenda\app\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, -22, 0, 0, 0, 27, 1, 6
+"c:\Users\admin\Desktop\Next-js\agenda\app\ui\account-button.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, -92, 0, 0, 0, 0, -6, -98
+"c:\Users\admin\Desktop\Next-js\agenda\app\ui\add-event-form.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -195, -17, -212
+"c:\Users\admin\Desktop\Next-js\agenda\app\ui\add-event-form2.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 10, 0, 0, 0, 0, -2, 8
+"c:\Users\admin\Desktop\Next-js\agenda\app\ui\add-file-form.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 129, 0, 0, 0, 3, 30, 162
+"c:\Users\admin\Desktop\Next-js\agenda\app\ui\add-folder-form.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 88, 0, 0, 0, 1, 32, 121
+"c:\Users\admin\Desktop\Next-js\agenda\app\ui\add-main-post-form.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 99, 0, 0, 0, 2, 4, 105
+"c:\Users\admin\Desktop\Next-js\agenda\app\ui\add-message-form.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 12, 0, 0, 0, 0, 1, 13
+"c:\Users\admin\Desktop\Next-js\agenda\app\ui\add-weekly-challenge-form.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 233, 0, 0, 0, 4, 33, 270
+"c:\Users\admin\Desktop\Next-js\agenda\app\ui\calendar-events.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -6, -2, -8
+"c:\Users\admin\Desktop\Next-js\agenda\app\ui\calendar-header.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -34, -6, -40
+"c:\Users\admin\Desktop\Next-js\agenda\app\ui\calendar3.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 14, 0, 0, 0, -8, 0, 6
+"c:\Users\admin\Desktop\Next-js\agenda\app\ui\dashboard-skeleton.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 4
+"c:\Users\admin\Desktop\Next-js\agenda\app\ui\dashboard.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 2
+"c:\Users\admin\Desktop\Next-js\agenda\app\ui\edit-event-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 23, 0, 0, 0, 0, 8, 31
+"c:\Users\admin\Desktop\Next-js\agenda\app\ui\edit-event.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, -22, 0, 0, 0, 0, -4, -26
+"c:\Users\admin\Desktop\Next-js\agenda\app\ui\edit-main-post.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 19, 0, 0, 0, 0, 1, 20
+"c:\Users\admin\Desktop\Next-js\agenda\app\ui\edit-message.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 12, 0, 0, 0, 0, 1, 13
+"c:\Users\admin\Desktop\Next-js\agenda\app\ui\edit-weekly-challenge.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 259, 0, 0, 0, 5, 37, 301
+"c:\Users\admin\Desktop\Next-js\agenda\app\ui\error.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 11, 0, 0, 0, 0, 3, 14
+"c:\Users\admin\Desktop\Next-js\agenda\app\ui\file-tree.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 69, 0, 0, 0, -1, 20, 88
+"c:\Users\admin\Desktop\Next-js\agenda\app\ui\folder-toggle.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 108, 0, 0, 0, 0, 23, 131
+"c:\Users\admin\Desktop\Next-js\agenda\app\ui\header.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -35, -3, -38
+"c:\Users\admin\Desktop\Next-js\agenda\app\ui\header2.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 31, 0, 0, 0, -118, -34, -121
+"c:\Users\admin\Desktop\Next-js\agenda\app\ui\main-files.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -25, -5, -30
+"c:\Users\admin\Desktop\Next-js\agenda\app\ui\main.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 36, 0, 0, 0, 0, 8, 44
+"c:\Users\admin\Desktop\Next-js\agenda\app\ui\view-event-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -111, -16, -127
+"c:\Users\admin\Desktop\Next-js\agenda\app\ui\view-event-client2.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0, 1, 17
+"c:\Users\admin\Desktop\Next-js\agenda\app\ui\view-event.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, -6, 0, 0, 0, 0, -2, -8
+"c:\Users\admin\Desktop\Next-js\agenda\app\ui\view-main-post.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 14, 0, 0, 0, 0, 3, 17
+"c:\Users\admin\Desktop\Next-js\agenda\app\ui\view-message.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, -4, 0, 0, 0, 0, 0, -4
+"c:\Users\admin\Desktop\Next-js\agenda\app\ui\weekly-challenges.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 304, 0, 0, 0, 2, 47, 353
+"c:\Users\admin\Desktop\Next-js\agenda\middleware.ts", "TypeScript", 59, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 11, 75
+"c:\Users\admin\Desktop\Next-js\agenda\next-sitemap.config.js", "JavaScript JSX", 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 1, 1, 7
+"c:\Users\admin\Desktop\Next-js\agenda\next.config.mjs", "JavaScript", 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 5
+"c:\Users\admin\Desktop\Next-js\agenda\package.json", "JSON", 0, 0, 0, 0, 0, 64, 0, 0, 0, 0, 0, 1, 65
+"c:\Users\admin\Desktop\Next-js\agenda\pnpm-lock.yaml", "YAML", 0, 0, 0, 0, 0, 0, 0, 0, 3693, 0, 0, 1056, 4749
+"c:\Users\admin\Desktop\Next-js\agenda\postcss.config.mjs", "JavaScript", 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 9
+"c:\Users\admin\Desktop\Next-js\agenda\public\open-folder.json", "JSON", 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1
+"c:\Users\admin\Desktop\Next-js\agenda\public\sitemap-0.xml", "XML", 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 0, 0, 18
+"c:\Users\admin\Desktop\Next-js\agenda\public\sitemap.xml", "XML", 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 4
+"c:\Users\admin\Desktop\Next-js\agenda\tailwind.config.ts", "TypeScript", 62, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 4, 70
+"c:\Users\admin\Desktop\Next-js\agenda\tsconfig.json", "JSON with Comments", 0, 0, 28, 0, 0, 0, 0, 0, 0, 0, 0, 1, 29
+"Total", "-", 1921, 8, 31, 23, 5, 65, 2229, 22, 3693, -16, -869, 1695, 8807

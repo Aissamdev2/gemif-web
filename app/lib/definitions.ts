@@ -1,6 +1,7 @@
 export type User = {
   id: string;
   name: string;
+  publicname: string;
   year: string;
   role: string;
   color: string;
@@ -9,6 +10,7 @@ export type User = {
   email: string;
   password: string;
   assignedgithubtoken: string;
+  isverified: boolean;
 };
 
 export type Token = {
@@ -19,12 +21,15 @@ export type Token = {
 export type FetchedUser = {
   id: string;
   name: string;
+  publicname: string;
   year: string;
   role: string;
 };
 
 export type UserCookie = {
   id: string;
+  email: string;
+  isverified: boolean;
   token: string;
   logincount: number;
   githubtoken: string;
@@ -48,12 +53,10 @@ export type PrimitiveSubject = {
   color: string;
   bordercolor: string;
   bgcolor: string;
-  year?: string | null;
-  quadri?: string | null;
   primitiveid?: string;
-  professors: string[] | [];
-  emails: string[] | [];
-  credits: string;
+  info: any;
+  qual: number[];
+  diff: number[];
   userid: string;
 }
 
@@ -67,8 +70,8 @@ export type Subject = {
   quadri?: string | null;
   primitiveid: string;
   archived: boolean;
-  scorequal?: number;
-  scorediff?: number;
+  qual?: number;
+  diff?: number;
   userid?: string;
 }
 
@@ -104,8 +107,11 @@ export type MainPost = {
   id?: string;
   name: string;
   description?: string;
-  filename?: string;
-  link?: string;
+  subjectid?: string;
+  type?: string;
+  foldername?: string;
+  filenames?: string[];
+  links?: string[];
   userId?: string;
 }
 
@@ -121,3 +127,117 @@ export type Message = {
 }
 
 
+export type WeeklyChallenge = {
+  id: string;
+  title: string;
+  description: string;
+  ismultiplechoice: boolean;
+  options: string[] | null;
+  correctanswers: string[];
+  difficulty: number;
+  deadline: string;
+  strictanswer: boolean;
+  active: boolean;
+  suggested: boolean;
+  createdat: string;
+  userid: string;
+};
+
+export type WeeklyChallengeAnswer = {
+  id: string;
+  challengeid: string;
+  answer: string;
+  score: number;
+  createdat: string;
+  userid: string;
+};
+
+
+export type UserPublic = {
+  id: string;
+  name: string;
+  year: string;
+  role: string;
+  color: string;
+  weeklychallengesscore: number;
+}
+
+
+export type ApiResponse = {
+  data?: any;
+  error?: any;
+  publicError?: string | null;
+  details?: any;
+  errorCode?: ErrorCode | null;
+};
+
+export type ErrorCode =
+  | 'NO_AUTH'
+  | 'DB_EVENTS_GET_FAILED'
+  | 'BAD_REQUEST'
+  | 'MISSING_FIELDS'
+  | 'DB_EVENT_POST_FAILED'
+  | 'DB_EVENT_GET_FAILED'
+  | 'DB_EVENT_PATCH_FAILED'
+  | 'DB_EVENT_DELETE_FAILED'
+  | 'EXTERNAL_FILE_POST_FAILED'
+  | 'INVALID_TYPE'
+  | 'EXTERNAL_CREDENTIALS_ERROR'
+  | 'EXTERNAL_FOLDER_GET_FAILED'
+  | 'EXTERNAL_PARTIAL_DELETE'
+  | 'EXTERNAL_FOLDER_DELETE_FAILED'
+  | 'RATE_LIMIT'
+  | 'EXTERNAL_POST_FAILED'
+  | 'EXTERNAL_GET_FAILED'
+  | 'EXTERNAL_PATCH_FAILED'
+  | 'EXTERNAL_DELETE_FAILED'
+  | 'EXTERNAL_FILE_DELETE_FAILED'
+  | 'EXTERNAL_FOLDER_GET_FAILED'
+  | 'EXTERNAL_EXTERNAL_FILE_POST_FAILED'
+  | 'DB_MAIN_POSTS_GET_FAILED'
+  | 'DB_MAIN_POSTS_POST_FAILED'
+  | 'DB_MAIN_POSTS_DELETE_FAILED'
+  | 'MISSING_PARAMS'
+  | 'PERMISSION_DENIED'
+  | 'DB_MAIN_POSTS_PATCH_FAILED'
+  | 'DB_MESSAGES_GET_FAILED'
+  | 'DB_MESSAGES_POST_FAILED'
+  | 'DB_MESSAGE_GET_FAILED'
+  | 'DB_MESSAGES_PATCH_FAILED'
+  | 'DB_MESSAGE_DELETE_FAILED'
+  | 'DB_USER_GET_FAILED'
+  | 'DB_UNSEEN_GET_FAILED'
+  | 'DB_PRIMITIVE_SUBJECTS_GET_FAILED'
+  | 'DB_PRIMITIVE_SUBJECTS_PATCH_FAILED'
+  | 'DB_SUBJECTS_GET_FAILED'
+  | 'DB_SUBJECTS_POST_FAILED'
+  | 'DB_SUBJECTS_PATCH_FAILED'
+  | 'DB_SUBJECT_DELETE_FAILED'
+  | 'DB_USER_PATCH_FAILED'
+  | 'DB_USERS_GET_FAILED'
+  | 'DB_WEEKLY_CHALLENGE_ANSWERS_GET_FAILED'
+  | 'DB_WEEKLY_CHALLENGE_ANSWERS_POST_FAILED'
+  | 'DB_WEEKLY_CHALLENGE_ANSWER_GET_FAILED'
+  | 'DB_WEEKLY_CHALLENGE_ANSWER_PATCH_FAILED'
+  | 'DB_WEEKLY_CHALLENGE_ANSWER_DELETE_FAILED'
+  | 'DB_WEEKLY_CHALLENGES_GET_FAILED'
+  | 'DB_WEEKLY_CHALLENGES_POST_FAILED'
+  | 'DB_WEEKLY_CHALLENGE_GET_FAILED'
+  | 'DB_WEEKLY_CHALLENGE_PATCH_FAILED'
+  | 'DB_WEEKLY_CHALLENGE_DELETE_FAILED'
+  | 'RESOURCE_EXISTS'
+  | 'UPLOAD_FAILED'
+  | 'UPDATE_FAILED'
+  | 'UNKNOWN_ERROR'
+  | 'EXTERNAL_PARTIAL_POST'
+  | 'EXTERNAL_PARTIAL_PATCH'
+  | 'DB_RANKING_GET_FAILED'
+  | 'DB_RANKING_PATCH_FAILED'
+  | 'RESOURCE_DELETED'
+  | 'USER_NOT_FOUND'
+  | 'INCORRECT_PASSWORD'
+  | 'DB_USERS_POST_FAILED'
+  | 'DB_AUTH_ERROR'
+  | 'EMAIL_SEND_FAILED'
+  | 'DB_VERIFICATION_TOKENS_PATCH_FAILED'
+  | 'USER_NOT_VERIFIED'

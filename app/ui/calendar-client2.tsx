@@ -10,9 +10,9 @@ export default function CalendarClient({
   primitiveSubjects,
   events
 }: {
-  subjects: Subject[] | undefined;
-  primitiveSubjects: PrimitiveSubject[] | undefined;
-  events: Event[] | undefined;
+  subjects: Subject[] | null | undefined;
+  primitiveSubjects: PrimitiveSubject[] | null | undefined;
+  events: Event[] | null | undefined;
 }) {
   const { year, month } = useContext(DateContext);
 

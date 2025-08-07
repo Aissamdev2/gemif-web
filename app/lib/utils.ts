@@ -273,8 +273,8 @@ export const HEADER_OPTIONS = [
     href: 'subjects',
   },
   {
-    name: 'Archivo',
-    href: 'archive',
+    name: 'Historial',
+    href: 'history',
   }
 ]
 
@@ -329,6 +329,31 @@ export const SUBJECT_INFO = [
 export const TITLES: Record<string, string> = {
   'file': 'archivo',
   'link': 'enlace'
+}
+
+export const LATEX_DELIMITERS = [
+  { left: '$$', right: '$$', display: true },
+  { left: '\\(', right: '\\)', display: false },
+  { left: '$', right: '$', display: false },
+  { left: '\\[', right: '\\]', display: true },
+  { left: '\\begin{equation}', right: '\\end{equation}', display: true },
+  { left: '\\begin{equation*}', right: '\\end{equation*}', display: true },
+]
+
+
+
+
+
+
+
+
+export function normalizeEmptyStrings<T extends Record<string, unknown>>(obj: T): T {
+  const cleaned: Record<string, unknown> = {};
+  for (const key in obj) {
+    const value = obj[key];
+    cleaned[key] = value === "" ? null : value;
+  }
+  return cleaned as T;
 }
 
 

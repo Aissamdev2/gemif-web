@@ -5,10 +5,11 @@ import { usePrimitiveSubjects } from "@/app/lib/use-primitive-subjects";
 import { useEffect, useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { mutate } from "swr";
-import { archiveSubjects, updateSubjects } from "@/app/lib/actions";
+import { archiveSubjects, updateSubjects } from "@/app/lib/actions/subjects/actions";
 import Loader from "@/app/ui/loader";
-import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
-import { useRouter } from "next/navigation";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
+import { CircleAlert } from "lucide-react";
+import ErrorPage from "@/app/ui/error";
 
 type Subject = {
   id: string;
@@ -118,41 +119,70 @@ export default function Page() {
   const changeSubjectsAndArchives = async (_: unknown, formData: FormData) => {
     if (!primitiveSubjects || !subjects) return;
 
-    const initialTakingNames = new Set(initialColumns.taking.map(s => s.name));
-    const currentTakingNames = new Set(columns.taking.map(s => s.name));
+    const initialTakingIds = new Set(initialColumns.taking.map(s => s.primitiveid));
+    const initialPassedIds = new Set(initialColumns.passed.map(s => s.primitiveid));
+    const currentTakingIds = new Set(columns.taking.map(s => s.primitiveid));
+    const currentPassedIds = new Set(columns.passed.map(s => s.primitiveid));
 
-    const subjectsToAdd = columns.taking
-      .filter(s => !initialTakingNames.has(s.name))
-      .map(s => primitiveSubjects.find(p => p.name === s.name)!)
-      .filter(Boolean);
+    // ✅ Subjects to ADD: currently in taking or passed, but weren't in either before
+    const subjectsToAdd = [...columns.taking, ...columns.passed]
+      .filter(s => !initialTakingIds.has(s.primitiveid) && !initialPassedIds.has(s.primitiveid))
+      .map(s => {
+        const match = primitiveSubjects.find(p => p.id === s.primitiveid);
+        if (!match) throw new Error(`Primitive subject not found for id: ${s.primitiveid}`);
+        return match;
+      });
 
-    const subjectsToRemove = initialColumns.taking
-      .filter(s => !currentTakingNames.has(s.name) && !columns.passed.some(p => p.name === s.name))
-      .map(s => subjects.find(sub => sub.name === s.name)!)
-      .filter(Boolean);
+    
 
-    console.log({ subjectsToAdd, subjectsToRemove });
+    // ✅ Subjects to REMOVE: removed from taking and not moved to passed
+    const subjectsToRemove = [
+      ...initialColumns.taking
+        .filter(s => !currentTakingIds.has(s.primitiveid) && !currentPassedIds.has(s.primitiveid))
+        .map(s => {
+          const match = primitiveSubjects.find(sub => sub.id === s.primitiveid);
+          if (!match) throw new Error(`Subject to remove not found for id: ${s.primitiveid}`);
+          return match;
+        }),
+      ...initialColumns.passed
+        .filter(s => !currentTakingIds.has(s.primitiveid) && !currentPassedIds.has(s.primitiveid))
+        .map(s => {
+          const match = primitiveSubjects.find(sub => sub.id === s.primitiveid);
+          if (!match) throw new Error(`Subject to remove not found for id: ${s.primitiveid}`);
+          return match;
+        }),
+    ];
 
-    const initialPassedNames = new Set(initialColumns.passed.map(s => s.name));
-    const currentPassedNames = new Set(columns.passed.map(s => s.name));
-
+    // ✅ Subjects to ARCHIVE: newly added to passed
     const subjectsToArchive = columns.passed
-      .filter(s => !initialPassedNames.has(s.name))
-      .map(s => subjects.find(sub => sub.name === s.name)!)
-      .filter(Boolean);
+      .filter(s => !initialPassedIds.has(s.primitiveid))
+      .map(s => {
+        const match = primitiveSubjects.find(sub => sub.id === s.primitiveid);
+        if (!match) throw new Error(`Subject to archive not found for id: ${s.primitiveid}`);
+        return match;
+      });
 
+    // ✅ Subjects to UNARCHIVE: removed from passed and not removed entirely
+    const removedPrimitiveIds = new Set(subjectsToRemove.map(s => s.id));
+    
     const subjectsToUnarchive = initialColumns.passed
-      .filter(s => !currentPassedNames.has(s.name))
-      .map(s => subjects.find(sub => sub.name === s.name)!)
-      .filter(Boolean);
-
+    .filter(s => !currentPassedIds.has(s.primitiveid) && !removedPrimitiveIds.has(s.primitiveid))
+    .map(s => {
+      const match = primitiveSubjects.find(sub => sub.id === s.primitiveid);
+      if (!match) throw new Error(`Subject to unarchive not found for id: ${s.primitiveid}`);
+        return match;
+      });
+      
     formData.set("subjectsToAdd", JSON.stringify(subjectsToAdd));
     formData.set("subjectsToRemove", JSON.stringify(subjectsToRemove));
     formData.set("subjectsToArchive", JSON.stringify(subjectsToArchive));
     formData.set("subjectsToUnarchive", JSON.stringify(subjectsToUnarchive));
 
-    mutate((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + "/api/subjects", await updateSubjects(formData))
-    mutate((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + "/api/subjects", await archiveSubjects(formData))
+    const updateRes = await updateSubjects(formData)
+    if (updateRes.error) return updateRes
+    const archiveRes = await archiveSubjects(formData)
+    if (!archiveRes.error && archiveRes.data)
+      mutate((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + "/api/subjects", archiveRes.data)
 
     // ✅ Sync initial state to new
     const updatedInitial = {
@@ -163,25 +193,29 @@ export default function Page() {
     setInitialColumns(updatedInitial);
     setHasChanges(false);
 
-    return "Subjects updated";
+    return archiveRes;
   };
 
+  const [errorMessage, setErrorMessage] = useState<{ error: string, errorCode: string, details: { name: string; success: boolean, error?: string | null }[] } | null>(null);
   const [state, dispatch] = useFormState(changeSubjectsAndArchives, undefined);
-  const router = useRouter()
 
-    useEffect(() => {
-      if (state === 'Subjects updated') {
-        if (!subjects) return
-
-        router.refresh();
-      } else if (state === 'Failed to update subjects') {
-      }
-    }, [router, state, subjects]);
+  useEffect(() => {
+    if (state?.data) {
+    } else if (state?.error) {
+      setErrorMessage({
+        error: state.error,
+        errorCode: state.errorCode ?? 'UNKNOWN_ERROR',
+        details: state.details,
+      });
+    }
+  }, [state, setErrorMessage]);
 
   const handleReset = () => {
     setColumns(initialColumns);
     setHasChanges(false);
   };
+
+  if (primitiveSubjectsError || subjectsError) return <ErrorPage error={primitiveSubjectsError?.message || subjectsError?.message} />
 
   const Column = ({ id, title, items }: { id: ColumnId; title: string; items: Subject[] }) => (
     <Droppable droppableId={id}>
@@ -191,38 +225,48 @@ export default function Page() {
           ref={provided.innerRef}
           className={`flex flex-col gap-3 min-h-[300px] max-h-[calc(100vh-200px)] p-2`}
         >
-          <p className="text-2xl text-slate-700 border-b px-2 py-2 ">{title}</p>
-          <div className={`flex flex-col gap-3 min-h-[300px] max-h-[calc(100vh-200px)] overflow-y-auto rounded-md p-2 transition-[background-color] ${snapshot.isDraggingOver ? 'bg-[#ceddec]' : ''}`}>
-            {items.length === 0 && !isLoadingSubjects && (
-              <p className="text-slate-700 text-center py-8">No hay asignaturas</p>
-            )}
-            {isLoadingSubjects ? (
-              <div className="flex items-center justify-center h-full"><Loader /></div>
+          <p className="text-lg text-slate-700 border-b px-2 py-2 ">{title}</p>
+          {
+            isLoadingPrimitiveSubjects || isLoadingSubjects ? (
+              <div className="flex justify-center items-center w-full min-h-[4rem]">
+                <div className="w-[40px] h-[30px]">
+                  <Loader />
+                </div>
+              </div>
             ) : (
-              items.map((subject, index) => (
-                <Draggable key={subject.id} draggableId={subject.id} index={index}>
-                  {(provided, snapshot) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                      className={`max-w-full flex justify-between items-stretch 
-                                    rounded-md bg-white border border-[#e0e7ff] 
-                                    shadow-sm hover:shadow-md hover:border-blue-400 
-                                    transition-all duration-200 ease-in-out p-1`}
-                    >
-                      <div className="flex items-center w-full">
-                        <label className="text-sm cursor-pointer truncate max-w-[200px] text-slate-600">
-                          {subject.name}
-                        </label>
-                      </div>
-                    </div>
-                  )}
-                </Draggable>
-              ))
-            )}
-            {provided.placeholder}
-          </div>
+              <div className={`flex flex-col gap-3 min-h-[300px] max-h-[calc(100vh-200px)] overflow-y-auto rounded-md p-2 transition-[background-color] ${snapshot.isDraggingOver ? 'bg-[#ceddec]' : 'bg-[#dbe7f4]'}`}>
+                {items.length === 0 && !isLoadingSubjects && (
+                  <p className="text-slate-700 text-center py-8">No hay asignaturas</p>
+                )}
+                {isLoadingSubjects ? (
+                  <div className="flex items-center justify-center h-full"><Loader /></div>
+                ) : (
+                  items.map((subject, index) => (
+                    <Draggable key={subject.id} draggableId={subject.id} index={index}>
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          className={`max-w-full flex justify-between items-stretch 
+                                        rounded-md bg-white border border-[#e0e7ff] 
+                                        shadow-sm hover:shadow-md hover:border-blue-400 
+                                        transition-all duration-200 ease-in-out p-1`}
+                        >
+                          <div className="flex items-center w-full">
+                            <label className="text-sm cursor-pointer truncate max-w-[200px] text-slate-600">
+                              {subject.name}
+                            </label>
+                          </div>
+                        </div>
+                      )}
+                    </Draggable>
+                  ))
+                )}
+                {provided.placeholder}
+              </div>
+            )
+          }
           </div>
       )}
     </Droppable>
@@ -232,39 +276,31 @@ export default function Page() {
 
   return (
     <div className="h-fit lg:h-full w-full flex bg-white py-3 text-gray-900 font-medium justify-center items-center">
-      <form action={dispatch} className="w-[95%]">
+      <form action={dispatch} className="w-[95%] bg-[#f4f9ff] border border-[#DCEBFF] hover:bg-[#EEF5FF] transition-[background-color] duration-300 rounded-2xl">
+        {errorMessage && (
+          <div className="p-4 bg-red-100 text-red-700 text-sm shrink-0 border-b border-red-300 overflow-auto max-w-full break-words">
+            <div className="flex items-start gap-2">
+              <CircleAlert className="min-w-[20px] h-5 w-5 mt-[2px]" />
+              <div className="mt-[2px] text-left break-words">
+                <strong className="block mb-1 break-words">
+                  {errorMessage.errorCode + ': ' + errorMessage.error}
+                </strong>
+                {errorMessage.details && errorMessage.details.length > 0 &&
+                  errorMessage.details.map((detail: { name: string; success: boolean, error?: string | null }, idx: number) => (
+                    <p key={idx + detail.name} className="break-words">• {`${detail.name}: ${detail.error || 'Sin errores'}`}</p>
+                  ))}
+              </div>
+            </div>
+          </div>
+        )}
         <DragDropContext onDragEnd={onDragEnd}>
-          <div className="h-fit lg:h-[85%] lg:mt-5 bg-[#f4f9ff] border border-[#DCEBFF] hover:bg-[#EEF5FF] transition-[background-color] duration-300 rounded-2xl  grid grid-cols-1 md:grid-cols-3 gap-4 px-4 py-6">
-            {
-              isLoadingSubjects || isLoadingPrimitiveSubjects ? (
-                <>
-                  <div className="flex justify-center items-center w-full min-h-[4rem]">
-                    <div className="w-[40px] h-[30px]">
-                      <Loader />
-                    </div>
-                  </div>
-                  <div className="flex justify-center items-center w-full min-h-[4rem]">
-                    <div className="w-[40px] h-[30px]">
-                      <Loader />
-                    </div>
-                  </div>
-                  <div className="flex justify-center items-center w-full min-h-[4rem]">
-                    <div className="w-[40px] h-[30px]">
-                      <Loader />
-                    </div>
-                  </div>   
-                </>
-              ) : (
-                <>
-                  <Column id="toTake" title="Por cursar" items={columns.toTake} />
-                  <Column id="taking" title="Cursando" items={columns.taking} />
-                  <Column id="passed" title="Superadas" items={columns.passed} />
-                </>
-              )
-            }
+          <div className="h-fit lg:h-[80%]  grid grid-cols-1 md:grid-cols-3 gap-4 px-4 py-4">
+            <Column id="toTake" title="Por cursar" items={columns.toTake} />
+            <Column id="taking" title="Cursando" items={columns.taking} />
+            <Column id="passed" title="Superadas" items={columns.passed} />
           </div>
         </DragDropContext>
-        <div className="flex gap-3 justify-center mt-6">
+        <div className="flex gap-3 justify-center mb-4">
           <button
             type="button"
             onClick={handleReset}

@@ -3,7 +3,7 @@ import { dateToString } from "../lib/utils";
 import DashboardSkeleton from "./dashboard-skeleton";
 import Link from "next/link";
 
-export default function Dashboard({events, subjects}:{ events: Event[] | undefined, subjects: Subject[] | undefined}) {
+export default function Dashboard({events, subjects}:{ events: Event[] | null | undefined, subjects: Subject[] | null | undefined}) {
 
   if (!subjects || !events ) {
     return <DashboardSkeleton />

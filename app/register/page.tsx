@@ -1,184 +1,149 @@
 'use client'
 
-import { register } from '@/app/lib/actions'
+import { addUser } from '@/app/lib/actions/session/actions'
 import { useFormState, useFormStatus } from 'react-dom'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { CircleAlert } from 'lucide-react'
 
 export default function Page() {
-  const [errorMessage, dispatch] = useFormState(register, undefined)
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [email, setEmail] = useState('')
-  const [confirmEmail, setConfirmEmail] = useState('')
-  const [formError, setFormError] = useState<string>('')
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setFormError('')
-    
-    const passwordError = password !== confirmPassword;
-    const emailError = email !== confirmEmail;
-    if (passwordError) {
-      setFormError((prevState) => prevState + ' Las contraseñas no coinciden.')
-    }
-
-    if (emailError) {
-      setFormError((prevState) => prevState + ' Los correos no coinciden.')
-    }
-
-    if (passwordError || emailError) {
-      return
-    }
-    setFormError('')
-    const formData = new FormData(event.currentTarget)
-    dispatch(formData) // Dispatch the form data
+  const createUser = async (_currentState: any, formData: FormData) => {
+    const result = await addUser(formData);
+    return result
   }
 
+  const [errorMessage, setErrorMessage] = useState<{ error: string, errorCode: string, details: { name: string; success: boolean, error?: string | null }[] } | null>(null);
+  const [state, dispatch] = useFormState(createUser, undefined)
+  const router = useRouter();
+
+  useEffect(() => {
+    if (state?.data) {
+      router.push('/verify-email');
+    } else if (state?.error) {
+      setErrorMessage({
+        error: state.error,
+        errorCode: state.errorCode ?? 'UNKNOWN_ERROR',
+        details: state.details,
+      });
+    }
+  }, [state, router]);
+
   return (
-    <div className="flex absolute justify-center items-center bg-[#eaf3ff] h-screen w-screen backdrop-blur-[2px] z-10">
+    <div className="min-h-screen bg-white flex items-center justify-center px-4 py-8">
       <form
-        onSubmit={handleSubmit}
-        className="flex flex-col gap-[10px] bg-white w-fit h-fit rounded-lg border-[#6c9ded] py-10 px-10"
+        action={dispatch}
+        className="w-full max-w-4xl bg-[#f4f9ff] rounded-xl shadow-lg p-8 sm:p-10 flex flex-col gap-6 overflow-hidden"
       >
-        <h2 className="text-3xl font-semibold text-center mt-4">Registrarse</h2>
-        <p className="text-red-500 font-bold text-center min-h-6">
-          {formError || errorMessage}
-        </p>
-        <div className='flex flex-col lg:flex-row gap-[50px] mb-[25px] px-[20px]'>
-          <div className="flex flex-col gap-[20px]">
-            <div className="flex">
-              <div className="flex flex-col w-[67%]">
-                <label
-                  htmlFor="name"
-                  className="block w-fit mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                >
-                  Nombre de usuario <span className='text-red-500'>*</span>
-                </label>
+        <h2 className="text-3xl font-semibold text-center">Registrarse</h2>
+
+        {errorMessage && (
+          <div className="p-4 bg-red-100 text-red-700 text-sm border border-red-300 rounded-lg max-w-full break-words overflow-auto">
+            <div className="flex items-start gap-2">
+              <CircleAlert className="min-w-[20px] h-5 w-5 mt-[2px]" />
+              <div>
+                <strong className="block mb-1">{errorMessage.errorCode + ': ' + errorMessage.error}</strong>
+                {errorMessage.details?.map((detail, idx) => (
+                  <p key={idx + detail.name}>• {`${detail.name}: ${detail.error || 'Sin errores'}`}</p>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-col lg:flex-row gap-10">
+          {/* Left Column */}
+          <div className="flex flex-col gap-6 w-full">
+            <div className="flex gap-4">
+              <div className="w-2/3">
+                <label htmlFor="name" className="mb-2 block text-sm font-medium text-gray-900">Nombre de usuario <span className='text-red-500'>*</span></label>
                 <input
-                  autoComplete="off"
                   type="text"
                   name="name"
                   id="name"
-                  className="bg-[white] border outline-none border-blue-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[90%] p-2.5"
-                  required
+                  autoComplete="off"
+                  className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
                 />
               </div>
-              <div className="flex flex-col w-[25%]">
-                <label
-                  htmlFor="year"
-                  className="block w-fit mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                >
-                  Curso <span className='text-red-500'>*</span>
-                </label>
+              <div className="w-1/3">
+                <label htmlFor="year" className="mb-2 block text-sm font-medium text-gray-900">Curso <span className='text-red-500'>*</span></label>
                 <input
-                  autoComplete="off"
                   type="number"
                   min={1}
                   max={4}
                   step={1}
                   name="year"
                   id="year"
-                  className="bg-[white] border outline-none border-blue-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[90%] p-2.5"
-                  required
+                  autoComplete="off"
+                  className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
                 />
               </div>
             </div>
-            <div className="flex flex-col ">
-              <label
-                htmlFor="email"
-                className="block w-fit mb-2 text-sm font-medium text-gray-900 dark:text-white"
-              >
-                Correo electrónico <span className='text-red-500'>*</span>
-              </label>
+
+            <div>
+              <label htmlFor="email" className="mb-2 block text-sm font-medium text-gray-900">Correo electrónico <span className='text-red-500'>*</span></label>
               <input
-                autoComplete="on"
                 type="email"
                 name="email"
                 id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="bg-[white] border outline-none border-blue-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[90%] p-2.5"
-                required
+                autoComplete="on"
+                className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
               />
             </div>
-            <div className="flex flex-col ">
-              <label
-                htmlFor="confirmEmail"
-                className="block w-fit mb-2 text-sm font-medium text-gray-900 dark:text-white"
-              >
-                Confirma tu correo electrónico <span className='text-red-500'>*</span>
-              </label>
+
+            <div>
+              <label htmlFor="confirmEmail" className="mb-2 block text-sm font-medium text-gray-900">Confirma tu correo electrónico <span className='text-red-500'>*</span></label>
               <input
-                autoComplete="on"
                 type="email"
                 name="confirmEmail"
                 id="confirmEmail"
-                value={confirmEmail}
-                onChange={(e) => setConfirmEmail(e.target.value)}
-                className="bg-[white] border outline-none border-blue-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[90%] p-2.5"
-                required
+                autoComplete="on"
+                className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
               />
             </div>
           </div>
-          <div className="flex flex-col gap-[20px]">
+
+          {/* Right Column */}
+          <div className="flex flex-col gap-6 w-full">
             <div>
-              <label
-                htmlFor="password"
-                className="block w-fit mb-2 text-sm font-medium text-gray-900 dark:text-white"
-              >
-                Crea tu contraseña <span className='text-red-500'>*</span>
-              </label>
+              <label htmlFor="password" className="mb-2 block text-sm font-medium text-gray-900">Crea tu contraseña <span className='text-red-500'>*</span></label>
               <input
                 type="password"
                 name="password"
                 id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="bg-[white] border outline-none border-blue-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[90%] p-2.5"
-                required
+                className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
               />
             </div>
+
             <div>
-              <label
-                htmlFor="confirmPassword"
-                className="block w-fit mb-2 text-sm font-medium text-gray-900 dark:text-white"
-              >
-                Confirma tu contraseña <span className='text-red-500'>*</span>
-              </label>
+              <label htmlFor="confirmPassword" className="mb-2 block text-sm font-medium text-gray-900">Confirma tu contraseña <span className='text-red-500'>*</span></label>
               <input
                 type="password"
                 name="confirmPassword"
                 id="confirmPassword"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="bg-[white] border outline-none border-blue-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[90%] p-2.5"
-                required
+                className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
               />
             </div>
+
             <div>
-              <label
-                htmlFor="key"
-                className="block w-fit mb-2 text-sm font-medium text-gray-900 dark:text-white"
-              >
-                Clave <span className='text-red-500'>*</span>
-              </label>
+              <label htmlFor="key" className="mb-2 block text-sm font-medium text-gray-900">Clave <span className='text-red-500'>*</span></label>
               <input
                 type="password"
                 name="key"
                 id="key"
-                className="bg-[white] border outline-none border-blue-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-[90%] p-2.5"
-                required
+                className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
               />
             </div>
           </div>
         </div>
+
         <LoginButton />
-        <div className="w-full border-t border-[#5f3fbe61] my-[15px]" />
+
+        <div className="w-full border-t border-[#5f3fbe61]" />
         <p className="text-center">¿Ya tienes cuenta?</p>
         <Link
           href="/login"
-          className="bg-[#592baf] text-white outline-none max-w-[150px] self-center hover:bg-[#6c41bd] font-semibold hover:text-white py-2 px-4 border border-blue-500 hover:border-transparent rounded-[10px] transition-[background-color, border-color, color] duration-300"
+          className="bg-[#592baf] text-white font-semibold py-2 px-4 rounded-lg text-center hover:bg-[#6c41bd] transition duration-300 max-w-[150px] self-center"
         >
           Iniciar sesión
         </Link>
@@ -190,18 +155,11 @@ export default function Page() {
 function LoginButton() {
   const { pending } = useFormStatus()
 
-  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-    if (pending) {
-      event.preventDefault()
-    }
-  }
-
   return (
     <button
-      aria-disabled={pending}
       type="submit"
-      onClick={handleClick}
-      className="flex justify-center items-center bg-[#ad3939] text-white outline-none w-[200px] self-center hover:bg-[#b95353] font-semibold hover:text-white py-2 px-4 border border-red-500 hover:border-transparent rounded-[10px] transition-[background-color, border-color, color] duration-300"
+      disabled={pending}
+      className="bg-[#ad3939] text-white font-semibold py-2 px-4 rounded-lg w-[200px] self-center hover:bg-[#b95353] transition duration-300"
     >
       {pending ? 'Registrando...' : 'Registrarse'}
     </button>

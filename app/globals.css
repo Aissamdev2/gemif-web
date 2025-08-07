@@ -1,6 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import 'katex/dist/katex.min.css';
 
 
 
@@ -10,10 +11,32 @@
 }
 
 body {
-  background-color: #F5F7FA;
+  background-color: #ffffff;
 }
 
+/* In globals.css or a dedicated CSS file */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
 
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+/* For Firefox (basic styling) */
+.custom-scrollbar {
+  scrollbar-width: thin; /* "auto" or "none" */
+  scrollbar-color: #888 #f1f1f1; /* thumb and track color */
+}
 
 
 .bg-fullscreen::before {

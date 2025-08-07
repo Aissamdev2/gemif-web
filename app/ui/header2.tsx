@@ -1,17 +1,17 @@
 "use client"
 
-import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { useUser } from "../lib/use-user";
 import Link from "next/link";
 import { HEADER_OPTIONS } from "../lib/utils";
 import { useFormState, useFormStatus } from "react-dom";
-import { signOut } from "../lib/auth";
+import { signOut } from "../lib/actions/session/actions";
 import { usePathname, useRouter } from "next/navigation";
-import { checkUnseenMessages } from "../lib/actions";
+import { checkUnseenMessages } from "../lib/actions/messages/actions";
 import { useUnseenMessages } from "../lib/use-unseen-messages";
 import { mutate } from "swr";
 import { CircleUserRound } from "lucide-react";
+import ErrorPage from "./error";
 
 export default function Header() {
   const pathname = usePathname();
@@ -21,7 +21,7 @@ export default function Header() {
   const { user, error: userError } = useUser();
   const [state, setState] = useState(() => pathname.split("/").slice(2).reverse().pop());
   const [errorMessage, dispatch] = useFormState(signOut, undefined);
-  const { unseenMessages } = useUnseenMessages();
+  const { unseenMessages, error } = useUnseenMessages();
 
   const navContainerRef = useRef<HTMLUListElement>(null);
   const linkRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
@@ -60,13 +60,25 @@ export default function Header() {
     }
   }, [state]);
 
-  if (userError) return <div>Error: {userError.message}</div>;
+  if (userError || error) return <ErrorPage error={userError?.message || error?.message} />
 
   return (
     <header className="sticky top-0 left-0 w-full max-w-full box-border z-[100]">
       <nav className="bg-[#ffffff] max-w-full px-6 py-2 flex items-center box-border justify-between">
         <div className="flex items-center max-w-full overflow-hidden gap-2">
-          <p className="text-slate-700 text-lg md:text-3xl font-extrabold">GEMiF</p>
+          {/* <Link href="/gemif/main" className="px-9 relative inline-block group cursor-pointer text-slate-700 text-lg md:text-3xl font-extrabold w-fit">
+            <span className="inline-block transition-transform duration-700 group-hover:-translate-x-9 relative z-10">G</span>
+            
+            <span className="absolute left-1/2 top-0 -translate-x-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-700 z-0">
+              <span>E</span>
+              <span>M</span>
+              <span>i</span>
+            </span>
+            
+            <span className="inline-block transition-transform duration-700 group-hover:translate-x-8 relative z-10">F</span>
+          </Link> */}
+          <Link href={"/gemif/main"} className="text-slate-700 text-lg md:text-3xl font-extrabold">GEMiF</Link>
+
           <div className="mx-1 md:mx-3 border-r border-[#2C3E50] h-[30px]" />
 
           <ul
@@ -80,9 +92,9 @@ export default function Header() {
                 ref={(el: HTMLAnchorElement | null) => {
                   linkRefs.current[option.href] = el;
                 }}
-                className={`text-slate-700 z-[102] relative flex items-center px-2 py-1 transition-all after:opacity-0 after:transition-[opacity] after:duration-500 after:delay-500 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-full after:h-full ${
+                className={`text-slate-700 z-[102] relative flex items-center px-2 py-1 transition-all after:z-[101] after:opacity-0 after:transition-[opacity] after:duration-500 after:delay-500 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-full after:h-full ${
                   state === option.href
-                    ? "font-bold border-b-2 border-[#76aae6] after:z-[101] after:opacity-100 after:bg-[linear-gradient(to_top,#ddebfc,transparent)]"
+                    ? "font-bold border-b-2 border-[#76aae6] after:opacity-100 after:bg-[linear-gradient(to_top,#ddebfc,transparent)]"
                     : ""
                 }`}
               >
@@ -115,7 +127,7 @@ export default function Header() {
                 <div className="flex items-center space-x-4">
                   <CircleUserRound className="w-6 h-6" style={{ color: user?.color ?? "#ffffff" }} />
                   <div>
-                    <p className="font-semibold">{user?.name}</p>
+                    <p className="font-semibold">{user?.publicname}</p>
                     <p className="text-sm text-slate-500">{user?.email}</p>
                   </div>
                 </div>

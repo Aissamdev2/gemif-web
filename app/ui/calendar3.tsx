@@ -10,30 +10,24 @@ import { useSubjects } from "../lib/use-subjects";
 import Dashboard from "./dashboard";
 import { usePrimitiveSubjects } from "../lib/use-primitive-subjects";
 import { usePathname } from "next/navigation";
+import ErrorPage from "./error";
 
 export default function Calendar() {
   const { year, month } = useContext(DateContext);
-  const { events } = useEvents();
-  const { subjects } = useSubjects();
-  const { primitiveSubjects } = usePrimitiveSubjects();
+  const { events, isLoading: eventsLoading, error: eventsError } = useEvents();
+  const { subjects, isLoading: subjectsLoading, error: subjectsError } = useSubjects();
+  const { primitiveSubjects, isLoading: primitiveSubjectsLoading, error: primitiveSubjectsError } = usePrimitiveSubjects();
 
   const pathname = usePathname();
 
   const modals  = ['add-event', 'edit-event', 'view-event'];
 
   const isModalOpen = modals.some(modal => pathname.includes(modal));
+
+  if (eventsError || subjectsError || primitiveSubjectsError) return <ErrorPage error={eventsError?.message || subjectsError.message || primitiveSubjectsError.message} />
   
   return (
     <DateProvider>
-        {/* Background decorations */}
-        {/* <div className="fixed top-0 left-0 w-screen h-screen">
-          <div className="bg-[#8a88b8] w-[20px] sm:w-40 h-40 rounded-full opacity-45 max-sm:ml-auto sm:ml-56"></div>
-          <div className="bg-emerald-500 w-[20px] sm:w-40 h-24 md:mt-0 mt-20 opacity-25"></div>
-          <div className="bg-purple-600 w-[20px] sm:w-40 h-24 md:mt-0 mt-10 opacity-45"></div>
-          <div className="absolute inset-0  backdrop-blur-3xl"></div>
-        </div> */}
-
-        {/* Main content area */}
         <section className={`${isModalOpen ? 'overflow-hidden' : ''} z-50 max-h-full w-full h-full flex flex-col lg:mb-0 px-2 lg:px-10 gap-24 pt-[80px] pb-[20px] lg:gap-12 lg:flex-row`}>
               {/* Upcoming Events */}
               <Dashboard events={events} subjects={subjects} />

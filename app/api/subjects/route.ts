@@ -1,34 +1,102 @@
-import { sql } from '@vercel/postgres'
+import { sql } from '@vercel/postgres';
+import { jsonResponse } from '@/app/lib/helpers';
 
 export async function GET(request: Request) {
-  try {
-    const userId = request.headers.get('X-User-Id');
-    if (!userId) {
-      return new Response('Unauthorized', { status: 401 });
-    }
-    const subjects = (await sql`SELECT * FROM subjects WHERE userId = ${userId} ORDER BY createdat;`).rows
-    return new Response(JSON.stringify(subjects))
+  const userId = request.headers.get('X-User-Id');
 
-  } catch (error) {
-    console.log(error)
-    return new Response('Unauthorized', { status: 401 })
+  if (!userId) {
+    return jsonResponse({
+      error: 'Falta el encabezado X-User-Id',
+      publicError: 'Permiso denegado',
+      errorCode: 'NO_AUTH',
+      details: []
+    }, 401);
+  }
+
+  try {
+    const result = await sql`
+      SELECT * FROM subjects
+      WHERE userId = ${userId}
+      ORDER BY createdat;
+    `;
+
+    return jsonResponse({ data: result.rows }, 200);
+  } catch (error: any) {
+
+    return jsonResponse({
+      error: error.message || String(error),
+      publicError: 'Error interno, contacta al administrador si el problema persiste',
+      errorCode: 'DB_SUBJECTS_GET_FAILED',
+      details: []
+    }, 500);
   }
 }
 
 export async function POST(request: Request) {
+  const userId = request.headers.get('X-User-Id');
+
+  if (!userId) {
+    return jsonResponse({
+      error: 'Falta el encabezado X-User-Id',
+      publicError: 'Permiso denegado',
+      errorCode: 'NO_AUTH',
+      details: []
+    }, 401);
+  }
+
   try {
-    const userId = request.headers.get('X-User-Id');
-    if (!userId) {
-      return new Response('Unauthorized', { status: 401 });
+    const body = await request.json();
+
+    if (!body || typeof body !== 'object') {
+      return jsonResponse({
+        error: 'Falta o formato incorrecto del cuerpo',
+        publicError: 'Datos insuficientes o inválidos',
+        errorCode: 'BAD_REQUEST',
+        details: []
+      }, 400);
     }
-    const body = await request.json()
-    if (!body)return new Response('Invalid request body', { status: 400 })
-    const { name, color, bgcolor, bordercolor, primitiveid, year, quadri, archived, scoreQual, scoreDiff } = body
-    if (!name) return new Response('Missing required fields', { status: 400 })
-    await sql`INSERT INTO subjects (name, color, bgColor, borderColor, year, quadri, primitiveid, archived, scorequal, scorediff, userId) VALUES (${name}, ${color}, ${bgcolor}, ${bordercolor}, ${year}, ${quadri}, ${primitiveid}, ${archived}, ${scoreQual}, ${scoreDiff}, ${userId});`
-    return new Response('Subject created')
-  } catch (error) {
-    console.log(error)
-    return new Response('Unauthorized', { status: 401 })
+
+    const {
+      name,
+      color,
+      bgcolor,
+      bordercolor,
+      primitiveid,
+      year,
+      quadri,
+      archived,
+      qual,
+      diff
+    } = body;
+
+    if (!name) {
+      return jsonResponse({
+        error: 'Campo "name" obligatorio',
+        publicError: 'Datos insuficientes o inválidos',
+        errorCode: 'MISSING_FIELDS',
+        details: []
+      }, 400);
+    }
+
+    await sql`
+      INSERT INTO subjects (
+        name, color, bgColor, borderColor, year, quadri,
+        primitiveid, archived, qual, diff, userId
+      )
+      VALUES (
+        ${name}, ${color}, ${bgcolor}, ${bordercolor},
+        ${year}, ${quadri}, ${primitiveid}, ${archived},
+        ${qual}, ${diff}, ${userId}
+      );
+    `;
+
+    return jsonResponse({ data: { ok: true } }, 201);
+  } catch (error: any) {
+    return jsonResponse({
+      error: error.message || String(error),
+      publicError: 'Error interno, contacta al administrador si el problema persiste',
+      errorCode: 'DB_SUBJECTS_POST_FAILED',
+      details: []
+    }, 500);
   }
 }

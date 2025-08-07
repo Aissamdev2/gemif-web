@@ -71,6 +71,7 @@ export default function RootLayout({
     <html lang="es">
       <head>
         <meta name="google-site-verification" content="BuUjUrMXjcobaS_shfW4lsUoMZ3teEvFnLiFf_0Gy9U" />
+        
       </head>
       <body className={inter.className + ' h-screen'}>{children}</body>
     </html>
