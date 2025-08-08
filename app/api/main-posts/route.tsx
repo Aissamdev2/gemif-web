@@ -98,7 +98,7 @@ export async function POST(request: Request) {
   } catch (error: any) {
     return jsonResponse(
       {
-        error: error.message || "SQL error",
+        error: error.message || "Db error",
         publicError: "No se pudo crear la publicación",
         errorCode: "DB_MAIN_POSTS_POST_FAILED",
         details: { body, error },

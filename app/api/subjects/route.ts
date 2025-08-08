@@ -62,8 +62,6 @@ export async function POST(request: Request) {
       bgcolor,
       bordercolor,
       primitiveid,
-      year,
-      quadri,
       archived,
       qual,
       diff
@@ -80,12 +78,11 @@ export async function POST(request: Request) {
 
     await sql`
       INSERT INTO subjects (
-        name, color, bgColor, borderColor, year, quadri,
+        name, color, bgColor, borderColor,
         primitiveid, archived, qual, diff, userId
       )
       VALUES (
-        ${name}, ${color}, ${bgcolor}, ${bordercolor},
-        ${year}, ${quadri}, ${primitiveid}, ${archived},
+        ${name}, ${color}, ${bgcolor}, ${bordercolor}, ${primitiveid}, ${archived},
         ${qual}, ${diff}, ${userId}
       );
     `;

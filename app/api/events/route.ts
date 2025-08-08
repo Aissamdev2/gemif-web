@@ -20,6 +20,9 @@ export async function GET(request: Request) {
     const subjectsResult = await sql`SELECT * FROM subjects WHERE userId = ${userId};`;
     const subjects = subjectsResult.rows;
 
+    const primitiveSubjectsResult = await sql`SELECT * FROM primitive_subjects;`;
+    const primitiveSubjects = primitiveSubjectsResult.rows;
+
     const primitiveIds = subjects
       .filter(subject => !subject.archived && subject.primitiveid !== '00000000')
       .map(subject => subject.primitiveid)
@@ -27,7 +30,7 @@ export async function GET(request: Request) {
 
     const years = subjects
       .filter(subject => !subject.archived && subject.primitiveid !== '00000000')
-      .map(subject => subject.year);
+      .map((sbj) => primitiveSubjects.find(ps => ps.id === sbj.primitiveid)?.year)
 
     const individualEvents = (await sql`SELECT * FROM events WHERE userId = ${userId};`).rows;
 
