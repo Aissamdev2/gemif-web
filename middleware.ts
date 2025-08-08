@@ -47,6 +47,10 @@ export async function middleware(request: NextRequest) {
     
     // 1. Allow internal requests
 
+    if (isInternal) {
+      return NextResponse.next();
+    }
+
     if (isInternal && isPublicApiRoute) {
       
       return NextResponse.next();
