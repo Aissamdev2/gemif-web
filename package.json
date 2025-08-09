@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && critical ./out/index.html --inline --minify --extract --dest ./out/index.html",
+    "build": "next build && critical ./out/index.html --inline --extract --dest ./out/index.html",
     "start": "next start",
     "lint": "next lint",
     "postbuild": "next-sitemap"
