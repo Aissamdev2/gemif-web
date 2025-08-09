@@ -35,13 +35,10 @@ export default function Page() {
         errorCode: state.errorCode ?? 'UNKNOWN_ERROR',
         details: state.details,
       });
-    } else if (state?.data && state?.data?.user && state?.data?.user.logincount === 0 && state?.data?.verify === false) {
+    } else if (state?.data && state?.data?.logincount === 0) {
       router.push('/initial-setup');
       setErrorMessage(null);
-    } else if (state?.data && state?.data?.cookie && state?.data?.verify === true) {
-      router.push('/verify-email');
-      setErrorMessage(null);
-    } else if (state?.data && state?.data?.user && state?.data?.user.logincount > 0 && state?.data?.verify === false) {
+    } else if (state?.data && state?.data?.logincount > 0) {
       router.push('/gemif/main');
       setErrorMessage(null);
     }

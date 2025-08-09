@@ -225,7 +225,7 @@ export async function authenticate(formData: FormData) {
     return { data: null, error: 'Error al iniciar sesión', errorCode: "UNKNOWN_ERROR", details: [] };
   }
 
-  return { data: { user: updatedUser.data, verify: false }, error: null, errorCode: null, details: [] };
+  return { data: updatedUser.data, error: null, errorCode: null, details: [] };
 }
 
 export async function logout(_currentState: unknown) {
