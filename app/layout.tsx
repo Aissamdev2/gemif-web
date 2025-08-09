@@ -6,7 +6,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "GEMiFWeb URV: Matemáticas y Física",
-  description: "Pagina web de GEMiF Grado en Ingeniería Matemática y Física, Universitat Rovira i Virgili (URV) NO OFICIAL",
+  description: "Pagina web de GEMiF Grado en Ingeniería Matemática y Física, Universitat Rovira i Virgili (URV)",
   keywords: "Pagina web, Página web, web, gemif, GEMIF, GEMiF, GEMIFWeb, gemifweb, matemáticas, fisica, matematicas, URV, Universitat Rovira i Virgili, estudiantes gemif, universitat rovira i virgili, enginyeria, matematica",
   applicationName: "GEMiFWeb URV",
   authors: [{ name: "Aissam Khadraoui" }],
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "GEMiFWeb URV: Matemáticas y Física",
-    description: "Pagina web de GEMiF Grado en Ingeniería Matemática y Física, Universitat Rovira i Virgili (URV) NO OFICIAL",
+    description: "Pagina web de GEMiF Grado en Ingeniería Matemática y Física, Universitat Rovira i Virgili (URV)",
     images: ["https://gemif.es/preview_twitter.png"],
   },
   icons: [
@@ -38,6 +38,18 @@ export const metadata: Metadata = {
       type: "image/ico",
       sizes: "64x64",
       url: "/favicon.ico",
+    },
+    {
+      rel: "icon",
+      type: "image/ico",
+      sizes: "32x32",
+      url: "/favicon-32x32.ico",
+    },
+    {
+      rel: "icon",
+      type: "image/png",
+      sizes: "32x32",
+      url: "/favicon-32x32.png",
     },
     {
       rel: "apple-touch-icon",
@@ -70,7 +82,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <head>      
-        <meta name="google-site-verification" content="5dr1RNpL3ATQo0UBoBS4URjOmKWkFiGofMSIV7M4hvA" />  
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body className={inter.className + ' h-screen'}>{children}</body>
     </html>
