@@ -4,4 +4,4 @@ Allow: /
 
 
 # Sitemaps
-Sitemap: https://gemif-.es/sitemap.xml
+Sitemap: https://gemif.es/sitemap.xml
