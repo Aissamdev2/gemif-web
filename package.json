@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && critical ./out/index.html --inline --extract --dest ./out/index.html",
+    "build": "next build && npm run critical",
+    "critical": "type out\\index.html | critical --base out --inline > out\\index.critical.html && move /Y out\\index.critical.html out\\index.html",
     "start": "next start",
     "lint": "next lint",
     "postbuild": "next-sitemap"
