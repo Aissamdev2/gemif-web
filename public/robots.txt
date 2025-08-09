@@ -4,4 +4,4 @@ Allow: /
 
 
 # Sitemaps
-Sitemap: https://gemif-web.vercel.app/sitemap.xml
+Sitemap: https://gemif-.es/sitemap.xml
