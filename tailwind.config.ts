@@ -63,7 +63,8 @@ const config: Config = {
       },
     })
     addVariant("starting", "@starting-style");
-  }),],
+  }),
+]
 };
 
 export default config;
