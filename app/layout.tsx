@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "GEMiFWeb URV: Matemáticas y Física",
     description: "Pagina web de GEMiF Grado en Ingeniería Matemática y Física, Universitat Rovira i Virgili (URV) NO OFICIAL",
-    images: ["https://gemif-es/preview_twitter.png"],
+    images: ["https://gemif.es/preview_twitter.png"],
   },
   icons: [
     {
