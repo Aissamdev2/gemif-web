@@ -1,7 +1,7 @@
 import { sql } from '@vercel/postgres';
 import { jsonResponse } from '@/app/lib/helpers';
 import bcrypt from "bcrypt";
-import { NextResponse } from 'next/server';
+import { PrimitiveUser, User } from '@/app/lib/definitions';
 
 export async function GET(request: Request) {
   const userId = request.headers.get('X-User-Id');
@@ -55,41 +55,64 @@ export async function POST(request: Request) {
   if (key !== process.env.SIGNUP_KEY) {
     return jsonResponse({ data: null, error: "Clave incorrecta", publicError: "Clave incorrecta", errorCode: "PERMISSION_DENIED", details: [] }, 400);
   }
-  
-  const primitiveUser = await sql`SELECT * FROM primitive_users WHERE signedup = false AND name = ${name.toLowerCase()}`;
-  
-  if (primitiveUser.rows.length === 0) {
-    return jsonResponse({ data: null, error: "El usuario no existe o ya se ha registrado", publicError: "El usuario no existe o ya se ha registrado", errorCode: "PERMISSION_DENIED", details: [] }, 400);
+
+  const primitiveUserRows = (await sql`SELECT * FROM primitive_users WHERE name = ${name.toLowerCase()}`).rows;
+
+  if (primitiveUserRows.length === 0) {
+    return jsonResponse({ data: null, error: "El usuario no existe", publicError: "El usuario no existe", errorCode: "PERMISSION_DENIED", details: [] }, 400);
   }
-  const tokens = await sql`SELECT * FROM githubtokens`;
 
-  const tokensArray = tokens.rows.filter((token) => {
-    return !token.assigned
-  });
+  const primitiveUser = primitiveUserRows[0]
 
-    
-  if (tokensArray.length === 0) {
-    return jsonResponse({ data: null, error: "Límite de usuarios alcanzado", publicError: "Límite de usuarios alcanzado", errorCode: "PERMISSION_DENIED", details: [] }, 400);
-  }
-  const githubtoken = tokensArray[0].githubtoken;
-
-  try {
-    const user = await 
-      sql`INSERT INTO users (name, publicname, role, year, email, password, assignedgithubtoken) VALUES (${name}, ${name}, ${role}, ${year}, ${email}, ${hashedPassword}, ${githubtoken}) RETURNING *`
-      .then((res) => res.rows[0]);
-
-    await sql`UPDATE githubtokens SET assigned = true WHERE githubtoken = ${githubtoken}`;
-    await sql`UPDATE primitive_users SET signedup = true WHERE name = ${name.toLowerCase()}`;
-
-    return jsonResponse({ data: user }, 200);
-  } catch (error: any) {
-    if (error.code === '23505') {
-      return jsonResponse({ data: null, error: "El usuario ya existe", publicError: "El usuario ya existe", errorCode: "PERMISSION_DENIED", details: [] }, 400);
+  if (primitiveUser.signedup === false) {
+    const tokens = await sql`SELECT * FROM githubtokens`;
+  
+    const tokensArray = tokens.rows.filter((token) => {
+      return !token.assigned
+    });
+  
+      
+    if (tokensArray.length === 0) {
+      return jsonResponse({ data: null, error: "Límite de usuarios alcanzado", publicError: "Límite de usuarios alcanzado", errorCode: "PERMISSION_DENIED", details: [] }, 400);
     }
-    return jsonResponse({
-      error: error.message || String(error),
-      publicError: 'Error interno, contacta al administrador si el problema persiste',
-      errorCode: 'DB_USERS_POST_FAILED'
-    }, 500);
+    const githubtoken = tokensArray[0].githubtoken;
+  
+    try {
+      const user = await 
+        sql`INSERT INTO users (name, publicname, role, year, email, password, assignedgithubtoken, primitiveid) VALUES (${name}, ${name}, ${role}, ${year}, ${email}, ${hashedPassword}, ${githubtoken}, ${primitiveUser.id}) RETURNING *`
+        .then((res) => res.rows[0]);
+  
+      await sql`UPDATE githubtokens SET assigned = true WHERE githubtoken = ${githubtoken}`;
+      await sql`UPDATE primitive_users SET signedup = true WHERE name = ${name.toLowerCase()}`;
+  
+      return jsonResponse({ data: user }, 200);
+    } catch (error: any) {
+      if (error.code === '23505') {
+        return jsonResponse({ data: null, error: "El usuario ya existe", publicError: "El usuario ya existe", errorCode: "PERMISSION_DENIED", details: [] }, 400);
+      }
+      return jsonResponse({
+        error: error.message || String(error),
+        publicError: 'Error interno, contacta al administrador si el problema persiste',
+        errorCode: 'DB_USERS_POST_FAILED'
+      }, 500);
+    }
+
+  } else if (primitiveUser.isverified === false) {
+    try {
+      const user = await 
+        sql`SELECT * FROM users WHERE primitiveid = ${primitiveUser.id}`
+      return jsonResponse({ data: user.rows[0] }, 200);
+    } catch (error: any) {
+      if (error.code === '23505') {
+        return jsonResponse({ data: null, error: "El usuario ya existe", publicError: "El usuario ya existe", errorCode: "PERMISSION_DENIED", details: [] }, 400);
+      }
+      return jsonResponse({
+        error: error.message || String(error),
+        publicError: 'Error interno, contacta al administrador si el problema persiste',
+        errorCode: 'DB_USERS_POST_FAILED'
+      }, 500);
+    }
+  } else {
+    return jsonResponse({ data: null, error: "El usuario ya se ha registrado", publicError: "El usuario ya se ha registrado", errorCode: "PERMISSION_DENIED", details: [] }, 400);
   }
 }

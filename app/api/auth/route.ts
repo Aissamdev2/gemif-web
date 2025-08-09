@@ -38,7 +38,10 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!user.isverified) {
+    const primitiveUser = (await sql`SELECT * FROM primitive_users WHERE id = ${user.primitiveid}`)
+        .rows[0]; 
+
+    if (!primitiveUser.isverified) {
       return jsonResponse(
         {
           error: "User not verified",

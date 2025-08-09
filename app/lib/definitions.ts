@@ -11,7 +11,13 @@ export type User = {
   password: string;
   assignedgithubtoken: string;
   isverified: boolean;
-};
+}
+
+export type PrimitiveUser = {
+  name: string,
+  signedup: boolean,
+  id: number;
+}
 
 export type Token = {
   githubtoken: string;

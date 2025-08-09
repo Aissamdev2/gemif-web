@@ -68,6 +68,7 @@ export async function addUser(formData: FormData): Promise<{ data: any | null, e
   if (!response.ok) {
     return { data: null, error: resJson.publicError?? 'Error al crear el usuario', errorCode: resJson.errorCode, details: resJson.details };
   }
+  console.log(resJson)
 
   const verificationRes = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/send-verification-email', {
     method: 'POST',
@@ -95,7 +96,6 @@ export async function increaseLoginCount(user: User): Promise<{ data: User | nul
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
-      'X-Internal-Token': process.env.INTERNAL_API_SECRET!,
       Cookie: cookies().toString(),
     },
     body: JSON.stringify({ logincount: user.logincount + 1 }),
@@ -209,33 +209,12 @@ export async function authenticate(formData: FormData) {
     });
 
   const resJson: ApiResponse = await response.json();
-  console.log('resJson: ', resJson);
 
-  if (!response.ok && resJson.errorCode === "USER_NOT_VERIFIED") {
-    const verificationRes = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/send-verification-email', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Internal-Token': process.env.INTERNAL_API_SECRET!,
-      },
-      body: JSON.stringify({ email }),
-    })
-
-    const verificationResJson: ApiResponse = await verificationRes.json();
-    if (!verificationRes.ok) {
-      return { data: null, error: verificationResJson.publicError?? 'Error al enviar el correo de verificación', errorCode: verificationResJson.errorCode, details: verificationResJson.details };
-    }
-
-    const registerCookie = await setTokenCookie({ user: resJson.data, token: verificationResJson.data, type: 'verify' });
-
-    return { data: { cookie: registerCookie, verify: true }, error: null, errorCode: null, details: registerCookie.details };
-
-  } else if (!response.ok) {
-    
+  if (!response.ok) {
+    console.log(resJson)
     return { data: null, error: resJson.publicError?? 'Error al iniciar sesión', errorCode: resJson.errorCode, details: resJson.details };
   }
 
-  
   const res = await setCookie(resJson.data);
   if (res.error) {
     return { data: null, error: 'Error al iniciar sesión', errorCode: "UNKNOWN_ERROR", details: [] };
