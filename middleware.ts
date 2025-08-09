@@ -130,10 +130,14 @@ export async function middleware(request: NextRequest) {
     return returnError({ request, title: "Error de autenticación", description: err.message, code: 'PERMISSION_DENIED' });
   }
 }
-
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|.*\\.(?:png|jpg|jpeg|ico|svg|xml|txt)$).*)',
+    /*
+     * Match everything except:
+     * - Next.js internals (_next/static, _next/image)
+     * - Common static file extensions
+     */
+    '/((?!_next/static|_next/image|.*\\.(?:css|js|png|jpg|jpeg|ico|svg|xml|txt|woff|woff2|eot|ttf|otf|json)$).*)',
     '/api/(.*)',
   ],
 };
