@@ -19,11 +19,45 @@ export async function POST(req: Request) {
   const resetUrl = `${(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string)}/reset-password?token=${token}`;
 
   try {
-    await resend.emails.send({
-      from: 'gemif-web.vercel.app <onboarding@resend.dev>',
+    const emailResponse = await resend.emails.send({
+      from: 'GEMiF <no-reply@gemif.es>',
       to: [email],
-      subject: 'Restablece tu contraseña',
-      html: `<p>Haz clic para cambiar tu contraseña: <a href="${resetUrl}">${resetUrl}</a></p>`,
+      subject: 'Restablecer tu contraseña',
+      html: `
+        <div style="font-family: Arial, sans-serif; background-color: #f4f6f8; padding: 30px;">
+          <div style="max-width: 600px; margin: auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            
+            <div style="background: #0f172a; padding: 20px; text-align: center;">
+              <h1 style="color: #ffffff; margin: 0; font-size: 24px;">GEMiF</h1>
+            </div>
+            
+            <div style="padding: 30px;">
+              <h2 style="color: #0f172a; font-size: 20px;">Restablecer tu contraseña</h2>
+              <p style="color: #334155; font-size: 16px;">
+                Hemos recibido una solicitud para restablecer tu contraseña. Si no la solicitaste, puedes ignorar este mensaje.
+              </p>
+              <p style="color: #334155; font-size: 16px;">
+                Para continuar, haz clic en el siguiente botón:
+              </p>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${resetUrl}" style="background-color: #0f172a; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-size: 16px; display: inline-block;">
+                  Restablecer contraseña
+                </a>
+              </div>
+              
+              <p style="color: #94a3b8; font-size: 14px;">
+                Este enlace caduca en 1 hora por motivos de seguridad.
+              </p>
+            </div>
+            
+            <div style="background: #f1f5f9; padding: 15px; text-align: center; font-size: 12px; color: #94a3b8;">
+              &copy; ${new Date().getFullYear()} GEMiF. Todos los derechos reservados.
+            </div>
+            
+          </div>
+        </div>
+      `,
     });
 
     return jsonResponse({ data: { user, token }, error: null, publicError: null, errorCode: null, details: [] }, 200);

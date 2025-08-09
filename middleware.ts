@@ -85,7 +85,7 @@ export async function middleware(request: NextRequest) {
 
     // 4. Block API requests without valid auth session or internal header
     if (isApiRoute && !isAuth) {
-      return returnError({ request, title: "Error de autenticación", description: 'Permiso denegado', code: 'PERMISSON_DENIED' });
+      return returnError({ request, title: "Error de autenticación", description: 'Permiso denegado', code: 'PERMISSION_DENIED' });
     }
 
     // 5. Redirect to initial-setup if logged in and loginCount === 0
@@ -97,7 +97,7 @@ export async function middleware(request: NextRequest) {
     // 6. Redirect away from /initial-setup if loginCount !== 0
     if (isAuth && loginCount !== 0 && isInitialSetup) {
       
-      return returnError({ request, title: "No autorizado", description: 'Permiso denegado para acceder a esta pagina', code: 'PERMISSON_DENIED' });
+      return returnError({ request, title: "No autorizado", description: 'Permiso denegado para acceder a esta pagina', code: 'PERMISSION_DENIED' });
     }
 
     // 7. Redirect to /gemif/main if logged in and not in /gemif or /initial-setup or /api
@@ -109,7 +109,7 @@ export async function middleware(request: NextRequest) {
     // 8. Block all other routes if user is not authenticated and not internal
     if (!isAuth && !isInternal && !isPublicPage && !isProtectedPublicPage && !isApiRoute) {
       
-      return returnError({ request, title: "No autorizado", description: 'Permiso denegado para acceder a esta pagina', code: 'PERMISSON_DENIED' });
+      return returnError({ request, title: "No autorizado", description: 'Permiso denegado para acceder a esta pagina', code: 'PERMISSION_DENIED' });
     }
 
 
@@ -127,7 +127,7 @@ export async function middleware(request: NextRequest) {
     return response;
   } catch (err: any) {
     console.error('Middleware error:', err);
-    return returnError({ request, title: "Error de autenticación", description: err.message, code: 'PERMISSON_DENIED' });
+    return returnError({ request, title: "Error de autenticación", description: err.message, code: 'PERMISSION_DENIED' });
   }
 }
 
