@@ -1,5 +1,4 @@
 import Link from "next/link";
-import 'katex/dist/katex.min.css';
 
 
 export default function Home() {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useWeeklyChallenges } from "../lib/use-weekly-challenges";
 import { WeeklyChallenge } from "@/app/lib/definitions";
 import Link from "next/link";

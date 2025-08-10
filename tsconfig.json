@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "types": ["./app/lib/dotlottie.d.ts"],
+    "types": [],
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,

@@ -1,14 +1,13 @@
 'use client';
 
 import { useEffect, useRef, useState } from "react";
-import {
-  FilePlus2,
-  FolderPlus,
-  Trash2,
-} from "lucide-react";
+import dynamic from 'next/dynamic';
+import { FilePlus2, FolderPlus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import folderOpenAnimation from "@/public/open-folder.json";
-import Lottie from "lottie-react";
+
+// Dynamically import Lottie to avoid blocking JS bundle and disable SSR
+const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
 
 const FolderToggle = ({
   title,

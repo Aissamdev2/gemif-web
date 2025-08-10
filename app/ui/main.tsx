@@ -7,9 +7,9 @@ import { useMainPosts } from '@/app/lib/use-main-posts';
 import { useUser } from '@/app/lib/use-user';
 import { useSubjects } from '../lib/use-subjects';
 import { MainPost, Subject } from '../lib/definitions';
-//import Loader from './loader';
-//import ErrorPage from './error';
-//import ListModal from './list-modal';
+import Loader from './loader';
+import ErrorPage from './error';
+import ListModal from './list-modal';
 
 export default function Main() {
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('11111111');
@@ -46,7 +46,7 @@ export default function Main() {
   }, [mainPosts, selectedSubjectId]);
 
   const error = userError || subjectsError || postsError;
-  if (error) return null;
+  if (error) return <ErrorPage error={error.message} />;
 
   return (
     <section className="z-50 w-full h-full max-h-full flex flex-col lg:mb-0 px-2 lg:px-10 gap-4 md:gap-6 pt-[80px] pb-[20px]">
@@ -73,13 +73,12 @@ export default function Main() {
         />
 
         {modalState.type && modalState.postId && (
-          // <ListModal
-          //   post={mainPosts?.find(p => p.id === modalState.postId)}
-          //   type={modalState.type}
-          //   position={modalState.position}
-          //   onClose={closeModal}
-          // />
-          null
+          <ListModal
+            post={mainPosts?.find(p => p.id === modalState.postId)}
+            type={modalState.type}
+            position={modalState.position}
+            onClose={closeModal}
+          />
         )}
       </div>
     </section>
@@ -162,7 +161,7 @@ const PostsList = ({
   if (isLoading) {
     return (
       <div className="flex justify-center items-center w-full min-h-[4rem]">
-        {/*<Loader /> */}
+        <Loader />
       </div>
     );
   }
