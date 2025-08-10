@@ -1,14 +1,13 @@
 'use client'
 
-import { useFormStatus, useFormState } from "react-dom";
 import { addMainPost } from "@/app/lib/actions/main-posts/actions";
-import { useEffect, useState } from "react";
+import { CircleAlert, FileText, UploadCloud, X } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useFormState, useFormStatus } from "react-dom";
 import { mutate } from "swr";
-import { useUser } from "../lib/use-user";
-import { User } from "../lib/definitions";
-import { CircleAlert, UploadCloud, FileText, X, OctagonAlert } from "lucide-react";
 import { useSubjects } from "../lib/use-subjects";
+import { useUser } from "../lib/use-user";
 import ErrorPage from "./error";
 import Loader from "./loader";
 import MiniModal from "./mini-modal";

@@ -235,12 +235,12 @@ function SubjectRadios({ subjects, setDisabled }: { subjects: Subject[], setDisa
           />
           <label htmlFor={subject.id}>
             <div
-              style={{
-                background: `linear-gradient(to right, ${subject.bgcolor}, white)`,
-                borderColor: subject.bordercolor,
-                color: subject.color,
-                borderRadius: "4px"
-              }}
+              // style={{
+              //   background: `linear-gradient(to right, ${subject.bgcolor}, white)`,
+              //   borderColor: subject.bordercolor,
+              //   color: subject.color,
+              //   borderRadius: "4px"
+              // }}
               className="max-w-[170px] cursor-pointer flex items-center gap-2 border-[2px] text-xs font-medium mr-2 px-1.5 py-1"
             >
               <p className="overflow-hidden truncate w-[">{subject.name}</p>

@@ -196,7 +196,7 @@ export default function Page() {
                 ) : (
                   <div className="flex justify-center items-center p-2 rounded-lg bg-gray-300">
                     <CircleUserRound className="w-12 h-12"
-                    style={{ color: color || '#000000' }}
+                    // style={{ color: color || '#000000' }}
                     />
                   </div>
 

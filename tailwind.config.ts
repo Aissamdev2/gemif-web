@@ -1,5 +1,4 @@
 import type { Config } from "tailwindcss";
-//import { SUBJECTS_COLORS_1, SUBJECT_BG_COLORS, SUBJECT_BORDER_COLORS } from "./app/lib/utils";
 import plugin from "tailwindcss/plugin";
 
 /** @type {import('tailwindcss/types/config').PluginCreator} */
@@ -11,12 +10,6 @@ const config: Config = {
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
-  safelist: [
-    {
-      pattern: /(text|bg|border)-./,  // Safelist all dynamic color classes
-    },
-  ],
-  //safelist: [Object.values(SUBJECTS_COLORS_1), Object.values(SUBJECT_BG_COLORS), Object.values(SUBJECT_BORDER_COLORS)].flat(),
   theme: {
     extend: {
       backgroundImage: {

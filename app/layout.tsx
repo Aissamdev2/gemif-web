@@ -75,6 +75,7 @@ export default function RootLayout({
         <meta name="application-name" content="GEMiF" />
         <meta property="og:site_name" content="GEMiF" />
         <JsonLdSiteNavigation />
+        
       </head>
       <body className={inter.className + " h-screen"}>{children}</body>
     </html>

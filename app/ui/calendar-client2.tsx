@@ -65,12 +65,12 @@ export default function CalendarClient({
                     <Link
                       href={`/gemif/calendar/view-event/${event.id}`}
                       key={event.id}
-                      style={{
-                        background: `linear-gradient(to right, ${subject?.bgcolor}, white)`,
-                        borderColor: subject?.bordercolor,
-                        color: subject?.color,
-                        borderRadius: "4px"
-                      }}
+                      // style={{
+                      //   background: `linear-gradient(to right, ${subject?.bgcolor}, white)`,
+                      //   borderColor: subject?.bordercolor,
+                      //   color: subject?.color,
+                      //   borderRadius: "4px"
+                      // }}
                       className={`cursor-pointer border z-[2] grow text-[10px] min-h-[14px] truncate font-medium px-1.5 py-0`}
                       >
                         {event.name}

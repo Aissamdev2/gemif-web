@@ -204,7 +204,7 @@ const ProfileDropdown = React.memo(
               <div className="flex items-center space-x-4">
                 <CircleUserRound
                   className="w-6 h-6"
-                  style={{ color: user?.color ?? '#ffffff' }}
+                  // style={{ color: user?.color ?? '#ffffff' }}
                 />
                 <div>
                   <p className="font-semibold">{user?.publicname}</p>
