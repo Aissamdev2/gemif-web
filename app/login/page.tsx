@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import { CircleAlert } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
+
 export default function Page() {
   const loginUser = async (_currentState: any, formData: FormData) => {
     const result = await authenticate(formData);

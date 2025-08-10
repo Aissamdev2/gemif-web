@@ -8,6 +8,8 @@ interface ErrorPageProps {
   };
 }
 
+
+
 const ErrorPage: FC<ErrorPageProps> = ({ searchParams }) => {
   const {
     title = 'Unknown Error',

@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import { verifyUser } from '../lib/actions/session/actions'
 import { CircleAlert } from 'lucide-react'
 
+
+
 export default function VerifyEmailPage({ searchParams }: { searchParams: { [key: string]: string } }) {
   const token = searchParams.token
 

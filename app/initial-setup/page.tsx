@@ -25,6 +25,7 @@ type Columns = {
   passed: Subject[];
 };
 
+
 export default function InitialSetup() {
   const { primitiveSubjects, isLoading: isLoadingPrimitiveSubjects, error: primitiveSubjectsError } = usePrimitiveSubjects();
 

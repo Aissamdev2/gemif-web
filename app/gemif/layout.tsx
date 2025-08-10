@@ -1,5 +1,12 @@
 import Header from "@/app/ui/header2";
-import 'katex/dist/katex.min.css';
+
+export const metadata = {
+  title: "GEMiFWeb",
+  robots: {
+    index: false,
+    follow: false,
+  }
+};
 
 export default function GemifLayout({ children }: { children: React.ReactNode }) {
   return (
