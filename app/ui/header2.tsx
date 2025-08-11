@@ -29,7 +29,7 @@ export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const { user, error: userError } = useUser();
+  const { user, error: userError } = useUser({});
   const { unseenMessages, error: messagesError } = useUnseenMessages();
 
   const [dropdownOpen, setDropdownOpen] = useState(false);

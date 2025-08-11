@@ -11,7 +11,7 @@ import { id } from "zod/v4/locales";
 
 
 
-export async function getMainPosts(): Promise<{ data: MainPost[] | null; error: string | null; errorCode: ErrorCode | null | undefined, details: { name: string; success: boolean, error?: string | null }[] }> {
+export async function getMainPosts(): Promise<{ data: MainPost[] | null | undefined; error: string | null; errorCode: ErrorCode | null | undefined, details: { name: string; success: boolean, error?: string | null }[] }> {
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/main-posts', {
     headers: {
       Cookie: cookies().toString()

@@ -84,7 +84,7 @@ export default function ViewMessage({ id }: { id: string}) {
 function EditButton({ disabled, router, id }: { disabled: boolean, id: string, router: AppRouterInstance }) {
     const { pending } = useFormStatus()  
     return (
-      <button type="button" disabled={disabled || pending} onClick={() => router.push(`/gemif/messages/edit-message/${id}`, { scroll: false })} className={`${disabled || pending ? 'pointer-events-none opacity-30' : ''} w-full text-center p-1.5 py-2 rounded-md bg-[#4A90E2] text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-[#3A7BC4]`}>
+      <button type="button" disabled={disabled || pending} onClick={() => router.push(`/gemif/messages/edit-message/${id}`, { scroll: false })} className={`${disabled || pending ? 'pointer-events-none opacity-30' : ''} w-full text-center p-1.5 py-2 rounded-md bg-[#2C5AA0] text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-[#3A7BC4]`}>
         Editar
       </button>
     )

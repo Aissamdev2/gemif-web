@@ -130,7 +130,7 @@ function EditButton({ disabled }: { disabled: boolean }) {
   }
 
   return (
-    <button disabled={ disabled || pending } type="submit" onClick={handleClick} className={`${disabled || pending ? 'pointer-events-none opacity-30' : ''} w-full text-center p-1.5 py-2 rounded-md bg-[#4A90E2] text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-[#3A7BC4]`}>
+    <button disabled={ disabled || pending } type="submit" onClick={handleClick} className={`${disabled || pending ? 'pointer-events-none opacity-30' : ''} w-full text-center p-1.5 py-2 rounded-md bg-[#2C5AA0] text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-[#3A7BC4]`}>
       {pending ? 'Cargando...' : 'Editar'}
     </button>
   )

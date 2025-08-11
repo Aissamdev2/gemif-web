@@ -209,7 +209,7 @@ export default function SubjectsPage() {
                   name="options"
                   value={selectedOptionId}
                   onChange={handleSelectChange}
-                  className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition">
+                  className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition">
                   <option value="Seleccione una asignatura">Cargando...</option>
                 </select>
               </div>
@@ -221,7 +221,7 @@ export default function SubjectsPage() {
                   name="options"
                   value={selectedOptionId}
                   onChange={handleSelectChange}
-                  className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition">
+                  className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition">
                   <option value="Seleccione una asignatura">Seleccione una asignatura</option>
                   {
                     primitiveSubjects.filter((subject) => subject.id !== '00000000').map((subject) => {
@@ -244,8 +244,8 @@ export default function SubjectsPage() {
               <button
                 className={`px-4 py-1 rounded-md text-sm font-medium border ${
                   subjectMenu === 'info'
-                    ? 'bg-[#4A90E2] text-white border-[#4A90E2]'
-                    : 'bg-white text-[#4A90E2] border-[#4A90E2] hover:bg-[#eaf3ff]'
+                    ? 'bg-[#2C5AA0] text-white border-[#2C5AA0]'
+                    : 'bg-white text-[#2C5AA0] border-[#2C5AA0] hover:bg-[#eaf3ff]'
                 }`}
                 onClick={() => {
                   setSubjectMenu('info');
@@ -259,8 +259,8 @@ export default function SubjectsPage() {
               <button
                 className={`px-4 py-1 rounded-md text-sm font-medium border ${
                   subjectMenu === 'review'
-                    ? 'bg-[#4A90E2] text-white border-[#4A90E2]'
-                    : 'bg-white text-[#4A90E2] border-[#4A90E2] hover:bg-[#eaf3ff]'
+                    ? 'bg-[#2C5AA0] text-white border-[#2C5AA0]'
+                    : 'bg-white text-[#2C5AA0] border-[#2C5AA0] hover:bg-[#eaf3ff]'
                 }`}
                 onClick={() => {
                   setSubjectMenu('review');
@@ -305,7 +305,7 @@ export default function SubjectsPage() {
               
               {/* Créditos */}
               <tr className="border-b border-[#DCEBFF]">
-                <th className="text-left text-white bg-[#4A90E2] px-3 py-2 font-semibold">Créditos</th>
+                <th className="text-left text-white bg-[#2C5AA0] px-3 py-2 font-semibold">Créditos</th>
                 <td className="px-3 py-2 flex justify-between items-center">
                   {editingRow.includes('credits') ? (
                     <input
@@ -339,7 +339,7 @@ export default function SubjectsPage() {
               
               {/* Curso */}
               <tr className="border-b border-[#DCEBFF]">
-                <th className="text-left text-white bg-[#4A90E2] px-3 py-2 font-semibold">Curso</th>
+                <th className="text-left text-white bg-[#2C5AA0] px-3 py-2 font-semibold">Curso</th>
                 <td className="px-3 py-2 flex justify-between items-center">
                   {editingRow.includes('year') ? (
                     <select
@@ -376,7 +376,7 @@ export default function SubjectsPage() {
               
               {/* Cuatrimestre */}
               <tr className="border-b border-[#DCEBFF]">
-                <th className="text-left text-white bg-[#4A90E2] px-3 py-2 font-semibold">Cuadrimestre</th>
+                <th className="text-left text-white bg-[#2C5AA0] px-3 py-2 font-semibold">Cuadrimestre</th>
                 <td className="px-3 py-2 flex justify-between items-center">
                   {editingRow.includes('quadri') ? (
                     <select
@@ -411,7 +411,7 @@ export default function SubjectsPage() {
               
               {/* Profesores y emails */}
               <tr className="align-top">
-                <th className="text-left text-white bg-[#4A90E2] px-3 py-2 font-semibold">
+                <th className="text-left text-white bg-[#2C5AA0] px-3 py-2 font-semibold">
                   <span className="flex items-center">
                     Profesores y emails
                     <MiniModal >
@@ -519,7 +519,7 @@ export default function SubjectsPage() {
               onClick={() => setScoreType('qual')}
               className={`px-4 py-2 max-md:px-2 max-md:py-1 text-sm max-md:text-xs font-medium transition-colors duration-200 ${
                 scoreType === 'qual'
-                  ? 'bg-[#4A90E2] text-white'
+                  ? 'bg-[#2C5AA0] text-white'
                   : 'bg-white text-gray-700 hover:bg-gray-100'
               }`}
             >
@@ -529,7 +529,7 @@ export default function SubjectsPage() {
               onClick={() => setScoreType('diff')}
               className={`px-4 py-2 max-md:px-2 max-md:py-1 text-sm max-md:text-xs font-medium transition-colors duration-200 ${
                 scoreType === 'diff'
-                  ? 'bg-[#4A90E2] text-white'
+                  ? 'bg-[#2C5AA0] text-white'
                   : 'bg-white text-gray-700 hover:bg-gray-100'
               }`}
             >
@@ -547,7 +547,7 @@ export default function SubjectsPage() {
                   name="id"
                   value={scoreSelectedOptionId}
                   onChange={handleScoreSelectChange}
-                  className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition">
+                  className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition">
                   <option value="Seleccione una asignatura">Cargando...</option>
                 </select>
               </div>
@@ -559,7 +559,7 @@ export default function SubjectsPage() {
                   name="id"
                   value={scoreSelectedOptionId}
                   onChange={handleScoreSelectChange}
-                  className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition">
+                  className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition">
                   <option value="Seleccione una asignatura">Seleccione una asignatura</option>
                   {
                     subjects.filter((subject) => subject.primitiveid !== '00000000').map((subject) => {
@@ -585,7 +585,7 @@ export default function SubjectsPage() {
               <div className="flex gap-2">
                 <input type="number" key={scoreType + scoreSelectedOptionId} name={`score`} min={0} max={10} step={0.1} disabled={scoreSelectedOptionId === 'Seleccione una asignatura'}
                   defaultValue={scoreSelectedOption ? (scoreType === 'qual' ? scoreSelectedOption.qual : scoreSelectedOption.diff) : ''}
-                  className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
+                  className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition"
                   required />
                 <ScoreButton text="Puntuar" active={scoreSelectedOptionId !== 'Seleccione una asignatura'} />
               </div>
@@ -614,10 +614,10 @@ export default function SubjectsPage() {
           <div className="flex flex-col justify-between text-slate-700">
             <div className="flex justify-between">
               <div className="flex grow">
-                <p className="flex justify-start items-center py-1 border-b border-[#4A90E2]">Top</p>
-                <p className="flex justify-start items-center grow pl-4 py-1 border-b border-[#4A90E2]">Asignatura</p>
+                <p className="flex justify-start items-center py-1 border-b border-[#2C5AA0]">Top</p>
+                <p className="flex justify-start items-center grow pl-4 py-1 border-b border-[#2C5AA0]">Asignatura</p>
               </div>
-              <p className="flex justify-start items-center pl-1 py-1 border-b border-[#4A90E2]">Puntuación</p>
+              <p className="flex justify-start items-center pl-1 py-1 border-b border-[#2C5AA0]">Puntuación</p>
             </div>
             {
               isLoadingRanking || isLoadingPrimitive || isLoadingSubjects ? (
@@ -683,7 +683,7 @@ function ScoreButton({ text, active }: { text?: string, active?: boolean }) {
   }
 
   return (
-    <button disabled={pending || !active} type="submit" onClick={handleClick} className={`${pending || !active ? 'opacity-30' : 'opacity-100'} w-full text-center p-1.5 py-2 rounded-md bg-[#4A90E2] text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-[#3A7BC4]`}>
+    <button disabled={pending || !active} type="submit" onClick={handleClick} className={`${pending || !active ? 'opacity-30' : 'opacity-100'} w-full text-center p-1.5 py-2 rounded-md bg-[#2C5AA0] text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-[#3A7BC4]`}>
       {pending ? 'Puntuando...' : text}
     </button>
   )

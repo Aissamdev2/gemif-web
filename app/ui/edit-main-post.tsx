@@ -211,7 +211,7 @@ export default function EditMainPost({ id }: { id: string | undefined }) {
                       name="subjectid"
                       value={scoreSelectedOptionId}
                       onChange={handleScoreSelectChange}
-                      className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
+                      className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition"
                     >
                       <option value="11111111">General</option>
                       {isLoadingSubjects || !subjects ? (
@@ -392,7 +392,7 @@ function UpdateButton({ emptyPost, disabled}:{ emptyPost: boolean, disabled: boo
   }
 
   return (
-    <button disabled={ pending || disabled} type="submit" onClick={handleClick} className={`${pending || disabled ? 'pointer-events-none opacity-30' : ''} w-full text-center p-1.5 py-2 rounded-md bg-[#4A90E2] text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-[#3A7BC4]`}>
+    <button disabled={ pending || disabled} type="submit" onClick={handleClick} className={`${pending || disabled ? 'pointer-events-none opacity-30' : ''} w-full text-center p-1.5 py-2 rounded-md bg-[#2C5AA0] text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-[#3A7BC4]`}>
       {pending ? 'Cargando...' : (emptyPost ? 'Eliminar publicación' : 'Actualizar')}
     </button>
   )

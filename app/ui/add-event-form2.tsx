@@ -95,14 +95,14 @@ export default function AddEventForm() {
               <div className="relative">
                 <label className="flex items-center mb-1 text-gray-600 text-xs font-medium">Título<span className='text-red-500'>*</span></label>
                 <input type="text" name="name"
-                  className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
+                  className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition"
                   placeholder="Añade un título" />
               </div>
 
               <div className="relative">
                 <label className="flex items-center mb-1 text-gray-600 text-xs font-medium">Descripción</label>
                 <textarea name="description"
-                  className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
+                  className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition"
                   placeholder="Escribe una descripción..."></textarea>
               </div>
             </div>
@@ -112,14 +112,14 @@ export default function AddEventForm() {
                 <label className="flex items-center mb-1 text-gray-600 text-xs font-medium">Fecha del evento<span className='text-red-500'>*</span></label>
                 <input type="date" name="date"
                   defaultValue={new Date().toISOString().split('T')[0]}
-                  className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition" />
+                  className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition" />
               </div>
 
               <div className="relative">
                 <label className="flex items-center mb-1 text-gray-600 text-xs font-medium">Hora del evento<span className='text-red-500'>*</span></label>
                 <input type="time" name="time"
                   defaultValue={new Date().toLocaleTimeString().slice(0, 5)}
-                  className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition" />
+                  className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition" />
               </div>
 
               {user?.role === 'user' && (
@@ -134,7 +134,7 @@ export default function AddEventForm() {
                     name="scope"
                     value={scope}
                     onChange={handleScopeChange}
-                    className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition">
+                    className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition">
                     <option value="user">Individual</option>
                     <option value="admin">Clase</option>
                   </select>
@@ -149,7 +149,7 @@ export default function AddEventForm() {
                     name="scope"
                     value={scope}
                     onChange={handleScopeChange}
-                    className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition">
+                    className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition">
                     <option value="user">Individual</option>
                     <option value="admin">Clase</option>
                     <option value="dev">Global</option>
@@ -187,7 +187,7 @@ function AddButton({ disabled }: { disabled: boolean }) {
 
   return (
     <button disabled={pending || disabled} type="submit" onClick={handleClick}
-      className={`${disabled || pending ? 'pointer-events-none opacity-30' : 'opacity-100'} w-full text-center p-1.5 py-2 rounded-md bg-[#4A90E2] text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-[#3A7BC4]`}>
+      className={`${disabled || pending ? 'pointer-events-none opacity-30' : 'opacity-100'} w-full text-center p-1.5 py-2 rounded-md bg-[#2C5AA0] text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-[#3A7BC4]`}>
       {pending ? 'Cargando...' : 'Crear'}
     </button>
   );

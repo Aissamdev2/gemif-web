@@ -103,26 +103,26 @@ export default function Page() {
                     <label className="flex  items-center mb-1 text-gray-600 text-xs font-medium">Nombre de usuario</label>
                     <input type="text" name="name"
                       onChange={handleChange}
-                      className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
+                      className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition"
                       value={userState.name} required />
                   </div>
                   <div className="relative">
                     <label className="flex  items-center mb-1 text-gray-600 text-xs font-medium">Correo electrónico</label>
                     <input type="text" name="email"
-                      className="cursor-not-allowed block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
+                      className="cursor-not-allowed block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition"
                       disabled defaultValue={user.email} required />
                   </div>
                   <div className="relative">
                     <label className="flex  items-center mb-1 text-gray-600 text-xs font-medium">Curso</label>
                     <input type="number" min={1} max={4} name="year"
                       onChange={handleChange}
-                      className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
+                      className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition"
                       value={userState.year} required />
                   </div>
                   <div className="relative">
                     <label className="flex  items-center mb-1 text-gray-600 text-xs font-medium">Rol</label>
                     <input type="text" name="role"
-                      className="cursor-not-allowed block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
+                      className="cursor-not-allowed block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition"
                       disabled defaultValue={ROLES[user.role]} required />
                   </div>
                 </>

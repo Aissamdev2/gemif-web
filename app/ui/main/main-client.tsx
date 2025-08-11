@@ -1,17 +1,34 @@
 'use client';
 
+import { useMainPosts } from '@/app/lib/use-main-posts';
+import { useUser } from '@/app/lib/use-user';
+import { useSubjects } from '../../lib/use-subjects';
+
 import { useCallback, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Eye } from 'lucide-react';
-import { useMainPosts } from '@/app/lib/use-main-posts';
-import { useUser } from '@/app/lib/use-user';
-import { useSubjects } from '../lib/use-subjects';
-import { MainPost, Subject } from '../lib/definitions';
-import Loader from './loader';
-import ErrorPage from './error';
-import ListModal from './list-modal';
+import useSWR from 'swr';
 
-export default function Main() {
+import { MainPost, Subject, User } from '@/app/lib/definitions'; // Make sure User type is imported
+
+// Import your presentation components
+import Loader from '../loader';
+import ErrorPage from '../error';
+import ListModal from '../list-modal';
+
+// Define the props to accept initial data from the Server Component
+interface MainClientProps {
+  initialUser: User;
+  initialMainPosts: MainPost[];
+  initialSubjects: Subject[];
+}
+
+export function MainClient({
+  initialUser,
+  initialMainPosts,
+  initialSubjects,
+}: MainClientProps) {
+  // All state and interactivity remains here
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('11111111');
   const [modalState, setModalState] = useState<{
     postId: string | null;
@@ -19,10 +36,19 @@ export default function Main() {
     position: { top: number; left: number };
   }>({ postId: null, type: null, position: { top: 0, left: 0 } });
 
-  const { user, error: userError, isLoading: isUserLoading } = useUser();
-  const { mainPosts, error: postsError, isLoading: isPostsLoading } = useMainPosts();
-  const { subjects, error: subjectsError, isLoading: isSubjectsLoading } = useSubjects();
+  // 3. Use the initial data to hydrate the SWR hooks.
+  // SWR will not fetch on initial render, providing instant data.
+  const { user, error: userError } = useUser({ fallbackData: initialUser });
+  const { mainPosts, error: postsError } = useMainPosts({ fallbackData: initialMainPosts });
+  const { subjects, error: subjectsError } = useSubjects({ fallbackData: initialSubjects });
 
+  // Since we have fallbackData, the isLoading state will be false on initial load.
+  // We can derive a loading state for subsequent fetches if needed, but it's often not necessary.
+  const isUserLoading = !user && !userError;
+  const isPostsLoading = !mainPosts && !postsError;
+  const isSubjectsLoading = !subjects && !subjectsError;
+
+  // All your handlers and memos remain unchanged
   const handleSubjectChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedSubjectId(e.target.value);
   }, []);
@@ -30,7 +56,6 @@ export default function Main() {
   const toggleList = useCallback(
     (e: React.MouseEvent, type: 'link' | 'file', postId: string) => {
       const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-      // Prevent modal from rendering off-screen (basic fix)
       const top = Math.max(rect.top - 10, 10);
       const left = Math.min(rect.left, window.innerWidth - 300);
       setModalState({ postId, type, position: { top, left } });
@@ -50,6 +75,7 @@ export default function Main() {
   const error = userError || subjectsError || postsError;
   if (error) return <ErrorPage error={error.message} />;
 
+  // The rest of your JSX remains exactly the same
   return (
     <section
       aria-label="Recursos principales"
@@ -64,7 +90,7 @@ export default function Main() {
         className="flex flex-col gap-5 shadow-[0_2px_4px_rgba(16,42,83,0.08)] bg-[#f4f9ff] border border-[#DCEBFF] hover:bg-[#EEF5FF] transition-colors p-5 grow rounded-2xl"
       >
         <div className="flex flex-col gap-3">
-          <h3 className="text-xl font-bold text-slate-700">Recursos útiles</h3>
+          <h2 className="text-xl font-bold text-slate-700">Recursos útiles</h2>
           <div className="flex flex-col sm:flex-row sm:items-end gap-4 flex-wrap">
             <SubjectSelect
               subjects={subjects}
@@ -91,6 +117,7 @@ export default function Main() {
   );
 }
 
+
 // Header Component
 const Header = ({ isLoading, userName }: { isLoading: boolean; userName?: string }) => (
   <header
@@ -109,7 +136,7 @@ const Header = ({ isLoading, userName }: { isLoading: boolean; userName?: string
     </h1>
     <Link
       href="/gemif/weekly-challenges"
-      className="text-center sm:text-left py-2 px-3 hover:bg-[#d3e5ff] transition-colors rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#4A90E2]"
+      className="text-center sm:text-left py-2 px-3 hover:bg-[#d3e5ff] transition-colors rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#2C5AA0]"
       aria-label="Ir a desafíos semanales"
     >
       <p className="text-md font-bold text-slate-700 md:text-xl leading-none">Atrévete con los</p>
@@ -146,7 +173,7 @@ const SubjectSelect = ({
       disabled={isLoading}
       aria-disabled={isLoading}
       aria-live="polite"
-      className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
+      className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition"
     >
       <option value="11111111">{isLoading ? 'Cargando...' : 'General'}</option>
       {Array.isArray(subjects) &&
@@ -165,7 +192,7 @@ const SubjectSelect = ({
 const AddMainFileButton = () => (
   <Link
     href="/gemif/main/add-main-post"
-    className="w-full max-w-xs text-center p-2 rounded-md bg-[#4A90E2] text-white text-sm font-semibold transition-colors duration-300 hover:bg-[#3A7BC4] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C5AA0]"
+    className="w-full max-w-xs text-center p-2 rounded-md bg-[#2C5AA0] text-white text-sm font-semibold transition-colors duration-300 hover:bg-[#3A7BC4] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C5AA0]"
     aria-label="Añadir nuevo recurso"
   >
     Añadir recurso

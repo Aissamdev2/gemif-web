@@ -162,7 +162,7 @@ export default function ViewEventClient({ id }: { id: string | undefined }) {
           onClick={() => router.push(`/gemif/calendar/edit-event/${event?.id}`)}
           className={`${!event || isLoading || !user || userLoading || !subjects || subjectsLoading || user?.id !== event?.userid
             ? 'pointer-events-none opacity-30'
-            : 'hover:bg-[#3A7BC4]'} w-full text-center p-1.5 py-2 rounded-md bg-[#4A90E2] text-white text-xs font-medium close-modal-button transition-all duration-300`}>
+            : 'hover:bg-[#3A7BC4]'} w-full text-center p-1.5 py-2 rounded-md bg-[#2C5AA0] text-white text-xs font-medium close-modal-button transition-all duration-300`}>
           Editar
         </button>
       </div>
@@ -335,7 +335,7 @@ function DeleteButton({ disabled }: { disabled: boolean }) {
 //           onClick={() => router.push(`/gemif/calendar/edit-event/${event?.id}`)}
 //           className={`${!event || !user || !(user?.role === 'dev' || user?.id === event?.userid)
 //             ? 'pointer-events-none opacity-30'
-//             : 'hover:bg-[#3A7BC4]'} w-full text-center p-1.5 py-2 rounded-md bg-[#4A90E2] text-white text-xs font-medium close-modal-button transition-all duration-300`}>
+//             : 'hover:bg-[#3A7BC4]'} w-full text-center p-1.5 py-2 rounded-md bg-[#2C5AA0] text-white text-xs font-medium close-modal-button transition-all duration-300`}>
 //           Editar
 //         </button>
 //       </div>

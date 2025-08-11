@@ -154,7 +154,7 @@ export default function EditWeeklyChallenge({ id }: { id: string }) {
                     name="title"
                     type="text"
                     defaultValue={challenge ? challenge.title : 'Cargando...'}
-                    className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
+                    className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition"
                     placeholder="Título del desafío"
                   />
                 </div>
@@ -169,7 +169,7 @@ export default function EditWeeklyChallenge({ id }: { id: string }) {
                     min="1"
                     max="5"
                     defaultValue={challenge ? challenge.difficulty : '1'}
-                    className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
+                    className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition"
                   />
                 </div>
 
@@ -183,7 +183,7 @@ export default function EditWeeklyChallenge({ id }: { id: string }) {
                         ? new Date(challenge.deadline).toLocaleDateString().split('/').map((d) => d.padStart(2, '0')).reverse().join('-')
                         : ''
                     }
-                    className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
+                    className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition"
                   />
                 </div>
 
@@ -211,7 +211,7 @@ export default function EditWeeklyChallenge({ id }: { id: string }) {
                   <textarea
                     name="description"
                     defaultValue={challenge? challenge.description : 'Cargando...'}
-                    className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
+                    className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition"
                     placeholder="Enuncia un desafío"
                   />
                 </div>
@@ -246,7 +246,7 @@ export default function EditWeeklyChallenge({ id }: { id: string }) {
                           name="options[]"
                           value={opt}
                           onChange={(e) => handleOptionChange(i, e.target.value)}
-                          className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
+                          className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition"
                           placeholder={`Opción ${i + 1}`}
                         />
                         {options.length > 1 && (
@@ -352,7 +352,7 @@ export default function EditWeeklyChallenge({ id }: { id: string }) {
 function EditButton({ disabled, text}: { disabled: boolean, text: string }) {
   const { pending } = useFormStatus()
   return (
-    <button type="submit" disabled={pending || disabled} className={`${pending || disabled ? 'opacity-50 pointer-events-none' : ''} w-full text-center p-1.5 py-2 rounded-md bg-[#4A90E2] text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-[#3A7BC4]`}>
+    <button type="submit" disabled={pending || disabled} className={`${pending || disabled ? 'opacity-50 pointer-events-none' : ''} w-full text-center p-1.5 py-2 rounded-md bg-[#2C5AA0] text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-[#3A7BC4]`}>
       {pending ? 'Cargando...' : text}
     </button>
   )

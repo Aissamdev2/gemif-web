@@ -123,7 +123,7 @@ function AddButton() {
   }
 
   return (
-    <button disabled={ pending } type="submit" onClick={handleClick} className={`${pending ? 'pointer-events-none opacity-30' : ''} w-full text-center p-1.5 py-2 rounded-md bg-[#4A90E2] text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-[#3A7BC4]`}>
+    <button disabled={ pending } type="submit" onClick={handleClick} className={`${pending ? 'pointer-events-none opacity-30' : ''} w-full text-center p-1.5 py-2 rounded-md bg-[#2C5AA0] text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-[#3A7BC4]`}>
       Enviar mensaje
     </button>
   )

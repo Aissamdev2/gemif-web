@@ -35,7 +35,7 @@ export default function HistoryPage() {
               onClick={() => setSelected('exams')}
               className={`px-4 py-2 max-md:px-2 max-md:py-1 text-sm max-md:text-xs font-medium transition-colors duration-200 ${
                 selected === 'exams'
-                  ? 'bg-[#4A90E2] text-white'
+                  ? 'bg-[#2C5AA0] text-white'
                   : 'bg-white text-gray-700 hover:bg-gray-100'
               }`}
             >
@@ -45,7 +45,7 @@ export default function HistoryPage() {
               onClick={() => setSelected('files')}
               className={`px-4 py-2 max-md:px-2 max-md:py-1 text-sm max-md:text-xs font-medium transition-colors duration-200 ${
                 selected === 'files'
-                  ? 'bg-[#4A90E2] text-white'
+                  ? 'bg-[#2C5AA0] text-white'
                   : 'bg-white text-gray-700 hover:bg-gray-100'
               }`}
             >

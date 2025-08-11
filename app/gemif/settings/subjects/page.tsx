@@ -325,7 +325,7 @@ function SubmitButton({ hasChanges }: { hasChanges: boolean }) {
       disabled={!hasChanges || pending}
       className={`${
         !hasChanges || pending ? 'opacity-30' : 'opacity-100'
-      } w-full max-w-xs text-center text-nowrap p-1.5 py-2 rounded-md bg-[#4A90E2] text-white text-xs font-medium transition-all duration-300 hover:bg-[#3A7BC4]`}
+      } w-full max-w-xs text-center text-nowrap p-1.5 py-2 rounded-md bg-[#2C5AA0] text-white text-xs font-medium transition-all duration-300 hover:bg-[#3A7BC4]`}
     >
       {pending ? 'Cargando...' : 'Guardar cambios'}
     </button>

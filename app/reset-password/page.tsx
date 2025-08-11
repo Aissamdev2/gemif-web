@@ -61,7 +61,7 @@ export default function ResetPasswordPage({ searchParams }: { searchParams: { [k
               type="password"
               name="password"
               id="password"
-              className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
+              className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition"
               required
             />
           </div>
@@ -73,7 +73,7 @@ export default function ResetPasswordPage({ searchParams }: { searchParams: { [k
               type="password"
               name="confirm_password"
               id="password"
-              className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
+              className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition"
               required
             />
           </div>

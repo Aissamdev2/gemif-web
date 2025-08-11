@@ -134,7 +134,7 @@ export default function AddWeeklyChallengeForm() {
                 name="title"
                 type="text"
                 placeholder="Título del desafío"
-                className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
+                className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition"
               />
             </div>
 
@@ -146,7 +146,7 @@ export default function AddWeeklyChallengeForm() {
                 min="1"
                 max="5"
                 defaultValue="3"
-                className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
+                className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition"
               />
             </div>
 
@@ -155,7 +155,7 @@ export default function AddWeeklyChallengeForm() {
               <input
                 name="deadline"
                 type="date"
-                className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
+                className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition"
               />
             </div>
 
@@ -184,7 +184,7 @@ export default function AddWeeklyChallengeForm() {
               <textarea
                 name="description"
                 placeholder="Enuncia el desafío"
-                className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
+                className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition"
               />
             </div>
             {
@@ -217,7 +217,7 @@ export default function AddWeeklyChallengeForm() {
                       name={`options[]`}
                       value={opt}
                       onChange={(e) => handleOptionChange(i, e.target.value)}
-                      className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
+                      className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition"
                       placeholder={`Opción ${i + 1}`}
                     />
                     {options.length > 1 && (
@@ -264,7 +264,7 @@ export default function AddWeeklyChallengeForm() {
                           name={`correct_answers[]`}
                           value={opt}
                           onChange={(e) => handleAnswerChange(i, e.target.value)}
-                          className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
+                          className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition"
                           placeholder={`Respuesta ${i + 1}`}
                         />
                         {answers.length > 1 && (
@@ -322,7 +322,7 @@ function SubmitButton({ disabled, text }: { disabled: boolean, text: string }) {
     <button
       type="submit"
       disabled={disabled || pending}
-      className={`${disabled || pending ? 'pointer-events-none opacity-30' : 'opacity-100'} w-full text-center p-1.5 py-2 rounded-md bg-[#4A90E2] text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-[#3A7BC4]`}
+      className={`${disabled || pending ? 'pointer-events-none opacity-30' : 'opacity-100'} w-full text-center p-1.5 py-2 rounded-md bg-[#2C5AA0] text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-[#3A7BC4]`}
     >
       {pending ? 'Cargando...' : text}
     </button>

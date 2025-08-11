@@ -74,7 +74,7 @@ export default function ConfirmModal({
           <button
             onClick={onConfirm}
             className="px-4 py-2 rounded-md text-white"
-            //style={{ backgroundColor: color?? '#4A90E2' }}
+            //style={{ backgroundColor: color?? '#2C5AA0' }}
           >
             {isLoading ? 'Cargando...' : 'Confirmar'}
           </button>

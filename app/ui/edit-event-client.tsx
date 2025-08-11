@@ -109,13 +109,13 @@ export default function EditEventClient({ id }: { id: string }) {
                   <div className="relative">
                     <label className="flex  items-center mb-1 text-gray-600 text-xs font-medium">Título<span className='text-red-500'>*</span></label>
                     <input type="text" name="name"
-                      className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
+                      className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition"
                       placeholder="Añade un titulo"  defaultValue={event ? event.name : 'Cargando...'}/>
                   </div>
                   <div className="relative">
                     <label className="flex  items-center mb-1 text-gray-600 text-xs font-medium">Descripción</label>
                     <textarea  name="description"
-                      className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
+                      className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition"
                       placeholder="Escribe una descripción..." defaultValue={event ? event.description : 'Cargando...'}></textarea>
                   </div>
                 </div>
@@ -123,14 +123,14 @@ export default function EditEventClient({ id }: { id: string }) {
                   <div className="relative">
                     <label className="flex  items-center mb-1 text-gray-600 text-xs font-medium">Fecha del evento<span className='text-red-500'>*</span></label>
                     <input type="date" name="date"
-                      className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
+                      className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition"
                       defaultValue={event ? new Date(event.date).toLocaleDateString().split('/').map((date) => date.padStart(2, '0')).reverse().join('-') : new Date().toLocaleDateString().split('/').map((date) => date.padStart(2, '0')).reverse().join('-')}/>
                   </div>
                   <div className="relative">
                     <label className="flex  items-center mb-1 text-gray-600 text-xs font-medium">Hora del evento<span className='text-red-500'>*</span></label>
                     <input type="time" name="time"
                       defaultValue={event ? event.time : ''}
-                      className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition" />
+                      className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition" />
                   </div>
                   {
                     user &&user.role === 'user' && (
@@ -146,7 +146,7 @@ export default function EditEventClient({ id }: { id: string }) {
                         name="scope"
                         value={scope}
                         onChange={handleScopeChange}
-                        className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition">
+                        className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition">
                           <option value="user">Individual</option>
                           <option value="admin">Clase</option>
                         </select>
@@ -162,7 +162,7 @@ export default function EditEventClient({ id }: { id: string }) {
                         name="scope"
                         value={scope}
                         onChange={handleScopeChange}
-                        className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition">
+                        className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition">
                           <option value="user">Individual</option>
                           <option value="admin">Clase</option>
                           <option value="dev">Global</option>
@@ -199,7 +199,7 @@ export default function EditEventClient({ id }: { id: string }) {
     }
   
     return (
-      <button disabled={disabled || pending} type="submit" onClick={handleClick} className={`${disabled || pending ? 'pointer-events-none opacity-30' : 'opacity-100'} w-full text-center p-1.5 py-2 rounded-md bg-[#4A90E2] text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-[#3A7BC4]`}>
+      <button disabled={disabled || pending} type="submit" onClick={handleClick} className={`${disabled || pending ? 'pointer-events-none opacity-30' : 'opacity-100'} w-full text-center p-1.5 py-2 rounded-md bg-[#2C5AA0] text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-[#3A7BC4]`}>
         {pending ? 'Cargando...' : 'Editar'}
       </button>
     )

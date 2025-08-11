@@ -94,7 +94,7 @@ export default function Page() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="on"
-                className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
+                className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition"
                 required
               />
             </div>
@@ -108,7 +108,7 @@ export default function Page() {
                 name="password"
                 id="password"
                 autoComplete="current-password"
-                className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
+                className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition"
                 required
               />
             </div>
@@ -120,7 +120,7 @@ export default function Page() {
         </form>
         <form action={dispatchForgot}>
           <input type='hidden' name='email' value={email} />
-          <button type="submit" className="text-center text-[#4A90E2] cursor-pointer">¿Olvidaste tu contraseña?</button>
+          <button type="submit" className="text-center text-[#2C5AA0] cursor-pointer">¿Olvidaste tu contraseña?</button>
         </form>
         <div className="w-full border-t border-[#5f3fbe61]" />
         <p className="text-center">¿No tienes cuenta?</p>

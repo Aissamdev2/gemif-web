@@ -3,7 +3,7 @@ import useSWR from "swr";
 import { getSubjects } from "./actions/subjects/actions";
 import { Subject } from "./definitions";
 
-export function useSubjects() {
+export function useSubjects({ fallbackData }: { fallbackData?: Subject[] }) {
   const fetcher = async (): Promise<Subject[]> => {
     const { data, error } = await getSubjects();
     if (error) throw new Error(error);
@@ -12,7 +12,8 @@ export function useSubjects() {
 
   const { data, error, isLoading } = useSWR<Subject[]>((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/subjects', fetcher, {
     revalidateOnFocus: false,
-    dedupingInterval: 60000
+    dedupingInterval: 60000,
+    fallbackData
   });
 
   return { 

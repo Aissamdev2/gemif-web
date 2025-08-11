@@ -129,7 +129,7 @@ export default function AddMainPostForm() {
                 <button
                   onClick={() => setSelected('file')}
                   className={`px-4 py-2 text-sm font-medium transition-colors duration-200 ${
-                    selected === 'file' ? 'bg-[#4A90E2] text-white' : 'bg-white text-gray-700 hover:bg-gray-100'
+                    selected === 'file' ? 'bg-[#2C5AA0] text-white' : 'bg-white text-gray-700 hover:bg-gray-100'
                   }`}
                   type="button"
                 >
@@ -138,7 +138,7 @@ export default function AddMainPostForm() {
                 <button
                   onClick={() => setSelected('link')}
                   className={`px-4 py-2 text-sm font-medium transition-colors duration-200 ${
-                    selected === 'link' ? 'bg-[#4A90E2] text-white' : 'bg-white text-gray-700 hover:bg-gray-100'
+                    selected === 'link' ? 'bg-[#2C5AA0] text-white' : 'bg-white text-gray-700 hover:bg-gray-100'
                   }`}
                   type="button"
                 >
@@ -152,13 +152,13 @@ export default function AddMainPostForm() {
                 <div className="relative">
                   <label className="flex items-center mb-1 text-gray-600 text-xs font-medium">Título <span className='text-red-500'>*</span></label>
                   <input type="text" name="name"
-                    className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
+                    className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition"
                     placeholder="Añade un título" />
                 </div>
                 <div className="relative">
                   <label className="flex items-center mb-1 text-gray-600 text-xs font-medium">Descripción</label>
                   <textarea name="description"
-                    className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
+                    className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition"
                     placeholder="Escribe una descripción..."></textarea>
                 </div>
                 <div className="flex flex-col">
@@ -168,7 +168,7 @@ export default function AddMainPostForm() {
                     name="subjectid"
                     value={selectedId}
                     onChange={handleScoreSelectChange}
-                    className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition">
+                    className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition">
                     <option value="11111111">General</option>
                     {
                       subjects?.filter((subject) => subject.primitiveid !== '00000000').map((subject) => (
@@ -318,7 +318,7 @@ function AddButton({ disabled }: { disabled: boolean }) {
     <button disabled={ pending || disabled}
       type="submit"
       onClick={handleClick}
-      className={`${pending || disabled ? 'pointer-events-none opacity-30' : ''} w-full text-center p-1.5 py-2 rounded-md bg-[#4A90E2] text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-[#3A7BC4]`}>
+      className={`${pending || disabled ? 'pointer-events-none opacity-30' : ''} w-full text-center p-1.5 py-2 rounded-md bg-[#2C5AA0] text-white text-xs font-medium close-modal-button transition-all duration-300 hover:bg-[#3A7BC4]`}>
       {pending ? 'Cargando...' : 'Crear Publicación'}
     </button>
   );

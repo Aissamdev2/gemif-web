@@ -184,7 +184,7 @@ function checkNonStrict(haystack: string, needle: string) {
           <div className="px-4 pb-3 hidden lg:block">
             <Link
               href="/gemif/weekly-challenges/add-weekly-challenge"
-              className="block w-full text-center p-1.5 py-2 rounded-md bg-[#4A90E2] text-white text-xs font-medium transition hover:bg-[#3A7BC4]"
+              className="block w-full text-center p-1.5 py-2 rounded-md bg-[#2C5AA0] text-white text-xs font-medium transition hover:bg-[#3A7BC4]"
             >
               {user?.role === "admin" || user?.role === "dev" ? "Crear desafío" : "Sugerir desafío" }
             </Link>
@@ -195,7 +195,7 @@ function checkNonStrict(haystack: string, needle: string) {
                 id="suggestedSelect"
                 value={selectedSuggested}
                 onChange={onChangeSuggested}
-                className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] transition"
+                className="block w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-[#DCEBFF] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C5AA0] transition"
               >
                 <option value="existing">Desafíos existentes</option>
                 <option value="suggested">Desafíos sugeridos</option>
@@ -256,7 +256,7 @@ function checkNonStrict(haystack: string, needle: string) {
           <div className="ml-3 mt-2 lg:hidden">
             <Link
               href="/gemif/weekly-challenges/add-weekly-challenge"
-              className="block text-center p-1.5 py-2 rounded-md bg-[#4A90E2] text-white text-xs font-medium transition hover:bg-[#3A7BC4]"
+              className="block text-center p-1.5 py-2 rounded-md bg-[#2C5AA0] text-white text-xs font-medium transition hover:bg-[#3A7BC4]"
             >
               {user?.role === "admin" || user?.role === "dev" ? "Crear desafío" : "Sugerir desafío" }
             </Link>
@@ -343,7 +343,7 @@ function checkNonStrict(haystack: string, needle: string) {
                     (user.role === 'dev' || user.role === 'admin') && (
                       <Link
                         href={`/gemif/weekly-challenges/edit-weekly-challenge/${selectedChallenge.id}`}
-                        className="w-full text-center p-1.5 py-2 rounded-md bg-[#4A90E2] text-white text-xs font-medium transition hover:bg-[#3A7BC4]"
+                        className="w-full text-center p-1.5 py-2 rounded-md bg-[#2C5AA0] text-white text-xs font-medium transition hover:bg-[#3A7BC4]"
                       >
                         Editar desafío
                       </Link>
@@ -402,7 +402,7 @@ function SubmitButton({ disabled }: { disabled: boolean}) {
     <button
       type="submit"
       disabled={disabled || pending}
-      className={`w-full text-center p-1.5 py-2 rounded-md bg-[#4A90E2] text-white text-xs font-medium transition hover:bg-[#3A7BC4] ${disabled || pending ? "pointer-events-none opacity-30" : ""
+      className={`w-full text-center p-1.5 py-2 rounded-md bg-[#2C5AA0] text-white text-xs font-medium transition hover:bg-[#3A7BC4] ${disabled || pending ? "pointer-events-none opacity-30" : ""
       }`}
     >
       {pending ? "Cargando..." : "Enviar"}
