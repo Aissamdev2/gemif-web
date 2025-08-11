@@ -80,7 +80,7 @@ export default function Main() {
 
         {modalState.type && modalState.postId && (
           <ListModal
-            post={mainPosts?.find(p => p.id === modalState.postId) ?? null}
+            post={mainPosts?.find(p => p.id === modalState.postId) ?? undefined}
             type={modalState.type}
             position={modalState.position}
             onClose={closeModal}
