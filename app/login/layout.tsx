@@ -9,12 +9,12 @@ export const metadata: Metadata = {
     follow: true,
   },
   alternates: {
-    canonical: "/", // Canonical relativo; Next.js lo resuelve con el dominio
+    canonical: "/login", // Canonical relativo; Next.js lo resuelve con el dominio
   },
   openGraph: {
     title: "Iniciar sesión - GEMiFWeb",
     description: "Accede a tu cuenta de GEMiFWeb URV y disfruta de todos los recursos.",
-    url: "/", // relativo, lo resolverá el dominio base
+    url: "/login", // relativo, lo resolverá el dominio base
     siteName: "GEMiFWeb",
     locale: "es_ES",
     type: "website",
