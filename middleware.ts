@@ -43,7 +43,7 @@ export async function middleware(request: NextRequest) {
     const isTokenBased = type === 'verify' || type === 'forgot';
     const loginCount = session?.logincount ?? -1;
 
-    //console.log('url: ', url, 'session:', session, 'isAuth:', isAuth, 'isTokenBased:', isTokenBased, 'isInternal:', isInternal, 'loginCount:', loginCount);
+    console.log('url: ', url, 'session:', session, 'isAuth:', isAuth, 'isTokenBased:', isTokenBased, 'isInternal:', isInternal, 'loginCount:', loginCount);
     
     // 1. Allow internal requests
 
