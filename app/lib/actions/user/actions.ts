@@ -9,10 +9,13 @@ export const getUser = cache(async (): Promise<{ data: User | null, error: strin
   console.log('getUser');
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/user', {
      headers: {
-      Cookie: (await cookies()).toString(),
+       'X-Internal-Token': process.env.INTERAL_API_SECRET
       
     },
-    cache: "force-cache"
+    cache: "force-cache",
+    next: {
+      revalidate: 30
+    }
   });
   const resJson: ApiResponse = await response.json();
   if (!response.ok) {

@@ -12,10 +12,10 @@ import { cache } from "react";
 export const getMainPosts = cache(async (): Promise<{ data: MainPost[] | null | undefined; error: string | null; errorCode: ErrorCode | null | undefined, details: { name: string; success: boolean, error?: string | null }[] }> => {
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/main-posts', {
      headers: {
-      Cookie: (await cookies()).toString(),
+      'X-Internal-Token': process.env.INTERNAL_API_SECRET,
       
     },
-    next: { tags: ['main-posts'] },
+    next: { tags: ['main-posts'], revalidate: 30 },
     cache: "force-cache"
   });
   const resJson: ApiResponse = await response.json();
