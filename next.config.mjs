@@ -2,9 +2,6 @@
 import withBundleAnalyzer from '@next/bundle-analyzer';
 
 const nextConfig = {
-  experimental: {
-    ppr: 'incremental'
-  },
 };
 
 export default withBundleAnalyzer({

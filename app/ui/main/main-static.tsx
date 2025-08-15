@@ -5,8 +5,6 @@ import SubjectSelect from "@/app/ui/main/subject-select-server";
 import PostsListServer from "@/app/ui/main/posts-list-server";
 import AddMainPostButton from "@/app/ui/main/add-main-post-button";
 
-export const experimental_ppr = true
-
 export default function MainStatic() {
   return (
     <section className="min-h-screen flex flex-col gap-6 p-6">
