@@ -9,7 +9,7 @@ export const getUser = cache(async (): Promise<{ data: User | null, error: strin
   console.log('getUser');
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/user', {
      headers: {
-       'X-Internal-Token': process.env.INTERAL_API_SECRET ?? '',
+       'X-Internal-Token': process.env.INTERAL_API_SECRET ?? 'BrawlStars',
       
     },
     cache: "force-cache",
