@@ -7,7 +7,8 @@ import { useRouter } from 'next/navigation'
 import SubjectTag from "./subject-tag"
 import Timer from "./timer"
 import type { RemainingTime, Subject, User } from "../lib/definitions"
-import { useFormState, useFormStatus } from "react-dom"
+import { useFormStatus } from "react-dom"
+import { useActionState } from "react"
 import { deleteEvent } from "../lib/actions/events/actions"
 import { useEvents } from "../lib/use-events"
 import { mutate } from "swr"
@@ -25,12 +26,12 @@ export default function ViewEventClient({ id }: { id: string | undefined }) {
     return result
   }
 
-  const [state, dispatch] = useFormState(removeEvent, undefined)
+  const [state, dispatch] = useActionState(removeEvent, undefined)
   const [errorMessage, setErrorMessage] = useState<{ error: string, errorCode: string, details: { name: string; success: boolean, error?: string | null }[] }>()
   const router = useRouter()
   const { events, error, isLoading } = useEvents()
-  const { subjects, error: subjectsError, isLoading: subjectsLoading } = useSubjects();
-  const { user, error: userError, isLoading: userLoading } = useUser();
+  const { subjects, error: subjectsError, isLoading: subjectsLoading } = useSubjects({});
+  const { user, error: userError, isLoading: userLoading } = useUser({});
   const event = events?.find((event) => event.id === id)
 
   useEffect(() => {
@@ -203,7 +204,7 @@ function DeleteButton({ disabled }: { disabled: boolean }) {
 // import SubjectTag from "./subject-tag"
 // import Timer from "./timer"
 // import type { RemainingTime, Subject, User } from "../lib/definitions"
-// import { useFormState, useFormStatus } from "react-dom"
+// import { useActionState, useFormStatus } from "react-dom"
 // import { deleteEvent } from "../lib/actions/events/actions"
 // import { useEvents } from "../lib/use-events"
 // import { mutate } from "swr"
@@ -220,12 +221,12 @@ function DeleteButton({ disabled }: { disabled: boolean }) {
 //     return result
 //   }
 
-//   const [state, dispatch] = useFormState(removeEvent, undefined)
+//   const [state, dispatch] = useActionState(removeEvent, undefined)
 //   const [errorMessage, setErrorMessage] = useState<{ error: string, errorCode: string, details?: string[] }>()
 //   const router = useRouter()
 //   const { events, error, isLoading } = useEvents()
-//   const { subjects, error: subjectsError, isLoading: subjectsLoading } = useSubjects();
-//   const { user, error: userError, isLoading: userLoading } = useUser();
+//   const { subjects, error: subjectsError, isLoading: subjectsLoading } = useSubjects({});
+//   const { user, error: userError, isLoading: userLoading } = useUser({});
 //   const event = events?.find((event) => event.id === id)
 
 //   useEffect(() => {

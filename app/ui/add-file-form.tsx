@@ -1,6 +1,7 @@
 'use client'
 
-import { useFormState, useFormStatus } from 'react-dom'
+import { useFormStatus } from 'react-dom'
+import { useActionState } from 'react'
 import { addHistoryItem } from '@/app/lib/actions/history/actions'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -67,7 +68,7 @@ const createArchiveItem = async (_currentState: unknown, formData: FormData) => 
 };
 
 
-  const [state, formAction] = useFormState(createArchiveItem, undefined);
+  const [state, formAction] = useActionState(createArchiveItem, undefined);
   const [files, setFiles] = useState<File[]>([]);
   const [errorMessage, setErrorMessage] = useState<{ error: string, errorCode: string, details: { name: string; success: boolean, error?: string | null }[] } | null>(null)
 

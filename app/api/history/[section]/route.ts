@@ -21,10 +21,10 @@ interface TreeBatch {
   };
 }
 
-export async function GET(request: Request, { params }: { params: { section: string } }) {
+export async function GET(request: Request, { params }: any) {
   const userId = request.headers.get("X-User-Id");
   const token = request.headers.get("X-User-Github-Token");
-  const section = params.section;
+  const section = await params.section;
 
   if (!userId || !token) {
     return jsonResponse({
@@ -85,7 +85,7 @@ const fetchTreeBatch = async (batch: TreeBatch, token: string): Promise<void> =>
 
   const response = await fetch(GITHUB_API_URL, {
     method: "POST",
-    headers: {
+     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
@@ -142,7 +142,7 @@ async function fetchGitHubRepoContents(token: string, section: string): Promise<
 
   const rootResponse = await fetch(GITHUB_API_URL, {
     method: "POST",
-    headers: {
+     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },

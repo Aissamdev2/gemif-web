@@ -18,8 +18,8 @@
 // export default function CalendarClient() {
 //   const { date, month, year } = useContext(DateContext);
 //   const { events, error, isLoading } = useEvents()
-//   const { user, isLoading: isLoadingUser } = useUser()
-//   const { subjects, error: subjectsError, isLoading: subjectsLoading } = useSubjects()
+//   const { user, isLoading: isLoadingUser } = useUser({})
+//   const { subjects, error: subjectsError, isLoading: subjectsLoading } = useSubjects({})
   
 //   if (isLoading || isLoadingUser || subjectsLoading) {
 //     return (

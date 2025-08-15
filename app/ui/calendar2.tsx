@@ -17,7 +17,7 @@ import Dashboard from "./dashboard";
 export default function Calendar() {
   const {year, month} = useContext(DateContext);
   const { events, error, isLoading } = useEvents()
-  const { subjects, error: subjectsError, isLoading: subjectsLoading } = useSubjects()
+  const { subjects, error: subjectsError, isLoading: subjectsLoading } = useSubjects({})
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
   const eventsInDate = selectedDate ? events?.filter((event) => {

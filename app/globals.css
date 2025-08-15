@@ -13,6 +13,10 @@ body {
   background-color: #ffffff;
 }
 
+/* example: if your header is 64px tall */
+:root { --header-height: 56px; }
+
+
 /* In globals.css or a dedicated CSS file */
 .custom-scrollbar::-webkit-scrollbar {
   width: 8px;

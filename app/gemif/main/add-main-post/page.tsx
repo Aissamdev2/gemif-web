@@ -1,11 +1,8 @@
-import Modal from "@/app/ui/modal"
-import AddMainPostForm from "@/app/ui/add-main-post-form"
+import AddMainPostServer from "@/app/ui/main/add-main-post/add-main-post-server"
 
-export default async function Page({ params }: { params: { type: string } }) {
+export default async function Page() {
 
   return (
-    <Modal>
-      <AddMainPostForm />
-    </Modal>
+      <AddMainPostServer route="/gemif/main"/>
   )
 }

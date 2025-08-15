@@ -15,7 +15,7 @@ import ErrorPage from "./error";
 export default function Calendar() {
   const { year, month } = useContext(DateContext);
   const { events, isLoading: eventsLoading, error: eventsError } = useEvents();
-  const { subjects, isLoading: subjectsLoading, error: subjectsError } = useSubjects();
+  const { subjects, isLoading: subjectsLoading, error: subjectsError } = useSubjects({});
   const { primitiveSubjects, isLoading: primitiveSubjectsLoading, error: primitiveSubjectsError } = usePrimitiveSubjects();
 
   const pathname = usePathname();

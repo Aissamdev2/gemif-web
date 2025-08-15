@@ -1,11 +1,13 @@
 import Modal from "@/app/ui/modal"
 import ViewEventClient from "@/app/ui/view-event-client2"
 
-export default async function Page({ params }: { params: { id: string } }) {
+export default async function Page({ params }: any) {
+
+  const { id } = await params;
 
   return (
     <Modal>
-      <ViewEventClient id={params.id} />
+      <ViewEventClient id={id} />
     </Modal>
   )
 }

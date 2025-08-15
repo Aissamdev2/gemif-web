@@ -6,8 +6,9 @@ import { ApiResponse, ErrorCode, GitHubContent } from "../../definitions";
 
 export async function getMainData(): Promise<{data: GitHubContent[] | null, error: string | null, errorCode: ErrorCode | null | undefined }> {
   const res = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + "/api/main-data", { 
-    headers: {
-      Cookie: cookies().toString()
+     headers: {
+      Cookie: (await cookies()).toString(),
+      
     },
     cache: "no-cache" 
   });

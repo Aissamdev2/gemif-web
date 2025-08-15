@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { Event, Subject } from "../lib/definitions";
 import { useRouter } from "next/navigation";
-import { useFormState, useFormStatus } from "react-dom";
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { updateEvent } from "../lib/actions/events/actions";
 import { useUser } from "../lib/use-user";
 import { useSubjects } from "../lib/use-subjects";
@@ -29,13 +30,13 @@ export default function EditEventClient({ id }: { id: string }) {
     return result;
   }
 
-  const [state, dispatch] = useFormState(changeEvent, undefined)
+  const [state, dispatch] = useActionState(changeEvent, undefined)
   const [errorMessage, setErrorMessage] = useState<{ error: string, errorCode: string, details: { name: string; success: boolean, error?: string | null }[] }>()
   const [scope, setScope] = useState('')
   const router = useRouter()
-  const { subjects, error, isLoading } = useSubjects()
+  const { subjects, error, isLoading } = useSubjects({})
   const { events, error: eventsError, isLoading: eventsLoading } = useEvents()
-  const { user, error: userError, isLoading: userLoading } = useUser();
+  const { user, error: userError, isLoading: userLoading } = useUser({});
 
   const event = events?.find(event => event.id === id)
 

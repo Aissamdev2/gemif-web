@@ -1,21 +1,18 @@
 import { FC } from 'react';
 
 interface ErrorPageProps {
-  searchParams: {
-    title?: string;
-    description?: string;
-    code?: string;
-  };
+  title?: string;
+  description?: string;
+  code?: string;
 }
 
 
-
-const ErrorPage: FC<ErrorPageProps> = ({ searchParams }) => {
+const ErrorPage = async ({ searchParams }: any) => {
   const {
     title = 'Unknown Error',
     description = 'An unexpected error occurred.',
     code = '000',
-  } = searchParams;
+  }: ErrorPageProps = await searchParams;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-blue-50 px-4 py-8">

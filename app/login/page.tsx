@@ -1,7 +1,8 @@
 'use client'
 
 import { authenticate, forgotPassword, resetPassword } from '@/app/lib/actions/session/actions'
-import { useFormStatus, useFormState } from 'react-dom'
+import { useFormStatus } from 'react-dom'
+import { useActionState } from 'react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { CircleAlert } from 'lucide-react'
@@ -20,9 +21,9 @@ export default function Page() {
   };
 
   const [errorMessage, setErrorMessage] = useState<{ error: string, errorCode: string, details: { name: string; success: boolean, error?: string | null }[] } | null>(null);
-  const [state, dispatch] = useFormState(loginUser, undefined);
+  const [state, dispatch] = useActionState(loginUser, undefined);
   const [email, setEmail] = useState('');
-  const [forgotState, dispatchForgot] = useFormState(forgot, undefined);
+  const [forgotState, dispatchForgot] = useActionState(forgot, undefined);
   const [forgotErrorMessage, setForgotErrorMessage] = useState<{ error: string, errorCode: string, details: { name: string; success: boolean, error?: string | null }[] } | null>(null);
 
 

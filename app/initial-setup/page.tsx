@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { usePrimitiveSubjects } from '../lib/use-primitive-subjects';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useFormStatus } from 'react-dom'
+import { useActionState } from 'react';
 import { mutate } from 'swr';
 import { initialize } from '../lib/actions/session/actions';
 import { updateSubjects, archiveSubjects } from '../lib/actions/subjects/actions';
@@ -126,7 +127,7 @@ export default function InitialSetup() {
 
 
 
-  const [state, dispatch] = useFormState(submitAll, undefined);
+  const [state, dispatch] = useActionState(submitAll, undefined);
   const [errorMessage, setErrorMessage] = useState<{ error: string, errorCode: string, details: { name: string; success: boolean, error?: string | null }[] } | null>(null);
   const router = useRouter()
 

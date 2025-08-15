@@ -1,9 +1,8 @@
 import { sql } from '@vercel/postgres';
 import { jsonResponse } from '@/app/lib/helpers';
 
-type Params = { params: { id: string } };
 
-export async function GET(request: Request, { params }: Params) {
+export async function GET(request: Request, { params }: any) {
   try {
     const userId = request.headers.get('X-User-Id');
     if (!userId) {
@@ -15,7 +14,7 @@ export async function GET(request: Request, { params }: Params) {
       }, 401);
     }
 
-    const { id } = params;
+    const { id } = await params;
     if (!id) {
       return jsonResponse({
         error: 'Missing event ID in params',
@@ -48,7 +47,7 @@ export async function GET(request: Request, { params }: Params) {
   }
 }
 
-export async function PATCH(request: Request, { params }: Params) {
+export async function PATCH(request: Request, { params }: any) {
   try {
     const userId = request.headers.get('X-User-Id');
     if (!userId) {
@@ -60,7 +59,7 @@ export async function PATCH(request: Request, { params }: Params) {
       }, 401);
     }
 
-    const { id } = params;
+    const { id } = await params;
     if (!id) {
       return jsonResponse({
         error: 'Missing event ID in params',
@@ -148,7 +147,7 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 }
 
-export async function DELETE(request: Request, { params }: Params) {
+export async function DELETE(request: Request, { params }: any) {
   try {
     const userId = request.headers.get('X-User-Id');
     if (!userId) {
@@ -160,7 +159,7 @@ export async function DELETE(request: Request, { params }: Params) {
       }, 401);
     }
 
-    const { id } = params;
+    const { id } = await params;
     if (!id) {
       return jsonResponse({
         error: 'Missing event ID in params',

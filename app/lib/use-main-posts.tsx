@@ -1,10 +1,10 @@
 // lib/use-main-posts.ts
 import useSWR from "swr";
-import { getMainPosts } from "./actions/main-posts/actions";
+import { getMainPost, getMainPosts } from "./actions/main-posts/actions";
 import { MainPost } from "./definitions";
 
-export function useMainPosts({ fallbackData }: { fallbackData?: MainPost[] }) {
-  const fetcher = async (): Promise<MainPost[]> => {
+export function useMainPosts({ fallbackData, id }: { fallbackData?: MainPost[], id?: string }) {
+  const fetcher = async (): Promise<MainPost[] > => {
     const { data, error, errorCode } = await getMainPosts();
     if (error) {
       const customError = new Error(error);
@@ -18,7 +18,9 @@ export function useMainPosts({ fallbackData }: { fallbackData?: MainPost[] }) {
     revalidateOnFocus: false,
     dedupingInterval: 30000,
     shouldRetryOnError: false,
-    fallbackData
+    fallbackData,
+    revalidateIfStale: false,
+    revalidateOnMount: false
   });
 
   return { 

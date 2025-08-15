@@ -1,11 +1,11 @@
-import Modal from "@/app/ui/modal"
-import EditMainPost from "@/app/ui/edit-main-post"
+import EditMainPostServer from "@/app/ui/main/edit-main-post/edit-main-post-server"
 
-export default async function Page({ params }: { params: { id: string, type: string } }) {
+
+export default async function Page({ params }: any) {
+
+  const { id } = await params;
 
   return (
-    <Modal>
-      <EditMainPost id={params.id} />
-    </Modal>
+    <EditMainPostServer id={id} route="/gemif/main" />
   )
 }

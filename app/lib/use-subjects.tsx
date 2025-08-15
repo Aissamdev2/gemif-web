@@ -13,7 +13,9 @@ export function useSubjects({ fallbackData }: { fallbackData?: Subject[] }) {
   const { data, error, isLoading } = useSWR<Subject[]>((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/subjects', fetcher, {
     revalidateOnFocus: false,
     dedupingInterval: 60000,
-    fallbackData
+    fallbackData,
+    revalidateIfStale: false,
+    revalidateOnMount: false
   });
 
   return { 

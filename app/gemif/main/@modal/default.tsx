@@ -1,6 +1,6 @@
-import MainPage from "../page";
+import MainServer from "@/app/ui/main/main-server";
 
 export default function Default() {
   
-  return <MainPage />;
+  return null
 }

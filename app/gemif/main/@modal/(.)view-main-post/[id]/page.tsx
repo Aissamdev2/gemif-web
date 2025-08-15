@@ -1,11 +1,11 @@
-import Modal from "@/app/ui/modal"
-import ViewMainPost from "@/app/ui/view-main-post"
+import ViewMainPostServer from "@/app/ui/main/view-main-post/view-main-post-server"
 
-export default async function Page({ params }: { params: { id: string, type: string } }) {
+
+export default async function Page({ params }: any) {
+
+  const { id } = await params;
 
   return (
-    <Modal>
-      <ViewMainPost id={params.id} />
-    </Modal>
+    <ViewMainPostServer id={id} />
   )
 }

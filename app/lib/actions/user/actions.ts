@@ -2,14 +2,17 @@
 
 import { cookies } from "next/headers";
 import { ApiResponse, ErrorCode, User } from "../../definitions";
+import { cache } from "react";
 
 
 
-export async function getUser(): Promise<{ data: User | null, error: string | null, errorCode: ErrorCode | null | undefined }> {
+export const getUser = cache(async (): Promise<{ data: User | null, error: string | null, errorCode: ErrorCode | null | undefined }> => {
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/user', {
-    headers: {
-      Cookie: cookies().toString()
-    }
+     headers: {
+      Cookie: (await cookies()).toString(),
+      
+    },
+    cache: "force-cache"
   });
   const resJson: ApiResponse = await response.json();
   if (!response.ok) {
@@ -17,7 +20,7 @@ export async function getUser(): Promise<{ data: User | null, error: string | nu
   }
   const user: User =  resJson.data;
   return { data: user, error: null, errorCode: null };
-}
+})
 
 
 export async function updateUser(formData: FormData): Promise<{ data: User | null; error: string | null; errorCode: ErrorCode | null | undefined, details: { name: string; success: boolean, error?: string | null }[] }> {
@@ -31,9 +34,10 @@ export async function updateUser(formData: FormData): Promise<{ data: User | nul
 
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/user/', {
     method: 'PATCH',
-    headers: {
+     headers: {
+      Cookie: (await cookies()).toString(),
       'Content-Type': 'application/json',
-      Cookie: cookies().toString(),
+      
     },
     body: JSON.stringify(filteredPayload),
   })

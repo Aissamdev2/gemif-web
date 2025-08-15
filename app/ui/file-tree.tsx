@@ -4,7 +4,8 @@ import { GitHubContent } from "../lib/definitions";
 import FolderToggle from "./folder-toggle";
 import { File, Trash2, LoaderCircle } from "lucide-react";
 import { deleteHistoryItem } from "@/app/lib/actions/history/actions";
-import { useFormState, useFormStatus } from "react-dom";
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { mutate } from "swr";
 import { useEffect, useState } from "react";
 import ConfirmModal from "./confirm-modal";
@@ -52,7 +53,7 @@ const FileTree = ({ structure }: { structure: GitHubContent[] }) => {
     return res;
   };
 
-  const [state, dispatch] = useFormState(removeItem, undefined);
+  const [state, dispatch] = useActionState(removeItem, undefined);
 
   
   useEffect(() => {

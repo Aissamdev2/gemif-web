@@ -9,8 +9,9 @@ import { revalidateTag } from "next/cache";
 
 export async function getRanking(): Promise<{ data: { qual: Ranking, diff: Ranking } | null; error: string | null; errorCode: ErrorCode | null | undefined; details: { name: string; success: boolean, error?: string | null }[] }> {
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/ranking', {
-    headers: {
-      Cookie: cookies().toString()
+     headers: {
+      Cookie: (await cookies()).toString(),
+      
     },
     next: { tags: ['ranking'] }
   });
@@ -73,9 +74,10 @@ export async function updateRanking(formData: FormData): Promise<{ data: { qual:
 
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/ranking/' + id, {
     method: 'PATCH',
-    headers: {
+     headers: {
+      Cookie: (await cookies()).toString(),
       'Content-Type': 'application/json',
-      Cookie: cookies().toString()
+      
     },
     body: JSON.stringify({ type, score })
   });

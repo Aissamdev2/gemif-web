@@ -14,7 +14,9 @@ export function jsonResponse(res: Partial<ApiResponse>, status = 200) {
     errorCode: res.errorCode ?? null,
   }), {
     status,
-    headers: { 'Content-Type': 'application/json' }
+     headers: {
+    'Content-Type': 'application/json'
+  }
   });
 }
 
@@ -49,7 +51,8 @@ export async function createVerificationToken(userId: string, type: 'verify' | '
 
   const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL}/api/verification-token`, {
     method: 'POST',
-    headers: {
+     headers: {
+      Cookie: (await cookies()).toString(),
       'Content-Type': 'application/json',
       'X-Internal-Token': process.env.INTERNAL_API_SECRET!,
     },
@@ -71,7 +74,8 @@ export async function createVerificationToken(userId: string, type: 'verify' | '
 export async function validateVerificationToken(rawToken: string, type: 'verify' | 'forgot'): Promise<{ data: any, error: string | null, publicError: string | null, errorCode: ErrorCode | null, details: any[] }> {
   const res = await fetch(`${API_URL}/api/verification-token?type=${type}`, {
     method: 'GET',
-    headers: {
+     headers: {
+      Cookie: (await cookies()).toString(),
       'Content-Type': 'application/json',
       'X-Internal-Token': process.env.INTERNAL_API_SECRET!,
     },
@@ -151,8 +155,8 @@ export async function verifyJWT(token: string) {
   }
 }
 
-export function getSession(): UserCookie | null {
-  const tokenCookieString = cookies().get('session')?.value;
+export async function getSession(): Promise<UserCookie | null> {
+  const tokenCookieString = (await cookies()).get('session')?.value;
   return tokenCookieString ? JSON.parse(tokenCookieString) : null;
 }
 
@@ -166,7 +170,7 @@ export async function verifySession(): Promise<{
   session: any | null;
   type: SessionType;
 }> {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
 
   // 1. Normal authenticated session
   const sessionCookie = cookieStore.get('session')?.value;

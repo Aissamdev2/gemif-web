@@ -9,8 +9,9 @@ import { info } from "console";
 
 export async function getPrimitiveSubjects(): Promise<{ data: PrimitiveSubject[] | null, error: string | null, errorCode: ErrorCode | null | undefined, details: { name: string; success: boolean, error?: string | null }[] }> {
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/primitive-subjects', {
-    headers: {
-      Cookie: cookies().toString()
+     headers: {
+      Cookie: (await cookies()).toString(),
+      
     },
   });
   const resJson: ApiResponse = await response.json();
@@ -60,9 +61,10 @@ export async function updatePrimitiveSubject( formData: FormData): Promise<{ dat
 
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/primitive-subjects/' + id, {
     method: 'PATCH',
-    headers: {
+     headers: {
+      Cookie: (await cookies()).toString(),
       'Content-Type': 'application/json',
-      Cookie: cookies().toString(),
+      
     },
     body: JSON.stringify(inputData),
   })

@@ -1,7 +1,7 @@
 import { sql } from '@vercel/postgres';
 import { jsonResponse } from '@/app/lib/helpers';
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: any) {
   const userId = request.headers.get('X-User-Id');
   if (!userId) {
     return jsonResponse({
@@ -13,7 +13,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 
   try {
-    const { id } = params;
+    const { id } = await params;
     const result = await sql`
       SELECT * FROM weekly_challenges WHERE id = ${id} AND userid = ${userId}
     `;
@@ -28,7 +28,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, { params }: any) {
   const userId = request.headers.get('X-User-Id');
   if (!userId) {
     return jsonResponse({
@@ -40,7 +40,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   }
 
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
 
     if (!body || typeof body !== 'object') {
@@ -139,7 +139,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: any) {
   const userId = request.headers.get('X-User-Id');
   if (!userId) {
     return jsonResponse({
@@ -151,7 +151,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
   }
 
   try {
-    const { id } = params;
+    const { id } = await params;
     await sql`
       DELETE FROM weekly_challenges WHERE id = ${id} AND userid = ${userId}
     `;

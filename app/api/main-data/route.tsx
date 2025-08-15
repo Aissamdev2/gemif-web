@@ -44,7 +44,8 @@ export async function GET(request: Request) {
 
 async function fetchStructure(token: string, path = "main-data") {
   const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { Authorization: `Bearer ${token}` },
+     headers: {
+      Authorization: `Bearer ${token}` },
   });
   const json = await res.json().catch(() => ({}));
 
@@ -88,8 +89,8 @@ export async function POST(req: Request) {
   // Check if file exists to get SHA
   let sha: string | undefined;
   const shaRes = await fetch(`${BASE_URL}${encodeURIComponent(path)}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
+     headers: {
+            Authorization: `Bearer ${token}`,
       Accept: "application/vnd.github+json",
     },
   });
@@ -101,8 +102,8 @@ export async function POST(req: Request) {
   try {
     const uploadRes = await fetch(`${BASE_URL}${encodeURIComponent(path)}`, {
       method: "PUT",
-      headers: {
-        Authorization: `Bearer ${token}`,
+       headers: {
+              Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -161,8 +162,8 @@ export async function DELETE(req: NextRequest) {
 
 async function deleteSingleFile(path: string, token: string) {
   const shaRes = await fetch(`${BASE_URL}${path}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
+     headers: {
+            Authorization: `Bearer ${token}`,
       Accept: "application/vnd.github+json",
     },
   });
@@ -182,8 +183,8 @@ async function deleteSingleFile(path: string, token: string) {
 
   const deleteRes = await fetch(`${BASE_URL}${path}`, {
     method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`,
+     headers: {
+            Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -207,8 +208,8 @@ async function deleteFolder(folderPath: string, token: string) {
   while (queue.length) {
     const currentPath = queue.pop()!;
     const res = await fetch(`${BASE_URL}${currentPath}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
+       headers: {
+              Authorization: `Bearer ${token}`,
         Accept: "application/vnd.github+json",
       },
     });
@@ -234,8 +235,8 @@ async function deleteFolder(folderPath: string, token: string) {
 
     const res = await fetch(`${BASE_URL}${path}`, {
       method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
+       headers: {
+              Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({

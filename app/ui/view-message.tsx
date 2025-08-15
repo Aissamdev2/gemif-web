@@ -1,6 +1,7 @@
 'use client'
 
-import { useFormStatus, useFormState } from "react-dom";
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { deleteMessage } from "@/app/lib/actions/messages/actions";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -22,10 +23,10 @@ export default function ViewMessage({ id }: { id: string}) {
     return 'Message deleted'
   }
 
-  const [state, dispatch] = useFormState(removeMessage, undefined)
+  const [state, dispatch] = useActionState(removeMessage, undefined)
   const [errorMessage, setErrorMessage] = useState('')
   const router = useRouter()
-  const { user, error, isLoading } = useUser();
+  const { user, error, isLoading } = useUser({});
   const { messages, error: messagesError, isLoading: loadingMessages } = useMessages();
 
   const message = messages?.find(message => message.id === id)

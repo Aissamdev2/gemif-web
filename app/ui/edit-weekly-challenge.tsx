@@ -1,6 +1,7 @@
 'use client'
 
-import { useFormState, useFormStatus } from 'react-dom'
+import { useFormStatus } from 'react-dom'
+import { useActionState } from 'react'
 import { updateWeeklyChallenge } from '@/app/lib/actions/weekly-challenges/actions'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -44,14 +45,14 @@ export default function EditWeeklyChallenge({ id }: { id: string }) {
 
 
 
-  const [state, dispatch] = useFormState(changeWeeklyChallenge, undefined)
+  const [state, dispatch] = useActionState(changeWeeklyChallenge, undefined)
   const [errorMessage, setErrorMessage] = useState<{ error: string, errorCode: string, details: { name: string; success: boolean, error?: string | null }[] } | null>(null);
   const [isMultipleChoice, setIsMultipleChoice] = useState(false)
   const [options, setOptions] = useState<string[]>([''])
   const [answers, setAnswers] = useState<string[]>([''])
   const [selectedCorrect, setSelectedCorrect] = useState<string | null>(null)
   const { weeklyChallenges, error, isLoading } = useWeeklyChallenges()
-  const { user, isLoading: userIsLoading, error: userError } = useUser();
+  const { user, isLoading: userIsLoading, error: userError } = useUser({});
   
   const router = useRouter()
 

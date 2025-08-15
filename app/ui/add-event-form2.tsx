@@ -1,6 +1,7 @@
 'use client'
 
-import { useFormStatus, useFormState } from "react-dom";
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { addEvent } from "@/app/lib/actions/events/actions";
 import { getSubjects } from "@/app/lib/actions/subjects/actions";
 import { useEffect, useState } from "react";
@@ -28,12 +29,12 @@ export default function AddEventForm() {
     return result;
   };
 
-  const [state, dispatch] = useFormState(addNewEvent, undefined);
+  const [state, dispatch] = useActionState(addNewEvent, undefined);
   const [errorMessage, setErrorMessage] = useState<{ error: string, errorCode: string, details: { name: string; success: boolean, error?: string | null }[] }>();
   const [scope, setScope] = useState('user');
   const router = useRouter();
-  const { user, isLoading, error } = useUser();
-  const { subjects, isLoading: isLoadingSubjects, error: subjectsError } = useSubjects();
+  const { user, isLoading, error } = useUser({});
+  const { subjects, isLoading: isLoadingSubjects, error: subjectsError } = useSubjects({});
   const { primitiveSubjects, isLoading: isLoadingPrimitiveSubjects, error: primitiveSubjectsError } = usePrimitiveSubjects();
   const [disabled, setDisabled] = useState(true);
 

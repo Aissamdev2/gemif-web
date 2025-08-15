@@ -1,10 +1,10 @@
-import MainServer from "@/app/ui/main/main-server";
+import MainStatic from "@/app/ui/main/main-static";
 
 
 export default function MainPage() {
 
   return (
-    <MainServer />
+    <MainStatic />
   )
 }
 

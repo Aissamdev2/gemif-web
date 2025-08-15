@@ -5,26 +5,42 @@ import { ApiResponse, ErrorCode, MainPost } from "../../definitions";
 import { revalidateTag } from "next/cache";
 import { mainPostsAddSchema, mainPostsUpdateSchema, mainPostsDeleteSchema } from "./validation";
 import { normalizeEmptyStrings } from "../../utils";
-import z, { file } from "zod";
-import path from "path";
-import { id } from "zod/v4/locales";
+import z from "zod";
+import { cache } from "react";
 
 
-
-export async function getMainPosts(): Promise<{ data: MainPost[] | null | undefined; error: string | null; errorCode: ErrorCode | null | undefined, details: { name: string; success: boolean, error?: string | null }[] }> {
+export const getMainPosts = cache(async (): Promise<{ data: MainPost[] | null | undefined; error: string | null; errorCode: ErrorCode | null | undefined, details: { name: string; success: boolean, error?: string | null }[] }> => {
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/main-posts', {
-    headers: {
-      Cookie: cookies().toString()
+     headers: {
+      Cookie: (await cookies()).toString(),
+      
     },
-    next: { tags: ['main-posts'] }
+    next: { tags: ['main-posts'] },
+    cache: "force-cache"
   });
   const resJson: ApiResponse = await response.json();
   if (!response.ok) {
-    return { data: null, error: `Error al recuperar los recursos: ${resJson.publicError}`, errorCode: resJson.errorCode, details: resJson.details };
+    return { data: null, error: resJson.publicError ?? "Error al recuperar información de las publicaciones", errorCode: resJson.errorCode, details: resJson.details };
   }
   const mainPosts: MainPost[] = resJson.data;
   return { data: mainPosts, error: null, errorCode: null, details: [] };
-}
+})
+
+export const getMainPost = cache(async ({ id, cache = true }: { id: string, cache?: boolean }): Promise<{ data: MainPost | null ; error: string | null; errorCode: ErrorCode | null | undefined, details: { name: string; success: boolean, error?: string | null }[] }> => {
+  const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/main-posts/' + id, {
+     headers: {
+      Cookie: (await cookies()).toString(),
+    },
+    cache: cache ? "force-cache" : "no-cache"
+  });
+  const resJson: ApiResponse = await response.json();
+  if (!response.ok) {
+    return { data: null, error: resJson.publicError ?? "Error al recuperar información de la publicación", errorCode: resJson.errorCode, details: resJson.details };
+  }
+  const mainPost: MainPost = resJson.data;
+  return { data: mainPost, error: null, errorCode: null, details: [] };
+})
+
 
 const ERROR_MESSAGES: Record<string, string> = {
   id: "Id",
@@ -113,9 +129,10 @@ export async function addMainPost(formData: FormData): Promise<{
 
         const res = await fetch(`${process.env.BASE_URL}/api/main-data`, {
           method: "POST",
-          headers: {
+           headers: {
+      Cookie: (await cookies()).toString(),
             "Content-Type": "application/json",
-            Cookie: cookies().toString(),
+            
           },
           body: JSON.stringify({
             path: `${pathPrefix}/${file.name}`,
@@ -171,8 +188,9 @@ export async function addMainPost(formData: FormData): Promise<{
       {
         method: "POST",
         headers: {
+      Cookie: (await cookies()).toString(),
           "Content-Type": "application/json",
-          Cookie: cookies().toString(),
+          
         },
         body: JSON.stringify(mainPost),
       }
@@ -233,9 +251,10 @@ export async function addMainPost(formData: FormData): Promise<{
     (process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL) + "/api/main-posts",
     {
       method: "POST",
-      headers: {
+       headers: {
+      Cookie: (await cookies()).toString(),
         "Content-Type": "application/json",
-        Cookie: cookies().toString(),
+        
       },
       body: JSON.stringify(mainPost),
     }
@@ -296,7 +315,7 @@ export async function addMainPost(formData: FormData): Promise<{
 }
 
 
-export async function updateMainPost(formData: FormData): Promise<{ ok: boolean; success: number; data: MainPost[] | null; error: string | null; errorCode: ErrorCode | null | undefined; details:  { name: string; success: boolean, error?: string | null }[] }> {
+export async function updateMainPost(formData: FormData): Promise<{ ok: boolean; success: number; data: MainPost | null; error: string | null; errorCode: ErrorCode | null | undefined; details:  { name: string; success: boolean, error?: string | null }[] }> {
   const rawInput = {
     id: formData.get("id"),
     type: formData.get("type"),
@@ -320,6 +339,8 @@ export async function updateMainPost(formData: FormData): Promise<{ ok: boolean;
   }
   
   const { id, type, name, description, subjectId } = parsed.data;
+
+  console.log('From action: ', { id, type, name, description, subjectId })
 
   let updatePayload: any = {
     name,
@@ -373,9 +394,10 @@ export async function updateMainPost(formData: FormData): Promise<{ ok: boolean;
       (process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL) + "/api/main-posts/" + id,
       {
         method: "PATCH",
-        headers: {
+         headers: {
+      Cookie: (await cookies()).toString(),
           "Content-Type": "application/json",
-          Cookie: cookies().toString(),
+          
         },
         body: JSON.stringify(updatePayload),
       }
@@ -421,9 +443,10 @@ export async function updateMainPost(formData: FormData): Promise<{ ok: boolean;
       try {
           const deleteRes = await fetch(`${(process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL)}/api/main-data`, {
             method: "DELETE",
-            headers: {
+             headers: {
+      Cookie: (await cookies()).toString(),
               "Content-Type": "application/json",
-              Cookie: cookies().toString(),
+              
             },
             body: JSON.stringify({
               path: `${basePath}/${filename}`,
@@ -461,9 +484,10 @@ export async function updateMainPost(formData: FormData): Promise<{ ok: boolean;
   
         const uploadRes = await fetch(`${(process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL)}/api/main-data`, {
           method: "POST",
-          headers: {
+           headers: {
+      Cookie: (await cookies()).toString(),
             "Content-Type": "application/json",
-            Cookie: cookies().toString(),
+            
           },
           body: JSON.stringify({
             path: `${basePath}/${file.name}`,
@@ -495,6 +519,7 @@ export async function updateMainPost(formData: FormData): Promise<{ ok: boolean;
     }
 
     updatePayload = {
+      ...updatePayload,
       fileNames: [...originalFiles.filter(f => !removeResults.filter(r => r.success).map(r => r.name).includes(f)), ...uploadResults.filter(r => r.success).map(r => r.name)],
       folderName: existingFolder,
     }
@@ -505,8 +530,9 @@ export async function updateMainPost(formData: FormData): Promise<{ ok: boolean;
         {
           method: 'DELETE',
           headers: {
+            Cookie: (await cookies()).toString(),
             'Content-Type': 'application/json',
-            Cookie: cookies().toString(),
+            
           }
         }
       );
@@ -529,8 +555,9 @@ export async function updateMainPost(formData: FormData): Promise<{ ok: boolean;
         {
           method: 'PATCH',
           headers: {
+            Cookie: (await cookies()).toString(),
             'Content-Type': 'application/json',
-            Cookie: cookies().toString(),
+            
           },
           body: JSON.stringify(updatePayload),
         }
@@ -553,7 +580,8 @@ export async function updateMainPost(formData: FormData): Promise<{ ok: boolean;
   }
 
   revalidateTag('main-posts');
-  const { data, error, errorCode } = await getMainPosts();
+  const { data, error, errorCode } = await getMainPost({ id, cache: false });
+  console.log({ data, error, errorCode });
   if (error || !data) return {
     ok: false,
     data: null,
@@ -602,9 +630,10 @@ export async function deleteMainPost(formData: FormData): Promise<{ ok: boolean;
     (process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL) + '/api/main-posts/' + id,
     {
       method: 'DELETE',
-      headers: {
+       headers: {
+      Cookie: (await cookies()).toString(),
         'Content-Type': 'application/json',
-        Cookie: cookies().toString(),
+        
       },
     }
   );
@@ -661,9 +690,10 @@ async function deleteFromGitHub(formData: FormData): Promise<{ ok: boolean; data
   
   const githubDeleteRes = await fetch((process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL) + '/api/main-data', {
     method: 'DELETE',
-    headers: {
+     headers: {
+      Cookie: (await cookies()).toString(),
       'Content-Type': 'application/json',
-      Cookie: cookies().toString(),
+      
     },
     body: JSON.stringify({ path: folderPath, type: 'folder' }),
   });

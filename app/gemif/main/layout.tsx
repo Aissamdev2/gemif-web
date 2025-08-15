@@ -1,8 +1,7 @@
-'use client'
 
-import { usePathname } from "next/navigation";
+import React from "react";
 
-export default function MainLayout({
+export default async function MainLayout({
   modal,
   children,
 }: {
@@ -10,16 +9,11 @@ export default function MainLayout({
   children: Readonly<React.ReactNode>;
 }) {
 
-  const pathname = usePathname();
-
-  const modals  = ['add-main-post', 'edit-main-post', 'view-main-post'];
-
-  const isModalOpen = modals.some(modal => pathname.includes(modal));
-
+  
   return (
     <>
-      {isModalOpen && modal}
       {children}
+      {/* {modal} */}
     </>
 );
 }

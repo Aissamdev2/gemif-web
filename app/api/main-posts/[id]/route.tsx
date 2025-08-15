@@ -1,10 +1,59 @@
 import { sql } from "@vercel/postgres";
 import { jsonResponse } from "@/app/lib/helpers";
 
+
+
+export async function GET(request: Request, { params }: any) {
+  try {
+    const userId = request.headers.get('X-User-Id');
+    if (!userId) {
+      return jsonResponse({
+        error: 'Missing X-User-Id header',
+        publicError: 'Permiso denegado',
+        errorCode: 'NO_AUTH',
+        details: []
+      }, 401);
+    }
+
+    const { id } = await params;
+    if (!id) {
+      return jsonResponse({
+        error: 'Missing main post ID in params',
+        publicError: 'ID de la publicación no proporcionado',
+        errorCode: 'MISSING_FIELDS',
+        details: []
+      }, 400);
+    }
+
+    const result = await sql`SELECT * FROM main_posts WHERE id = ${id}`;
+    const mainPost = result.rows[0];
+
+    if (!mainPost) {
+      return jsonResponse({
+        error: `Main post not found for id ${id}`,
+        publicError: 'Publicación no encontrada',
+        errorCode: 'DB_MAIN_POST_GET_FAILED',
+        details: []
+      }, 404);
+    }
+
+    return jsonResponse({ data: mainPost });
+  } catch (error: any) {
+    console.error(error);
+    return jsonResponse({
+      error: error.message,
+      publicError: 'Error interno. Contacta al administrador si el problema persiste.',
+      errorCode: 'DB_MAIN_POST_GET_FAILED',
+      details: [],
+    }, 500);
+  }
+}
+
+
 // 🔹 DELETE main post
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: any) {
   const userId = request.headers.get("X-User-Id");
-  const { id } = params;
+  const { id } = await params;
 
   if (!userId) {
     return jsonResponse(
@@ -59,9 +108,9 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
 }
 
 // 🔹 PATCH main post
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, { params }: any) {
   const userId = request.headers.get("X-User-Id");
-  const { id } = params;
+  const { id } = await params;
 
   if (!userId) {
     return jsonResponse(
@@ -101,6 +150,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
   const { name, description, links, fileNames, subjectId } = body || {};
 
+  console.log('From PATCH: ', { name, description, links, fileNames, subjectId });
   if (
     name === undefined &&
     description === undefined &&

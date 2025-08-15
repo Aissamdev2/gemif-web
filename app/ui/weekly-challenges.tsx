@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useWeeklyChallenges } from "../lib/use-weekly-challenges";
 import { WeeklyChallenge } from "@/app/lib/definitions";
 import Link from "next/link";
-import { useFormState, useFormStatus } from "react-dom";
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { deleteWeeklyChallenge } from "../lib/actions/weekly-challenges/actions";
 import { addWeeklyChallengeAnswer } from "../lib/actions/weekly-challenge-answers/actions";
 import { mutate } from "swr";
@@ -72,9 +73,9 @@ function checkNonStrict(haystack: string, needle: string) {
 
   const { weeklyChallenges, error: weeklyChallengesError, isLoading } = useWeeklyChallenges();
   const { weeklyChallengeAnswers, error: answerError, isLoading: answerIsLoading } = useWeeklyChallengeAnswers();
-  const { user, error, isLoading: userIsLoading } = useUser();
-  const [state, dispatch] = useFormState(createWeeklyChallengeAnswer, undefined);
-  const [deleteState, dispatchDelete] = useFormState(removeWeeklyChallenge, undefined);
+  const { user, error, isLoading: userIsLoading } = useUser({});
+  const [state, dispatch] = useActionState(createWeeklyChallengeAnswer, undefined);
+  const [deleteState, dispatchDelete] = useActionState(removeWeeklyChallenge, undefined);
   const router = useRouter();
 
   const submittedAnswer = weeklyChallengeAnswers?.find((answer) => answer.challengeid === selectedChallenge?.id)

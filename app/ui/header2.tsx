@@ -9,7 +9,8 @@ import React, {
 } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { mutate } from 'swr';
 import { CircleUserRound } from 'lucide-react';
 
@@ -37,7 +38,7 @@ export default function Header() {
   const navContainerRef = useRef<HTMLUListElement>(null);
   const linkRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
 
-  const [errorMessage, dispatch] = useFormState(signOut, undefined);
+  const [errorMessage, dispatch] = useActionState(signOut, undefined);
 
   const activePath = useMemo(() => getActivePath(pathname), [pathname]);
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });

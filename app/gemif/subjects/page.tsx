@@ -7,7 +7,8 @@ import { useSubjects } from "@/app/lib/use-subjects";
 import SubjectBoxInfo from "@/app/ui/subject-box-info"; // Not directly used in the provided snippet but keeping import
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useFormState, useFormStatus } from "react-dom";
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { mutate } from "swr";
 import { Award, CircleAlert, Copy, Pencil, Plus, Trash2, X } from "lucide-react"; // Added Pencil, Plus, Trash2
 import Loader from "@/app/ui/loader";
@@ -81,11 +82,11 @@ export default function SubjectsPage() {
   // Data fetching hooks
   const { primitiveSubjects, error: primitiveError, isLoading: isLoadingPrimitive } = usePrimitiveSubjects();
   const router = useRouter()
-  const { subjects, error: subjectsError, isLoading: isLoadingSubjects } = useSubjects();
+  const { subjects, error: subjectsError, isLoading: isLoadingSubjects } = useSubjects({});
   const { ranking, error: rankingError, isLoading: isLoadingRanking } = useRanking();
 
   // Form state for score submission
-  const [state, dispatch] = useFormState(submitScore, undefined)
+  const [state, dispatch] = useActionState(submitScore, undefined)
 
   // --- New states for editing functionality ---
   const [editingRow, setEditingRow] = useState<string[]>([]); // Stores the name of the row being edited (e.g., 'name', 'credits', 'professors')
@@ -93,7 +94,7 @@ export default function SubjectsPage() {
   const [isAnyRowEditing, setIsAnyRowEditing] = useState(false); // Tracks if any row is in editing mode
 
   
-  const [updateSubjectState, updateSubjectDispatch] = useFormState(handleUpdateSubject, undefined);
+  const [updateSubjectState, updateSubjectDispatch] = useActionState(handleUpdateSubject, undefined);
 
   useEffect(() => {
     if (state?.data) {

@@ -10,7 +10,8 @@ import { normalizeEmptyStrings } from "../../utils";
 
 export async function getWeeklyChallenges(): Promise<{ data: WeeklyChallenge[] | null; error: string | null; errorCode: ErrorCode | null | undefined, details: { name: string; success: boolean, error?: string | null }[] }> {
   const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL}/api/weekly-challenges`, {
-    headers: { Cookie: cookies().toString() },
+     headers: {
+      Cookie: (await cookies()).toString(),  },
     next: { tags: ['weekly-challenges'] },
     cache: "no-store",
   });
@@ -26,7 +27,8 @@ export async function getWeeklyChallenges(): Promise<{ data: WeeklyChallenge[] |
 
 export async function getWeeklyChallenge(id: string): Promise<{ data: WeeklyChallenge | null; error: string | null; errorCode: ErrorCode | null | undefined }> {
   const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL}/api/weekly-challenges/${id}`, {
-    headers: { Cookie: cookies().toString() },
+     headers: {
+      Cookie: (await cookies()).toString(),  },
     cache: "no-store",
   });
   const resJson: ApiResponse = await response.json();
@@ -92,9 +94,10 @@ export async function addWeeklyChallenge(formData: FormData): Promise<{ data: We
   
   const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL}/api/weekly-challenges`, {
     method: "POST",
-    headers: {
+     headers: {
+      Cookie: (await cookies()).toString(),
       "Content-Type": "application/json",
-      Cookie: cookies().toString(),
+      
     },
     body: JSON.stringify(challenge),
   });
@@ -152,9 +155,10 @@ export async function updateWeeklyChallenge(formData: FormData): Promise<{ data:
 
   const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL}/api/weekly-challenges/${id}`, {
     method: "PATCH",
-    headers: {
+     headers: {
+      Cookie: (await cookies()).toString(),
       "Content-Type": "application/json",
-      Cookie: cookies().toString(),
+      
     },
     body: JSON.stringify(payload),
   });
@@ -183,9 +187,10 @@ export async function deleteWeeklyChallenge(formData: FormData): Promise<{ data:
 
   const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL}/api/weekly-challenges/${id}`, {
     method: "DELETE",
-    headers: {
+     headers: {
+      Cookie: (await cookies()).toString(),
       "Content-Type": "application/json",
-      Cookie: cookies().toString(),
+      
     },
   });
   const resJson: ApiResponse = await response.json();

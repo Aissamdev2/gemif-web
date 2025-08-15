@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sql } from '@vercel/postgres'
 import { jsonResponse } from '@/app/lib/helpers'
 
-export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_: NextRequest, { params }: any) {
   try {
     await sql`DELETE FROM verification_tokens WHERE id = ${params.id}`
     return NextResponse.json({ data: 'Deleted' })
@@ -12,8 +12,8 @@ export async function DELETE(_: NextRequest, { params }: { params: { id: string 
 }
 
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
-  const { id } = params;
+export async function PATCH(request: Request, { params }: any) {
+  const { id } = await params;
 
   if (!id) {
     return jsonResponse(

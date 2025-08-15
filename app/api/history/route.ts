@@ -45,7 +45,7 @@ export async function POST(req: Request) {
 
     const uploadRes = await fetch(`${GITHUB_API_BASE}/${path}`, {
       method: "PUT",
-      headers: {
+       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
@@ -137,7 +137,7 @@ export async function DELETE(req: NextRequest) {
 async function deleteSingleFile(path: string, token: string) {
   try {
     const shaRes = await fetch(`${GITHUB_API_BASE}/${path}`, {
-      headers: {
+       headers: {
         Authorization: `Bearer ${token}`,
         Accept: "application/vnd.github+json",
       },
@@ -167,7 +167,7 @@ async function deleteSingleFile(path: string, token: string) {
 
     const deleteRes = await fetch(`${GITHUB_API_BASE}/${path}`, {
       method: "DELETE",
-      headers: {
+       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
@@ -206,7 +206,7 @@ async function deleteFolder(folderPath: string, token: string) {
     while (queue.length > 0) {
       const currentPath = queue.pop()!;
       const res = await fetch(`${GITHUB_API_BASE}/${currentPath}`, {
-        headers: {
+         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/vnd.github+json",
         },
@@ -240,7 +240,7 @@ async function deleteFolder(folderPath: string, token: string) {
 
       const deleteRes = await fetch(`${GITHUB_API_BASE}/${path}`, {
         method: "DELETE",
-        headers: {
+         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },

@@ -39,7 +39,7 @@ export function MainClient({
   // 3. Use the initial data to hydrate the SWR hooks.
   // SWR will not fetch on initial render, providing instant data.
   const { user, error: userError } = useUser({ fallbackData: initialUser });
-  const { mainPosts, error: postsError } = useMainPosts({ fallbackData: initialMainPosts });
+  const { mainPosts, error: postsError } = useMainPosts({ fallbackData: initialMainPosts }) as { mainPosts: MainPost[], error: string };
   const { subjects, error: subjectsError } = useSubjects({ fallbackData: initialSubjects });
 
   // Since we have fallbackData, the isLoading state will be false on initial load.
@@ -279,14 +279,27 @@ const PostItem = ({
         </p>
       </button>
 
-      <Link
-        href={`/gemif/main/view-main-post/${post.id}`}
-        className="flex w-12 items-center justify-center rounded-r-xl hover:bg-blue-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-        aria-label={`Ver detalles del recurso ${post.name}`}
-        tabIndex={0}
-      >
-        <Eye className="w-5 h-5 text-blue-500 hover:text-blue-600" aria-hidden="true" />
-      </Link>
+      <ViewPostButton post={{ id: post.id ?? '', name: post.name ?? '' }} />
+
     </li>
   );
 };
+
+
+export default function ViewPostButton({ post }: { post: { id: string; name: string } }) {
+
+  const openModal = () => {
+    window.history.pushState(null, '', `/gemif/main/view-main-post/${post.id}`)
+  }
+
+  return (
+    <button
+      onClick={openModal}
+      aria-label={`Ver detalles del recurso ${post.name}`}
+      className="flex w-12 items-center justify-center rounded-r-xl hover:bg-blue-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+      tabIndex={0}
+    >
+      <Eye className="w-5 h-5 text-blue-500 hover:text-blue-600" aria-hidden="true" />
+    </button>
+  )
+}

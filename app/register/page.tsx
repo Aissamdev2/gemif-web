@@ -1,7 +1,8 @@
 'use client'
 
 import { addUser } from '@/app/lib/actions/session/actions'
-import { useFormState, useFormStatus } from 'react-dom'
+import { useFormStatus } from 'react-dom'
+import { useActionState } from 'react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -17,7 +18,7 @@ export default function Page() {
   }
 
   const [errorMessage, setErrorMessage] = useState<{ error: string, errorCode: string, details: { name: string; success: boolean, error?: string | null }[] } | null>(null);
-  const [state, dispatch] = useFormState(createUser, undefined)
+  const [state, dispatch] = useActionState(createUser, undefined)
   const router = useRouter();
 
   useEffect(() => {

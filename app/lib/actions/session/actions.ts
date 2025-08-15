@@ -56,7 +56,8 @@ export async function addUser(formData: FormData): Promise<{ data: any | null, e
 
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/users', {
     method: 'POST', 
-    headers: {
+     headers: {
+      Cookie: (await cookies()).toString(),
       'Content-Type': 'application/json',
       'X-Internal-Token': process.env.INTERNAL_API_SECRET!,
     },
@@ -72,7 +73,8 @@ export async function addUser(formData: FormData): Promise<{ data: any | null, e
 
   const verificationRes = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/send-verification-email', {
     method: 'POST',
-    headers: {
+     headers: {
+      Cookie: (await cookies()).toString(),
       'Content-Type': 'application/json',
       'X-Internal-Token': process.env.INTERNAL_API_SECRET!,
     },
@@ -94,9 +96,10 @@ export async function addUser(formData: FormData): Promise<{ data: any | null, e
 export async function increaseLoginCount(user: User): Promise<{ data: User | null; error: string | null; errorCode: ErrorCode | null | undefined, details: { name: string; success: boolean, error?: string | null }[] }> {
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/user/', {
     method: 'PATCH',
-    headers: {
+     headers: {
+      Cookie: (await cookies()).toString(),
       'Content-Type': 'application/json',
-      Cookie: cookies().toString(),
+      
     },
     body: JSON.stringify({ logincount: user.logincount + 1 }),
   })
@@ -134,10 +137,10 @@ export async function setCookie(user: User): Promise<{ data: any; error: string 
     token: token,
     githubtoken: user?.assignedgithubtoken,
     logincount: user?.logincount,
-  }
+  };
 
   
-  cookies().set('session', JSON.stringify(session), {
+  (await cookies()).set('session', JSON.stringify(session), {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     maxAge: 60 * 60 * 24 * 7, 
@@ -165,7 +168,7 @@ export async function setTokenCookie({ user, token, type }: { user: User, token:
 
   
   try {
-    cookies().set('tokenCookie', JSON.stringify(tokenCookie), {
+    (await cookies()).set('tokenCookie', JSON.stringify(tokenCookie), {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       maxAge: 60 * 60 , // One hour
@@ -201,7 +204,8 @@ export async function authenticate(formData: FormData) {
 
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/auth', {
     method: 'POST', 
-    headers: {
+     headers: {
+      Cookie: (await cookies()).toString(),
       'Content-Type': 'application/json',
       'X-Internal-Token': process.env.INTERNAL_API_SECRET!,
     },
@@ -254,7 +258,7 @@ export async function initialize() {
 
 export async function signOut(): Promise<{ data: string | null; error: string | null; errorCode: ErrorCode | null | undefined, details: { name: string; success: boolean, error?: string | null }[]}> {
   try {
-    cookies().delete('session');
+    (await cookies()).delete('session');
   } catch (error) {
   return { data: null, error: "Error al cerrar sesión", errorCode: "UNKNOWN_ERROR", details: [] };
   }
@@ -267,7 +271,8 @@ export async function verifyUser({ token }: { token: string }): Promise<{ data: 
 
   const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string}/api/verify`, {
         method: 'POST',
-        headers: {
+         headers: {
+      Cookie: (await cookies()).toString(),
           'Content-Type': 'application/json',
           'X-Internal-Token': process.env.INTERNAL_API_SECRET!,
         },
@@ -281,7 +286,7 @@ export async function verifyUser({ token }: { token: string }): Promise<{ data: 
   }
 
   try {
-    cookies().delete('tokenCookie');
+    (await cookies()).delete('tokenCookie');
   } catch (error) {
     return { data: null, error: "Error del servidor", errorCode: "UNKNOWN_ERROR", details: [] };
   }
@@ -310,7 +315,8 @@ export async function forgotPassword(formData: FormData): Promise<{ data: any | 
 
   const forgotRes = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/send-reset-password', {
     method: 'POST',
-    headers: {
+     headers: {
+      Cookie: (await cookies()).toString(),
       'Content-Type': 'application/json',
       'X-Internal-Token': process.env.INTERNAL_API_SECRET!,
     },
@@ -362,7 +368,8 @@ export async function resetPassword(formData: FormData): Promise<{ data: any | n
 
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/reset-password', {
     method: 'POST', 
-    headers: {
+     headers: {
+      Cookie: (await cookies()).toString(),
       'Content-Type': 'application/json',
       'X-Internal-Token': process.env.INTERNAL_API_SECRET!,
     },
@@ -376,7 +383,7 @@ export async function resetPassword(formData: FormData): Promise<{ data: any | n
   }
 
   try {
-    cookies().delete('tokenCookie');
+    (await cookies()).delete('tokenCookie');
   } catch (error) {
     return { data: null, error: "Error del servidor", errorCode: "UNKNOWN_ERROR", details: [] };
   }

@@ -3,7 +3,8 @@
 import { useSubjects } from "@/app/lib/use-subjects";
 import { usePrimitiveSubjects } from "@/app/lib/use-primitive-subjects";
 import { useEffect, useState } from "react";
-import { useFormState, useFormStatus } from "react-dom";
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { mutate } from "swr";
 import { archiveSubjects, updateSubjects } from "@/app/lib/actions/subjects/actions";
 import Loader from "@/app/ui/loader";
@@ -33,7 +34,7 @@ function areColumnsEqual(a: Columns, b: Columns): boolean {
 }
 
 export default function Page() {
-  const { subjects, error: subjectsError, isLoading: isLoadingSubjects } = useSubjects();
+  const { subjects, error: subjectsError, isLoading: isLoadingSubjects } = useSubjects({});
   const { primitiveSubjects, error: primitiveSubjectsError, isLoading: isLoadingPrimitiveSubjects } = usePrimitiveSubjects();
 
   const [columns, setColumns] = useState<Columns>({ toTake: [], taking: [], passed: [] });
@@ -197,7 +198,7 @@ export default function Page() {
   };
 
   const [errorMessage, setErrorMessage] = useState<{ error: string, errorCode: string, details: { name: string; success: boolean, error?: string | null }[] } | null>(null);
-  const [state, dispatch] = useFormState(changeSubjectsAndArchives, undefined);
+  const [state, dispatch] = useActionState(changeSubjectsAndArchives, undefined);
 
   useEffect(() => {
     if (state?.data) {

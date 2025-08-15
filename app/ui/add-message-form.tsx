@@ -1,6 +1,7 @@
 'use client'
 
-import { useFormStatus, useFormState } from "react-dom";
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import {  addMessage } from "@/app/lib/actions/messages/actions";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -20,12 +21,12 @@ export default function AddMessageForm() {
     return { data, error, errorCode }
   }
 
-  const [state, dispatch] = useFormState(addNewMessage, undefined)
+  const [state, dispatch] = useActionState(addNewMessage, undefined)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const router = useRouter()
   const [scope, setScope] = useState('year')
   const [year, setYear] = useState<string>('')
-  const { user, error, isLoading } = useUser();
+  const { user, error, isLoading } = useUser({});
 
   useEffect(() => {
     if (state?.data) {

@@ -18,7 +18,7 @@ export default function HistoryLayout({
 
   return (
     <>
-      {isModalOpen && modal}
+      { modal}
       {children}
     </>
 );

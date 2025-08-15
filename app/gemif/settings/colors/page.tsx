@@ -3,7 +3,8 @@ import { useSubjects } from "@/app/lib/use-subjects";
 import { useUser } from "@/app/lib/use-user";
 import SubjectTag from "@/app/ui/subject-tag";
 import { useEffect, useState } from "react";
-import { useFormState, useFormStatus } from "react-dom";
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { updateUser } from "@/app/lib/actions/user/actions";
 import { updateSubject } from "@/app/lib/actions/subjects/actions";
 import { mutate } from "swr";
@@ -14,8 +15,8 @@ import Loader from "@/app/ui/loader";
 
 
 export default function Page() {
-  const { subjects, error: subjectsError, isLoading: isLoadingSubjects } = useSubjects();
-  const { user, error: userError, isLoading: isLoadingUser } = useUser();
+  const { subjects, error: subjectsError, isLoading: isLoadingSubjects } = useSubjects({});
+  const { user, error: userError, isLoading: isLoadingUser } = useUser({});
   const router = useRouter()
 
   const changeSubjectColor = async (_currentState: unknown, formData: FormData) => {
@@ -35,8 +36,8 @@ export default function Page() {
 
   const [resetColors, setResetColors] = useState(false)
   const [resetUserColor, setResetUserColor] = useState(false)
-  const [colorsState, dispatchColors] = useFormState(changeSubjectColor, undefined)
-  const [userColorState, dispatchUserColor] = useFormState(changeUserColor, undefined)
+  const [colorsState, dispatchColors] = useActionState(changeSubjectColor, undefined)
+  const [userColorState, dispatchUserColor] = useActionState(changeUserColor, undefined)
   const [selectedOption, setSelectedOption] = useState('Seleccione una asignatura');
   const [previewSubject, setPreviewSubject] = useState<Subject | undefined>(undefined)
   const [color, setColor] = useState<string>('#000000')

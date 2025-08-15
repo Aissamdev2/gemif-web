@@ -1,7 +1,4 @@
-// This file will be rendered by Next.js while the page is loading
-// It's a Server Component by default, so it's very fast.
-
-export default function LoadingSkeleton() {
+export default function MainSkeleton() {
   return (
     <section aria-label="Cargando recursos" className="z-50 w-full min-h-screen max-h-full flex flex-col lg:mb-0 px-4 sm:px-6 lg:px-10 gap-6 pt-[80px] pb-[20px]">
       {/* Header Skeleton */}
@@ -39,5 +36,5 @@ export default function LoadingSkeleton() {
         </ul>
       </div>
     </section>
-  );
+  )
 }

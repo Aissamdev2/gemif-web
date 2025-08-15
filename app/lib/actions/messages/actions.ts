@@ -7,7 +7,8 @@ import { revalidateTag } from "next/cache";
 
 export async function getMessages(): Promise<{ data: Message[] | null; error: string | null; errorCode: ErrorCode | null | undefined }> {
   const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL}/api/messages`, {
-    headers: { Cookie: cookies().toString() },
+     headers: {
+      Cookie: (await cookies()).toString(),  },
     next: { tags: ['messages'] },
     cache: 'no-store',
   });
@@ -21,9 +22,10 @@ export async function getMessages(): Promise<{ data: Message[] | null; error: st
   const payload = { lastseen: new Date().toISOString() };
   const responseLastSeen = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL}/api/user/`, {
     method: 'PATCH',
-    headers: {
+     headers: {
+      Cookie: (await cookies()).toString(),
       'Content-Type': 'application/json',
-      Cookie: cookies().toString(),
+      
     },
     body: JSON.stringify(payload),
   });
@@ -43,7 +45,8 @@ export async function getMessages(): Promise<{ data: Message[] | null; error: st
 
 export async function getMessage(id: string): Promise<{ data: Message | null; error: string | null; errorCode: ErrorCode | null | undefined }> {
   const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL}/api/messages/${id}`, {
-    headers: { Cookie: cookies().toString() },
+     headers: {
+      Cookie: (await cookies()).toString(),  },
   });
   const resJson: ApiResponse = await response.json();
   if (!response.ok) {
@@ -58,9 +61,10 @@ export async function deleteMessage(formData: FormData): Promise<{ data: Message
   const id = formData.get("id") as string;
   const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL}/api/messages/${id}`, {
     method: 'DELETE',
-    headers: {
+     headers: {
+      Cookie: (await cookies()).toString(),
       'Content-Type': 'application/json',
-      Cookie: cookies().toString(),
+      
     },
   });
   const resJson: ApiResponse = await response.json();
@@ -84,9 +88,10 @@ export async function updateMessage(formData: FormData): Promise<{ data: Message
 
   const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL}/api/messages/${id}`, {
     method: 'PATCH',
-    headers: {
+     headers: {
+      Cookie: (await cookies()).toString(),
       'Content-Type': 'application/json',
-      Cookie: cookies().toString(),
+      
     },
     body: JSON.stringify(filteredMessage),
   });
@@ -111,9 +116,10 @@ export async function addMessage(formData: FormData): Promise<{ data: Message[] 
 
   const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL}/api/messages`, {
     method: 'POST',
-    headers: {
+     headers: {
+      Cookie: (await cookies()).toString(),
       'Content-Type': 'application/json',
-      Cookie: cookies().toString(),
+      
     },
     body: JSON.stringify(filteredMessage),
   });
@@ -129,9 +135,10 @@ export async function addMessage(formData: FormData): Promise<{ data: Message[] 
 export async function checkUnseenMessages(): Promise<{ data: Message[] | null; error: string | null; errorCode: ErrorCode | null | undefined }> {
   const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL}/api/messages/unseen`, {
     method: 'GET',
-    headers: {
+     headers: {
+      Cookie: (await cookies()).toString(),
       'Content-Type': 'application/json',
-      Cookie: cookies().toString(),
+      
     },
     next: { tags: ['messages/unseen'] },
   });

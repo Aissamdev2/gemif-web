@@ -8,8 +8,9 @@ import { historyAddSchema, historyDeleteSchema } from "./validation";
 
 export async function getHistory({ section }: { section: string }): Promise<{structure: GitHubContent[] | null, error: string | null, errorCode: ErrorCode | null | undefined }> {
   const res = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + "/api/history/" + section.split("/").pop(), { 
-    headers: {
-      Cookie: cookies().toString()
+     headers: {
+      Cookie: (await cookies()).toString(),
+      
     },
   });
   const resJson: ApiResponse = await res.json();
@@ -81,8 +82,9 @@ errorCode: ErrorCode | null | undefined }> {
 
     const res = await fetch((process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL) + "/api/history", {
       method: "POST",
-      headers: {
-        Cookie: cookies().toString(),
+       headers: {
+      Cookie: (await cookies()).toString(),
+        
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ path, message, content }),
@@ -123,7 +125,8 @@ errorCode: ErrorCode | null | undefined }> {
       // Check if the file exists
       let sha: string | undefined = undefined;
       const shaRes = await fetch(`https://api.github.com/repos/gemif-web/Archive/contents/${path}`, {
-        headers: {
+         headers: {
+      Cookie: (await cookies()).toString(),
           Authorization: `Bearer ${process.env.GITHUB_TOKEN!}`,
           Accept: "application/vnd.github+json"
         }
@@ -135,8 +138,9 @@ errorCode: ErrorCode | null | undefined }> {
 
       const res = await fetch((process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL) + "/api/history", {
         method: "POST",
-        headers: {
-          Cookie: cookies().toString(),
+         headers: {
+      Cookie: (await cookies()).toString(),
+          
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ path, message, content: base64, sha }),
@@ -189,8 +193,9 @@ export async function deleteHistoryItem(formData: FormData): Promise<{ ok: boole
 
   const res = await fetch((process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL) + "/api/history", {
     method: "DELETE",
-    headers: {
-      Cookie: cookies().toString(),
+     headers: {
+      Cookie: (await cookies()).toString(),
+      
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ path, type }),

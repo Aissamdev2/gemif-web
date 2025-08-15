@@ -9,9 +9,6 @@ import { normalizeEmptyStrings } from "../../utils"
 
 export async function getEvents(): Promise<{ data: Event[] | null, error: string  | null, errorCode: ErrorCode | null | undefined, details: { name: string; success: boolean, error?: string | null }[] }> {
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/events', {
-    headers: {
-      Cookie: cookies().toString()
-    },
     next: { tags: ['calendar'] }
   });
   const resJson: ApiResponse = await response.json();
@@ -62,9 +59,10 @@ export async function addEvent(formData: FormData): Promise<{ data: Event[] | nu
   
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/events', {
     method: 'POST',
-    headers: {
+     headers: {
+      Cookie: (await cookies()).toString(),
       'Content-Type': 'application/json',
-      Cookie: cookies().toString(),
+      
     },
     body: JSON.stringify(event),
   })
@@ -105,9 +103,10 @@ export async function updateEvent(formData: FormData): Promise<{ data: Event[] |
 
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/events/' + id, {
     method: 'PATCH',
-    headers: {
+     headers: {
+      Cookie: (await cookies()).toString(),
       'Content-Type': 'application/json',
-      Cookie: cookies().toString(),
+      
     },
     body: JSON.stringify(event),
   })
@@ -140,9 +139,10 @@ export async function deleteEvent(formData: FormData): Promise<{ data: Event[] |
   const { id } = parsed.data;
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/events/' + id, {
     method: 'DELETE',
-    headers: {
+     headers: {
+      Cookie: (await cookies()).toString(),
       'Content-Type': 'application/json',
-      Cookie: cookies().toString(),
+      
     },
   })
   if (response.ok) {
@@ -157,8 +157,9 @@ export async function deleteEvent(formData: FormData): Promise<{ data: Event[] |
 
 export async function getEvent(id: string): Promise<{ data: Event | null, error: string | null, errorCode: ErrorCode | null | undefined }> {
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/events/' + id, {
-    headers: {
-      Cookie: cookies().toString()
+     headers: {
+      Cookie: (await cookies()).toString(),
+      
     }
   });
   const resJson: ApiResponse = await response.json();

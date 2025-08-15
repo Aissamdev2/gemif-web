@@ -4,7 +4,8 @@ import { useUser } from "@/app/lib/use-user";
 import { User } from "@/app/lib/definitions";
 import { useEffect, useState } from "react";
 import { ROLES } from "@/app/lib/utils";
-import { useFormState, useFormStatus } from "react-dom";
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { updateUser } from "@/app/lib/actions/user/actions";
 import { mutate } from "swr";
 import Loader from "@/app/ui/loader";
@@ -22,8 +23,8 @@ export default function Page() {
   }
 
   const [errorMessage, setErrorMessage] = useState<{ error: string, errorCode: string, details: { name: string; success: boolean, error?: string | null }[] } | null>(null);
-  const [state, dispatch] = useFormState(changeUser, undefined)
-  const { user, error, isLoading } = useUser();
+  const [state, dispatch] = useActionState(changeUser, undefined)
+  const { user, error, isLoading } = useUser({});
   const [reset, setReset] = useState(false);
   const [userState, setUserState] = useState<User | undefined>(undefined)
 

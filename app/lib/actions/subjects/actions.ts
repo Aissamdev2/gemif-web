@@ -4,14 +4,17 @@ import { cookies } from "next/headers"
 import { ApiResponse, ErrorCode, PrimitiveSubject, Ranking, Subject } from "../../definitions"
 import { revalidateTag } from "next/cache"
 import { getRanking } from "../ranking/actions";
+import { cache } from "react";
 
 
-export async function getSubjects(): Promise<{ data: Subject[] | null, error: string | null, errorCode: ErrorCode | null | undefined, details: { name: string; success: boolean, error?: string | null }[] }> {
+export const getSubjects= cache(async (): Promise<{ data: Subject[] | null, error: string | null, errorCode: ErrorCode | null | undefined, details: { name: string; success: boolean, error?: string | null }[] }> => {
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/subjects', {
-    headers: {
-      Cookie: cookies().toString()
+     headers: {
+      Cookie: (await cookies()).toString(),
+      
     },
-    next: { tags: ['subjects'] }
+    next: { tags: ['subjects'] },
+    cache: "force-cache"
   });
   const resJson: ApiResponse = await response.json();
   if (!response.ok) {
@@ -19,7 +22,7 @@ export async function getSubjects(): Promise<{ data: Subject[] | null, error: st
   }
   const subjects: Subject[] = resJson.data;
   return { data: subjects, error: null, errorCode: null, details: [] };
-}
+})
 
 export async function updateSubjects(formData: FormData): Promise<{ data: Subject[] | null, error: string | null, errorCode: ErrorCode | null | undefined, details: { name: string; success: boolean, error?: string | null }[] }> {
   const subjectsToAddRaw = formData.get("subjectsToAdd") as string;
@@ -41,9 +44,10 @@ export async function updateSubjects(formData: FormData): Promise<{ data: Subjec
     };
     const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/subjects/', {
       method: 'POST',
-      headers: {
+       headers: {
+      Cookie: (await cookies()).toString(),
         'Content-Type': 'application/json',
-        Cookie: cookies().toString(),
+        
       },
       body: JSON.stringify(payload)
     });
@@ -70,9 +74,10 @@ export async function updateSubjects(formData: FormData): Promise<{ data: Subjec
     await Promise.all(subjectsToRemove.map(async (subject: Subject) => {
       const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/subjects/' + subject.id, {
         method: 'DELETE',
-        headers: {
+         headers: {
+      Cookie: (await cookies()).toString(),
           'Content-Type': 'application/json',
-          Cookie: cookies().toString(),
+          
         },
       });
       const resJson: ApiResponse = await response.json();
@@ -97,9 +102,10 @@ export async function updateSubject( formData: FormData): Promise<{ data: Subjec
 
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/subjects/' + id, {
     method: 'PATCH',
-    headers: {
+     headers: {
+      Cookie: (await cookies()).toString(),
       'Content-Type': 'application/json',
-      Cookie: cookies().toString(),
+      
     },
     body: JSON.stringify(filteredpayload),
   })
@@ -130,9 +136,10 @@ export async function archiveSubjects(formData: FormData): Promise<{ data: Subje
   await Promise.all(subjectsToArchive.map(async (subject: Subject) => {
     const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL}/api/subjects/${subject.id}`, {
       method: 'PATCH',
-      headers: {
+       headers: {
+      Cookie: (await cookies()).toString(),
         'Content-Type': 'application/json',
-        Cookie: cookies().toString(),
+        
       },
       body: JSON.stringify({ archived: true })
     });
@@ -155,9 +162,10 @@ export async function archiveSubjects(formData: FormData): Promise<{ data: Subje
     await Promise.all(subjectsToUnarchive.map(async (subject: Subject) => {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL}/api/subjects/${subject.id}`, {
         method: 'PATCH',
-        headers: {
+         headers: {
+      Cookie: (await cookies()).toString(),
           'Content-Type': 'application/json',
-          Cookie: cookies().toString(),
+          
         },
         body: JSON.stringify({ archived: false })
       });

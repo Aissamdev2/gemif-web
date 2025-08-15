@@ -1,7 +1,7 @@
 import { sql } from '@vercel/postgres';
 import { jsonResponse } from '@/app/lib/helpers';
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, { params }: any) {
   const userId = request.headers.get('X-User-Id');
   if (!userId) {
     return jsonResponse({
@@ -12,7 +12,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     }, 401);
   }
 
-  const { id } = params;
+  const { id } = await params;
   if (!id) {
     return jsonResponse({
       error: 'Falta parámetro id',
@@ -95,7 +95,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: any) {
   const userId = request.headers.get('X-User-Id');
   if (!userId) {
     return jsonResponse({
@@ -106,7 +106,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     }, 401);
   }
 
-  const { id } = params;
+  const { id } = await params;
   if (!id) {
     return jsonResponse({
       error: 'Falta parámetro id',
