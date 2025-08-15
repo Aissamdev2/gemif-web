@@ -1,4 +1,5 @@
 
+import { preload } from "@/app/lib/preload";
 import React from "react";
 
 export default async function MainLayout({
@@ -9,6 +10,7 @@ export default async function MainLayout({
   children: Readonly<React.ReactNode>;
 }) {
 
+  preload();
   
   return (
     <>

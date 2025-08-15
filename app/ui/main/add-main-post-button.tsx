@@ -1,8 +1,6 @@
-'use client';
-
 import Link from "next/link";
 
-export default function AddMainFileButton() {
+export default function AddMainPostButton() {
   return (
     <Link
       href="/gemif/main/add-main-post"

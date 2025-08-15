@@ -1,36 +1,33 @@
-// components/posts-list.tsx
-"use client";
-import { MainPost } from "@/app/lib/definitions";
-import { useState, useCallback } from "react";
-import ListModal from "@/app/ui/list-modal";
-import { Eye } from "lucide-react";
+"use client"
 
-export default function PostsListClient({ posts }: { posts: MainPost[] }) {
+import { MainPost } from "@/app/lib/definitions"
+import { useState, useCallback } from "react"
+import ListModal from "@/app/ui/list-modal"
+import ViewPostButton from "./view-post-button"
+
+export default function PostsListClient({ posts, selected }: { posts: MainPost[], selected: string }) {
   const [modalState, setModalState] = useState<{
-    postId: string | null;
-    type: "link" | "file" | null;
-    position: { top: number; left: number };
-  }>({ postId: null, type: null, position: { top: 0, left: 0 } });
+    postId: string | null
+    type: "link" | "file" | null
+    position: { top: number; left: number }
+  }>({ postId: null, type: null, position: { top: 0, left: 0 } })
 
-  const toggleList = useCallback(
-    (e: React.MouseEvent, type: "link" | "file", postId: string) => {
-      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-      setModalState({
-        postId,
-        type,
-        position: { top: Math.max(rect.top - 10, 10), left: Math.min(rect.left, window.innerWidth - 300) },
-      });
-    },
-    []
-  );
+  const toggleList = useCallback((e: React.MouseEvent, type: "link" | "file", postId: string) => {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    setModalState({
+      postId,
+      type,
+      position: { top: Math.max(rect.top - 10, 10), left: Math.min(rect.left, window.innerWidth - 300) },
+    })
+  }, [])
 
   const closeModal = useCallback(() => {
-    setModalState({ postId: null, type: null, position: { top: 0, left: 0 } });
-  }, []);
+    setModalState({ postId: null, type: null, position: { top: 0, left: 0 } })
+  }, [])
 
   return (
-    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      {posts.map((post) => (
+    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 h-full">
+      {posts.filter((post) => post.subjectid === selected).map((post) => (
         <li key={post.id} className="bg-white h-[100px] flex rounded-xl border p-3">
           <button
             onClick={(e) => toggleList(e, post.type as "link" | "file", post.id ?? "")}
@@ -52,24 +49,5 @@ export default function PostsListClient({ posts }: { posts: MainPost[] }) {
         />
       )}
     </ul>
-  );
-}
-
-
-function ViewPostButton({ post }: { post: { id: string; name: string } }) {
-
-  const openModal = () => {
-    window.history.pushState(null, '', `/gemif/main/view-main-post/${post.id}`)
-  }
-
-  return (
-    <button
-      onClick={openModal}
-      aria-label={`Ver detalles del recurso ${post.name}`}
-      className="flex w-12 items-center justify-center rounded-r-xl hover:bg-blue-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-      tabIndex={0}
-    >
-      <Eye className="w-5 h-5 text-blue-500 hover:text-blue-600" aria-hidden="true" />
-    </button>
   )
 }
