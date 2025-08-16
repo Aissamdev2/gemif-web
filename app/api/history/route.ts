@@ -54,8 +54,8 @@ export async function POST(req: Request) {
 
     if (!uploadRes.ok) {
       const err = await uploadRes.json().catch(() => ({}));
-      console.log(uploadRes)
-      console.log(err)
+      
+      
       return jsonResponse({
         error: 'GitHub upload failed',
         publicError: err.message.includes('sha') ? 'Elemento existente' : 'No se pudo subir el elemento',

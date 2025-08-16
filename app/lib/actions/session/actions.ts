@@ -69,7 +69,7 @@ export async function addUser(formData: FormData): Promise<{ data: any | null, e
   if (!response.ok) {
     return { data: null, error: resJson.publicError?? 'Error al crear el usuario', errorCode: resJson.errorCode, details: resJson.details };
   }
-  console.log(resJson)
+  
 
   const verificationRes = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/send-verification-email', {
     method: 'POST',
@@ -215,7 +215,7 @@ export async function authenticate(formData: FormData) {
   const resJson: ApiResponse = await response.json();
 
   if (!response.ok) {
-    console.log(resJson)
+    
     return { data: null, error: resJson.publicError?? 'Error al iniciar sesión', errorCode: resJson.errorCode, details: resJson.details };
   }
 

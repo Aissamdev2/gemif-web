@@ -111,10 +111,10 @@ export default function InitialSetup() {
 
     // 🔁 Mutate and reset
     const updateRes = await updateSubjects(formData);
-    console.log(updateRes)
+    
     if (updateRes?.error) return updateRes;
     const archiveRes = await archiveSubjects(formData)
-    console.log(archiveRes)
+    
     if (archiveRes.error) return archiveRes;
 
     mutate((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + "/api/subjects", archiveRes.data);

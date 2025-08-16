@@ -16,7 +16,7 @@ const ModalButton: FC<ModalButtonProps> = ({ route, children }) => {
   const router = useRouter()
 
   const handleClose = () => {
-    console.log('Backdrop clicked')
+    
     if (route) {
       router.push(route)
     } else {

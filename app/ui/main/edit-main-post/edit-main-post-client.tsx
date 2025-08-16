@@ -56,10 +56,10 @@ export default function EditMainPostClient({ initialUser, initialSubjects, initi
     }
 
     const result = await updateMainPost(formData);
-    console.log(result);
+    
     if ((result.ok || result.success > 0) && result.data) {
-      console.log((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + "/api/main-posts/", mainPost?.id)
-      console.log(result.data);
+      
+      
       await mutate((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + "/api/main-posts/" + mainPost?.id, result.data);
     }
     return result;

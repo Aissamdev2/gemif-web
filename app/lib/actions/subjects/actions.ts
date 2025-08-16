@@ -13,9 +13,11 @@ export const getSubjects= cache(async (): Promise<{ data: Subject[] | null, erro
       Cookie: (await cookies()).toString(),
       
     },
-    next: { tags: ['subjects'] },
+    next: { tags: ['subjects'] , revalidate: 30 },
     cache: "force-cache"
   });
+  console.log('Subjects got')
+
   const resJson: ApiResponse = await response.json();
   if (!response.ok) {
     return { data: null, error: resJson.publicError??"Error al recuperar las asignaturas", errorCode: resJson.errorCode, details: resJson.details };

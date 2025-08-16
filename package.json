@@ -50,6 +50,7 @@
     "react-latex": "^2.0.0",
     "react-latex-next": "^3.0.0",
     "react-router-dom": "^6.26.0",
+    "redis": "^5.8.1",
     "resend": "^4.7.0",
     "swr": "^2.2.5",
     "tsx": "^4.16.5",

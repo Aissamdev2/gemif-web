@@ -37,15 +37,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
   try {
-    const { session, ok, type, error } = await verifySession();
-
-    const isAuth = type === 'auth';
-    const isTokenBased = type === 'verify' || type === 'forgot';
-    const loginCount = session?.logincount ?? -1;
-
-    //console.log('url: ', url, 'session:', session, 'isAuth:', isAuth, 'isTokenBased:', isTokenBased, 'isInternal:', isInternal, 'loginCount:', loginCount);
     
-    // 1. Allow internal requests
+    //console.log('url: ', url, 'session:', session, 'isAuth:', isAuth, 'isTokenBased:', isTokenBased, 'isInternal:', isInternal, 'loginCount:', loginCount);
 
     if (isInternal) {
       return NextResponse.next();
@@ -55,6 +48,12 @@ export async function middleware(request: NextRequest) {
       
       return NextResponse.next();
     }
+
+    const { session, ok, type, error } = await verifySession();
+
+    const isAuth = type === 'auth';
+    const isTokenBased = type === 'verify' || type === 'forgot';
+    const loginCount = session?.logincount ?? -1;
     
     if (error) {
       return returnError({ request, title: "Error de autenticación", description: error, code: 'NO_AUTH' });

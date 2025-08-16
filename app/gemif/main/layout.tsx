@@ -9,8 +9,6 @@ export default async function MainLayout({
   modal: React.ReactNode;
   children: Readonly<React.ReactNode>;
 }) {
-
-  preload();
   
   return (
     <>

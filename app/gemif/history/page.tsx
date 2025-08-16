@@ -6,6 +6,7 @@ import Loader from "@/app/ui/loader";
 import React, { useState } from "react";
 import { OctagonAlert } from "lucide-react";
 import ErrorPage from "@/app/ui/error";
+import Link from "next/link";
 export default function HistoryPage() {
 
   const TITLES = {

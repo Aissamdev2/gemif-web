@@ -12,12 +12,12 @@ import { cache } from "react";
 export const getMainPosts = cache(async (): Promise<{ data: MainPost[] | null | undefined; error: string | null; errorCode: ErrorCode | null | undefined, details: { name: string; success: boolean, error?: string | null }[] }> => {
   const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string) + '/api/main-posts', {
      headers: {
-      Cookie: (await cookies()).toString(),
-      
+      'X-Internal-Token': process.env.INTERNAL_API_SECRET!,     
     },
-    next: { tags: ['main-posts'] },
+    next: { tags: ['main-posts'], revalidate: 30 },
     cache: "force-cache"
   });
+  console.log('MainPosts got')
   const resJson: ApiResponse = await response.json();
   if (!response.ok) {
     return { data: null, error: resJson.publicError ?? "Error al recuperar información de las publicaciones", errorCode: resJson.errorCode, details: resJson.details };
@@ -340,7 +340,7 @@ export async function updateMainPost(formData: FormData): Promise<{ ok: boolean;
   
   const { id, type, name, description, subjectId } = parsed.data;
 
-  console.log('From action: ', { id, type, name, description, subjectId })
+  
 
   let updatePayload: any = {
     name,
@@ -581,7 +581,7 @@ export async function updateMainPost(formData: FormData): Promise<{ ok: boolean;
 
   revalidateTag('main-posts');
   const { data, error, errorCode } = await getMainPost({ id, cache: false });
-  console.log({ data, error, errorCode });
+  
   if (error || !data) return {
     ok: false,
     data: null,

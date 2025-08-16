@@ -3,19 +3,6 @@ import { jsonResponse } from "@/app/lib/helpers";
 
 // 🔹 GET all main posts
 export async function GET(request: Request) {
-  const userId = request.headers.get("X-User-Id");
-
-  if (!userId) {
-    return jsonResponse(
-      {
-        error: "Missing X-User-Id header",
-        publicError: "Permiso denegado",
-        errorCode: "NO_AUTH",
-      },
-      401
-    );
-  }
-
   try {
     const result = await sql`SELECT * FROM main_posts ORDER BY createdat DESC`;
     return jsonResponse({ data: result.rows });

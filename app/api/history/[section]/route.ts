@@ -24,7 +24,7 @@ interface TreeBatch {
 export async function GET(request: Request, { params }: any) {
   const userId = request.headers.get("X-User-Id");
   const token = request.headers.get("X-User-Github-Token");
-  const section = await params.section;
+  const section = (await params).section;
 
   if (!userId || !token) {
     return jsonResponse({

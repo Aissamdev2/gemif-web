@@ -150,7 +150,7 @@ export async function PATCH(request: Request, { params }: any) {
 
   const { name, description, links, fileNames, subjectId } = body || {};
 
-  console.log('From PATCH: ', { name, description, links, fileNames, subjectId });
+  
   if (
     name === undefined &&
     description === undefined &&

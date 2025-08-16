@@ -1,8 +1,9 @@
 // app/dashboard/page.tsx (Server Component)
 import { Suspense } from "react";
-import HeaderBanner from "@/app/ui/main/header-banner";
+import HeaderBannerServer from "@/app/ui/main/header-banner";
 import PostsDashboardServer from "./posts-dashboard-server";
 import AddMainPostButton from "./add-main-post-button";
+import Link from "next/link";
 
 
 export default async function MainStatic() {
@@ -10,10 +11,10 @@ export default async function MainStatic() {
   return (
     <section className="min-h-screen max-h-full pt-[64px] flex flex-col gap-6 p-6">
       <Suspense fallback={<HeaderSkeleton />}>
-        <HeaderSkeleton />
+        <HeaderBannerServer />
       </Suspense>
       <Suspense fallback={<DashboardSkeleton />}>
-        <DashboardSkeleton />
+        <PostsDashboardServer />
       </Suspense>
     </section>
   );
