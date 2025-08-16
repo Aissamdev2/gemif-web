@@ -11,7 +11,7 @@ export default async function MainStatic() {
   return (
     <section className="min-h-screen max-h-full pt-[64px] flex flex-col gap-6 p-6">
       <Suspense fallback={<HeaderSkeleton />}>
-        <HeaderBannerServer />
+        <HeaderSkeleton />
       </Suspense>
       <Suspense fallback={<DashboardSkeleton />}>
         <PostsDashboardServer />
