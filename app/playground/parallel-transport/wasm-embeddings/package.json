@@ -1,0 +1,15 @@
+{
+  "name": "wasm_transport",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "wasm_transport_bg.wasm",
+    "wasm_transport.js",
+    "wasm_transport.d.ts"
+  ],
+  "main": "wasm_transport.js",
+  "types": "wasm_transport.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
