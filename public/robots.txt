@@ -1,0 +1,9 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://gemif.es
+
+# Sitemaps
+Sitemap: https://gemif.es/sitemap.xml

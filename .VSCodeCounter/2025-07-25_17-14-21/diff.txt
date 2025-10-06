@@ -1,0 +1,164 @@
+Date : 2025-07-25 17:14:21
+Directory : c:\Users\admin\Desktop\Next-js\agenda
+Total : 77 files,  3839 codes, 47 comments, 517 blanks, all 4403 lines
+
+Languages
++----------------+------------+------------+------------+------------+------------+
+| language       | files      | code       | comment    | blank      | total      |
++----------------+------------+------------+------------+------------+------------+
+| TypeScript     |         41 |      1,947 |         -1 |        311 |      2,257 |
+| TypeScript JSX |         33 |      1,702 |         46 |        154 |      1,902 |
+| YAML           |          1 |        165 |          0 |         50 |        215 |
+| PostCSS        |          1 |         19 |          2 |          2 |         23 |
+| JSON           |          1 |          6 |          0 |          0 |          6 |
++----------------+------------+------------+------------+------------+------------+
+
+Directories
++----------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                                   | files      | code       | comment    | blank      | total      |
++----------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                                      |         77 |      3,839 |         47 |        517 |      4,403 |
+| . (Files)                                                                              |          3 |        212 |          0 |         61 |        273 |
+| app                                                                                    |         74 |      3,627 |         47 |        456 |      4,130 |
+| app (Files)                                                                            |          2 |         19 |          2 |          3 |         24 |
+| app\api                                                                                |         24 |        640 |          1 |        112 |        753 |
+| app\api\auth                                                                           |          1 |         77 |          0 |         13 |         90 |
+| app\api\events                                                                         |          1 |         10 |          0 |          0 |         10 |
+| app\api\events\[id]                                                                    |          1 |         10 |          0 |          0 |         10 |
+| app\api\history                                                                        |          2 |         16 |          0 |          0 |         16 |
+| app\api\history\[section]                                                              |          1 |          3 |          0 |         -3 |          0 |
+| app\api\main-data                                                                      |          1 |         24 |         -3 |          2 |         23 |
+| app\api\main-posts                                                                     |          2 |         14 |          0 |          1 |         15 |
+| app\api\main-posts (Files)                                                             |          1 |          1 |          0 |         -1 |          0 |
+| app\api\main-posts\[id]                                                                |          1 |         13 |          0 |          2 |         15 |
+| app\api\primitive-subjects                                                             |          1 |         83 |          0 |         13 |         96 |
+| app\api\primitive-subjects\[id]                                                        |          1 |         83 |          0 |         13 |         96 |
+| app\api\ranking                                                                        |          2 |        110 |          0 |         18 |        128 |
+| app\api\ranking (Files)                                                                |          1 |          3 |          0 |          1 |          4 |
+| app\api\ranking\[id]                                                                   |          1 |        107 |          0 |         17 |        124 |
+| app\api\reset-password                                                                 |          1 |         21 |          1 |          8 |         30 |
+| app\api\send-reset-password                                                            |          1 |         26 |          1 |          7 |         34 |
+| app\api\send-verification-email                                                        |          1 |         26 |          1 |          7 |         34 |
+| app\api\subjects                                                                       |          2 |         14 |          0 |          0 |         14 |
+| app\api\subjects (Files)                                                               |          1 |          6 |          0 |          0 |          6 |
+| app\api\subjects\[id]                                                                  |          1 |          8 |          0 |          0 |          8 |
+| app\api\user                                                                           |          1 |          3 |          0 |          0 |          3 |
+| app\api\users                                                                          |          1 |         52 |          0 |         14 |         66 |
+| app\api\verification-token                                                             |          2 |         82 |          0 |         13 |         95 |
+| app\api\verification-token (Files)                                                     |          1 |         27 |          0 |          5 |         32 |
+| app\api\verification-token\[id]                                                        |          1 |         55 |          0 |          8 |         63 |
+| app\api\verify                                                                         |          1 |         17 |          1 |          8 |         26 |
+| app\api\weekly-challenge-answers                                                       |          2 |         46 |          0 |          8 |         54 |
+| app\api\weekly-challenge-answers (Files)                                               |          1 |         36 |          0 |          8 |         44 |
+| app\api\weekly-challenge-answers\[id]                                                  |          1 |         10 |          0 |          0 |         10 |
+| app\api\weekly-challenges                                                              |          2 |         19 |          0 |          0 |         19 |
+| app\api\weekly-challenges (Files)                                                      |          1 |         10 |          0 |          0 |         10 |
+| app\api\weekly-challenges\[id]                                                         |          1 |          9 |          0 |          0 |          9 |
+| app\gemif                                                                              |          3 |        425 |         30 |         26 |        481 |
+| app\gemif\settings                                                                     |          2 |         43 |          0 |          3 |         46 |
+| app\gemif\settings\account                                                             |          1 |         19 |          0 |          1 |         20 |
+| app\gemif\settings\subjects                                                            |          1 |         24 |          0 |          2 |         26 |
+| app\gemif\subjects                                                                     |          1 |        382 |         30 |         23 |        435 |
+| app\initial-setup                                                                      |          1 |         41 |          0 |          7 |         48 |
+| app\lib                                                                                |         22 |      1,359 |         -5 |        207 |      1,561 |
+| app\lib (Files)                                                                        |          6 |         -6 |          0 |         10 |          4 |
+| app\lib\actions                                                                        |         15 |      1,045 |         -5 |        195 |      1,235 |
+| app\lib\actions\events                                                                 |          2 |         54 |          0 |         14 |         68 |
+| app\lib\actions\history                                                                |          2 |         77 |          0 |         13 |         90 |
+| app\lib\actions\main-posts                                                             |          2 |        463 |          1 |         56 |        520 |
+| app\lib\actions\primitive-subjects                                                     |          2 |        109 |          0 |         19 |        128 |
+| app\lib\actions\ranking                                                                |          2 |         27 |         -6 |         12 |         33 |
+| app\lib\actions\session                                                                |          2 |        212 |          0 |         67 |        279 |
+| app\lib\actions\subjects                                                               |          1 |         -7 |          0 |         -1 |         -8 |
+| app\lib\actions\weekly-challenges                                                      |          2 |        110 |          0 |         15 |        125 |
+| app\lib\secrets                                                                        |          1 |        320 |          0 |          2 |        322 |
+| app\login                                                                              |          1 |         66 |          0 |          7 |         73 |
+| app\register                                                                           |          1 |        -50 |          2 |          6 |        -42 |
+| app\reset-password                                                                     |          1 |         32 |          1 |          5 |         38 |
+| app\ui                                                                                 |         18 |      1,023 |         16 |         74 |      1,113 |
+| app\verify-email                                                                       |          1 |         72 |          0 |          9 |         81 |
++----------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++----------------------------------------------------------------------------------------+----------------+------------+------------+------------+------------+
+| filename                                                                               | language       | code       | comment    | blank      | total      |
++----------------------------------------------------------------------------------------+----------------+------------+------------+------------+------------+
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\auth\route.ts                            | TypeScript     |         77 |          0 |         13 |         90 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\events\[id]\route.ts                     | TypeScript     |         10 |          0 |          0 |         10 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\history\[section]\route.ts               | TypeScript     |          3 |          0 |         -3 |          0 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\history\route.ts                         | TypeScript     |         13 |          0 |          3 |         16 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\main-data\route.tsx                      | TypeScript JSX |         24 |         -3 |          2 |         23 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\main-posts\[id]\route.tsx                | TypeScript JSX |         13 |          0 |          2 |         15 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\main-posts\route.tsx                     | TypeScript JSX |          1 |          0 |         -1 |          0 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\primitive-subjects\[id]\route.ts         | TypeScript     |         83 |          0 |         13 |         96 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\ranking\[id]\route.ts                    | TypeScript     |        107 |          0 |         17 |        124 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\ranking\route.tsx                        | TypeScript JSX |          3 |          0 |          1 |          4 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\reset-password\route.ts                  | TypeScript     |         21 |          1 |          8 |         30 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\send-reset-password\route.ts             | TypeScript     |         26 |          1 |          7 |         34 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\send-verification-email\route.ts         | TypeScript     |         26 |          1 |          7 |         34 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\subjects\[id]\route.ts                   | TypeScript     |          8 |          0 |          0 |          8 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\subjects\route.ts                        | TypeScript     |          6 |          0 |          0 |          6 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\user\route.ts                            | TypeScript     |          3 |          0 |          0 |          3 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\users\route.tsx                          | TypeScript JSX |         52 |          0 |         14 |         66 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\verification-token\[id]\route.ts         | TypeScript     |         55 |          0 |          8 |         63 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\verification-token\route.ts              | TypeScript     |         27 |          0 |          5 |         32 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\verify\route.ts                          | TypeScript     |         17 |          1 |          8 |         26 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\weekly-challenge-answers\[id]\route.ts   | TypeScript     |         10 |          0 |          0 |         10 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\weekly-challenge-answers\route.ts        | TypeScript     |         36 |          0 |          8 |         44 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\weekly-challenges\[id]\route.ts          | TypeScript     |          9 |          0 |          0 |          9 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\api\weekly-challenges\route.ts               | TypeScript     |         10 |          0 |          0 |         10 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\settings\account\page.tsx              | TypeScript JSX |         19 |          0 |          1 |         20 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\settings\subjects\page.tsx             | TypeScript JSX |         24 |          0 |          2 |         26 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\gemif\subjects\page.tsx                      | TypeScript JSX |        382 |         30 |         23 |        435 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\globals.css                                  | PostCSS        |         19 |          2 |          2 |         23 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\initial-setup\page.tsx                       | TypeScript JSX |         41 |          0 |          7 |         48 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\layout.tsx                                   | TypeScript JSX |          0 |          0 |          1 |          1 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions.ts                               | TypeScript     |         -6 |          0 |         -4 |        -10 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions\events\actions.ts                | TypeScript     |         37 |          0 |          9 |         46 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions\events\validation.ts             | TypeScript     |         17 |          0 |          5 |         22 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions\history\actions.ts               | TypeScript     |         53 |          0 |          7 |         60 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions\history\validation.ts            | TypeScript     |         24 |          0 |          6 |         30 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions\main-posts\actions.ts            | TypeScript     |        432 |          1 |         50 |        483 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions\main-posts\validation.ts         | TypeScript     |         31 |          0 |          6 |         37 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions\primitive-subjects\actions.ts    | TypeScript     |         46 |          0 |          8 |         54 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions\primitive-subjects\validation.ts | TypeScript     |         63 |          0 |         11 |         74 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions\ranking\actions.ts               | TypeScript     |         14 |         -6 |          9 |         17 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions\ranking\validation.ts            | TypeScript     |         13 |          0 |          3 |         16 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions\session\actions.ts               | TypeScript     |        197 |          0 |         64 |        261 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions\session\validation.ts            | TypeScript     |         15 |          0 |          3 |         18 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions\subjects\actions.ts              | TypeScript     |         -7 |          0 |         -1 |         -8 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions\weekly-challenges\actions.ts     | TypeScript     |         50 |          0 |          8 |         58 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\actions\weekly-challenges\validation.ts  | TypeScript     |         60 |          0 |          7 |         67 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\auth.ts                                  | TypeScript     |       -113 |          0 |        -27 |       -140 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\definitions.ts                           | TypeScript     |         25 |          0 |          0 |         25 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\helpers.ts                               | TypeScript     |         80 |          0 |         32 |        112 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\secrets\users.ts                         | TypeScript     |        320 |          0 |          2 |        322 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\use-weekly-challenges.tsx                | TypeScript JSX |          0 |          0 |          1 |          1 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\lib\utils.ts                                 | TypeScript     |          8 |          0 |          8 |         16 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\login\page.tsx                               | TypeScript JSX |         66 |          0 |          7 |         73 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\register\page.tsx                            | TypeScript JSX |        -50 |          2 |          6 |        -42 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\reset-password\page.tsx                      | TypeScript JSX |         32 |          1 |          5 |         38 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\add-event-form2.tsx                       | TypeScript JSX |        -15 |          0 |          2 |        -13 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\add-file-form.tsx                         | TypeScript JSX |         43 |          0 |          0 |         43 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\add-folder-form.tsx                       | TypeScript JSX |         12 |          0 |         -2 |         10 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\add-main-post-form.tsx                    | TypeScript JSX |         67 |          0 |         11 |         78 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\add-weekly-challenge-form.tsx             | TypeScript JSX |         98 |          0 |         -6 |         92 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\confirm-modal.tsx                         | TypeScript JSX |         81 |          0 |          5 |         86 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\copy-to-clipboard.tsx                     | TypeScript JSX |         26 |          0 |          5 |         31 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\edit-event-client.tsx                     | TypeScript JSX |         28 |       -157 |        -10 |       -139 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\edit-main-post.tsx                        | TypeScript JSX |        186 |         12 |         27 |        225 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\edit-weekly-challenge.tsx                 | TypeScript JSX |         97 |         -2 |         -3 |         92 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\file-tree.tsx                             | TypeScript JSX |         32 |          0 |         -9 |         23 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\folder-toggle.tsx                         | TypeScript JSX |        -38 |          0 |        -20 |        -58 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\list-modal.tsx                            | TypeScript JSX |         48 |          2 |          4 |         54 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\main.tsx                                  | TypeScript JSX |         30 |          3 |          3 |         36 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\mini-modal.tsx                            | TypeScript JSX |        138 |          0 |         19 |        157 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\view-event-client2.tsx                    | TypeScript JSX |         45 |        150 |         29 |        224 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\view-main-post.tsx                        | TypeScript JSX |         91 |          6 |          5 |        102 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\ui\weekly-challenges.tsx                     | TypeScript JSX |         54 |          2 |         14 |         70 |
+| c:\Users\admin\Desktop\Next-js\agenda\app\verify-email\page.tsx                        | TypeScript JSX |         72 |          0 |          9 |         81 |
+| c:\Users\admin\Desktop\Next-js\agenda\middleware.ts                                    | TypeScript     |         41 |          0 |         11 |         52 |
+| c:\Users\admin\Desktop\Next-js\agenda\package.json                                     | JSON           |          6 |          0 |          0 |          6 |
+| c:\Users\admin\Desktop\Next-js\agenda\pnpm-lock.yaml                                   | YAML           |        165 |          0 |         50 |        215 |
+| Total                                                                                  |                |      3,839 |         47 |        517 |      4,403 |
++----------------------------------------------------------------------------------------+----------------+------------+------------+------------+------------+

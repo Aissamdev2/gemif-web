@@ -1,0 +1,55 @@
+pnpm remove @heroicons/react
+pnpm remove @lottiefiles/dotlottie-react
+pnpm remove @lottiefiles/dotlottie-web
+pnpm remove @next/bundle-analyzer
+pnpm remove @types/adm-zip
+pnpm remove @types/date-fns
+pnpm remove @types/dotenv
+pnpm remove @types/jsonwebtoken
+pnpm remove @types/katex
+pnpm remove @types/react-beautiful-dnd
+pnpm remove @types/react-katex
+pnpm remove @types/react-latex
+pnpm remove @types/react-router-dom
+pnpm remove @upstash/redis
+pnpm remove adm-zip
+pnpm remove date-fns
+pnpm remove dotenv
+pnpm remove framer-motion
+pnpm remove jsonwebtoken
+pnpm remove katex
+pnpm remove react-beautiful-dnd
+pnpm remove react-katex
+pnpm remove react-latex
+pnpm remove react-router-dom
+pnpm remove simple-icons
+pnpm remove tsx
+pnpm remove tw-elements
+
+
+
+   events: {
+     // Runs for both Credentials and OAuth
+     async signIn({ user }) {
+       try {
+         await increaseLoginCount((user as any).id as string);
+       } catch {}
+     },
+     // When a new OAuth account is linked to a user
+     async linkAccount({ user, account }) {
+       if (account?.provider === "github") {
+         try {
+           await db
+             .update(users)
+             .set({ 
+               // mark as verified once GitHub is linked
+               is_verified: true,
+               emailVerified: new Date(),
+               last_seen: new Date(),
+             })
+             .where(eq(users.id, (user as any).id as string));
+         } catch {}
+       }
+     },
+   },
+
