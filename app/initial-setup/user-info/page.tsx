@@ -23,7 +23,7 @@ export default async function Page() {
                       <p className="text-[11px] text-muted">Su nombre, este será público.</p>
                     </div>
                   </label>
-                  <input id="public-name" name="publicName" className="input input-md w-full" placeholder="Ej. Dave" />
+                  <input id="public-name" name="publicName" className="input input-md w-full" placeholder="Ej. Micielo" />
                 </div>
                 <div>
                   <label htmlFor="name" className="label">

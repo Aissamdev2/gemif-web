@@ -14,6 +14,10 @@
 		{
 			"binding": "GEMIF_WEB_MAIN",
 			"bucket_name": "gemif-web-main"
+		},
+		{
+			"binding": "GEMIF_WEB_RESOURCES_POSTS",
+			"bucket_name": "gemif-web-resources-posts"
 		}
 	],
 	"placement": {

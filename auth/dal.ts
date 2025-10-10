@@ -53,7 +53,6 @@ export const verifySession = cache(async (): Promise<Result<SessionPayload | nul
     }
     token = cookie.value 
   } catch (error: any) {
-    console.log(error)
     return failure(AuthError({
       message: "Error de sessión",
       details: "No se pudo obtener la sessión",

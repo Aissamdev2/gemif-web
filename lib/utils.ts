@@ -171,17 +171,23 @@ export function sleep(ms: number): Promise<void> {
 
 // URLS AND ROUTES
 
-
-export function redirectErrorUrl(error: AppError): never  {
+export function errorUrl(error: AppError, origin?: string): URL  {
+  const url = new URL('/error', process.env.NEXT_PUBLIC_BASE_URL);
   const params = new URLSearchParams({
-    error: error.message,
-    errorCode: error.code,
+    message: error.message,
+    code: error.code,
     details: error.details,
+    origin: origin || '',
   });
+  url.search = params.toString();
+  return url;
+}
 
-  const url = `/error?${params.toString()}`;
 
-  redirect(url)
+
+export function redirectErrorUrl(error: AppError, origin?: string): never  {
+  const url = errorUrl(error, origin);
+  redirect(url.pathname + url.search);
 }
 
 

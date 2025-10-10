@@ -9,6 +9,7 @@ import { connection } from "next/server";
 import { isFailure, unwrap, unwrapError } from "@/lib/errors/result";
 import { dbGetUser } from "@/db/users";
 
+
 export default async function ProfileServer() {
   // Validate session [START]
   const sessionResult = await verifySession();

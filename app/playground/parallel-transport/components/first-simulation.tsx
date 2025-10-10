@@ -8,7 +8,6 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 // WASM import: adjust path if different
 // Assuming "../public/pkg/wasm_transport" is correct for your setup
 import init, { parallel_transport_latitude } from "../wasm-embeddings/wasm_transport";
-import { motion } from "framer-motion";
 
 /* ---------- utils ---------- */
 const deg2rad = (d: number) => (d * Math.PI) / 180;

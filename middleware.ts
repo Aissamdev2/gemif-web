@@ -2,7 +2,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySession } from './auth/dal';
-import { isFailure, unwrap } from './lib/errors/result';
+import { isFailure, unwrap, unwrapError } from './lib/errors/result';
+import { errorUrl, redirectErrorUrl } from './lib/utils';
+import { error } from 'console';
 
 const PUBLIC_API_ROUTES = ['/api/verify', '/api/reset-password', '/api/verification-token', '/api/send-reset-password', '/api/send-verification-email', '/api/auth'];
 const PUBLIC_PAGES = ['/', '/login', '/register'];
@@ -34,16 +36,14 @@ export async function middleware(request: NextRequest) {
   }
   try {
     const sessionResult = await verifySession()
-    if (isFailure(sessionResult)) return NextResponse.redirect(new URL('/', request.url));
+    if (isFailure(sessionResult)) return NextResponse.redirect(new URL(errorUrl(unwrapError(sessionResult), pathname)));
     const session = unwrap(sessionResult)
-
 
     const isAuth = session?.userId;
     const isVerified = session?.flags?.is_verified;
     const isCompleteUserInfo = session?.flags?.is_complete_user_info;
     const isCompleteSubjects = session?.flags?.is_complete_subjects;
-    console.log('Pathname:', pathname,'isAuth:', isAuth, 'isVerfified:', isVerified, 'isCompleteUserInfo:', isCompleteUserInfo, 'isCompleteSubjects:', isCompleteSubjects)
-    
+
     // 1. Allow internal requests
     if (isInternal) {
       return NextResponse.next();

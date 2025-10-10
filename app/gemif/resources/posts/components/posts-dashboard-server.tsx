@@ -9,12 +9,12 @@ import { dbGetResourcesPosts } from "@/db/main-posts/main-posts";
 import { dbGetSubjects } from "@/db/subjects";
 import { isFailure, unwrap, unwrapError } from "@/lib/errors/result";
 
-
+const PATHNAME = '/gemif/resources/posts';
 
 export default async function PostsDashboardServer() {
   // Validate session [START]
   const sessionResult = await verifySession();
-  if (isFailure(sessionResult)) redirectErrorUrl(unwrapError(sessionResult))
+  if (isFailure(sessionResult)) redirectErrorUrl(unwrapError(sessionResult), PATHNAME);
   const session = unwrap(sessionResult)
   if (!session) unauthorized()
   // Validate session [END]
@@ -22,8 +22,8 @@ export default async function PostsDashboardServer() {
   const { userId } = session;
 
   const [postsResult, subjectsResult] = await Promise.all([dbGetResourcesPosts(), dbGetSubjects({ id: userId })]);
-  if (isFailure(postsResult)) redirectErrorUrl(unwrapError(postsResult))
-  if (isFailure(subjectsResult)) redirectErrorUrl(unwrapError(subjectsResult))
+  if (isFailure(postsResult)) redirectErrorUrl(unwrapError(postsResult), PATHNAME)
+  if (isFailure(subjectsResult)) redirectErrorUrl(unwrapError(subjectsResult), PATHNAME)
   
   const posts = unwrap(postsResult)
   const subjects = unwrap(subjectsResult)
