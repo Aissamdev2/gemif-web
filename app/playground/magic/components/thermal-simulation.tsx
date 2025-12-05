@@ -307,8 +307,8 @@ export default function ThermalPage() {
 
   // ACTIVE STATE: What is currently simulating (Triggers simulation on change)
   const [activeParams, setActiveParams] = useState({
-    focusOffset: 0,
-    matrixSize: 1,
+    focusOffset: -1.5,
+    matrixSize: 5,
     magicArea: 75,
   });
 
