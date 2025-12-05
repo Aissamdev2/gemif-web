@@ -6,6 +6,7 @@ import React, {
   useLayoutEffect,
   useState,
   useEffect,
+  useCallback,
 } from "react";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import {
@@ -34,7 +35,7 @@ const FOCUS_OFFSET_MAX = 0;
 const MATRIX_SIZE_MIN = 1;
 const MATRIX_SIZE_MAX = 5;
 
-import init, { run_thermal_simulation } from "../wasm-embeddings/solar.js";
+import init, { run_thermal_simulation } from "../wasm-embeddings/v3/solar.js";
 import { on } from "events";
 
 const tempColor = new THREE.Color();
@@ -74,16 +75,15 @@ interface SimStats {
   status: string;
   loading: boolean;
 }
-
 const ThermalBox = ({
   matrixSize,
   focusOffset,
   magicArea,
   onUpdateStats,
 }: {
-  matrixSize: number;
-  focusOffset: number;
-  magicArea: number;
+  matrixSize: number | null;
+  focusOffset: number | null;
+  magicArea: number | null;
   onUpdateStats: (stats: Partial<SimStats>) => void;
 }) => {
   const [texSink, setTexSink] = useState<LayerTextures | null>(null);
@@ -91,27 +91,44 @@ const ThermalBox = ({
   const [texCPV, setTexCPV] = useState<LayerTextures | null>(null);
 
   const fwhm = useMemo(() => {
+    // Handle null case safely
+    if (focusOffset === null) return 0.1;
     const ratio = Math.abs(focusOffset) / 2.5;
     return 0.1 + ratio * 0.5;
   }, [focusOffset]);
 
+  // Initial Load of WASM only
   useEffect(() => {
     init()
-      .then(() => onUpdateStats({ status: "Ready" }))
+      .then(() => onUpdateStats({ status: "Ready to Simulate" }))
       .catch((err) => {
         console.error("Failed to load WASM:", err);
         onUpdateStats({ status: "Error Loading WASM" });
       });
-  }, [onUpdateStats]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run once on mount
 
+  // Simulation Trigger Effect
   useEffect(() => {
-    // This effect now only runs when props passed from the parent change
-    // Since the parent only updates props on button click, this simulation
-    // is effectively manual-trigger only.
+    // CRITICAL FIX: Guard clause.
+    // If we don't have active parameters (initial load), do NOT run the simulation.
+    if (matrixSize === null || magicArea === null || focusOffset === null) {
+      return;
+    }
+
     onUpdateStats({ loading: true, status: "Calculating..." });
 
+    // We use a slightly longer timeout to ensure the UI has time to render
+    // the "Calculating" state before the heavy JS loop freezes the thread.
+    console.log("Starting simulation with params:", {
+      fwhm,
+      magicArea,
+      matrixSize,
+    });
     const timer = setTimeout(() => {
       try {
+        console.time("Simulation Run"); // Debugging for "lasts too much"
+
         const result = run_thermal_simulation(fwhm, magicArea, matrixSize);
 
         onUpdateStats({
@@ -128,7 +145,10 @@ const ThermalBox = ({
 
         let gMin = Infinity;
         let gMax = -Infinity;
-        for (let i = 0; i < tempArray.length; i++) {
+
+        // Optimize: use a simple loop
+        const len = tempArray.length;
+        for (let i = 0; i < len; i++) {
           const val = tempArray[i];
           if (val < gMin) gMin = val;
           if (val > gMax) gMax = val;
@@ -146,14 +166,17 @@ const ThermalBox = ({
             for (let i = 0; i < nx; i++) {
               const val = tempArray[zOffset + j * nx + i];
               const norm = (val - gMin) / range;
-              const idx1 = ((ny + j) * fullNx + (nx + i)) * 4;
-              const idx2 = ((ny + j) * fullNx + (nx - 1 - i)) * 4;
-              const idx3 = ((ny - 1 - j) * fullNx + (nx - 1 - i)) * 4;
-              const idx4 = ((ny - 1 - j) * fullNx + (nx + i)) * 4;
-              updateHeatColor(norm, textureData, idx1);
-              updateHeatColor(norm, textureData, idx2);
-              updateHeatColor(norm, textureData, idx3);
-              updateHeatColor(norm, textureData, idx4);
+
+              // Pre-calculate base indices to save math ops
+              const row1 = (ny + j) * fullNx;
+              const row2 = (ny - 1 - j) * fullNx;
+              const col1 = nx + i;
+              const col2 = nx - 1 - i;
+
+              updateHeatColor(norm, textureData, (row1 + col1) * 4);
+              updateHeatColor(norm, textureData, (row1 + col2) * 4);
+              updateHeatColor(norm, textureData, (row2 + col2) * 4);
+              updateHeatColor(norm, textureData, (row2 + col1) * 4);
             }
           }
           const tex = new THREE.DataTexture(textureData, fullNx, fullNy);
@@ -179,14 +202,20 @@ const ThermalBox = ({
             const zIdx = zStart + k;
             const zOffset = zIdx * nx * ny;
             const quarterDim = isXFace ? nx : ny;
+
+            // Optimization: Pull invariant calculation out of inner loop
+            const rowOffset = k * width;
+
             for (let q = 0; q < quarterDim; q++) {
               let val;
               if (isXFace) val = tempArray[zOffset + (ny - 1) * nx + q];
               else val = tempArray[zOffset + q * nx + (nx - 1)];
 
               const norm = (val - gMin) / range;
-              const idxRight = (k * width + (quarterDim + q)) * 4;
-              const idxLeft = (k * width + (quarterDim - 1 - q)) * 4;
+
+              const idxRight = (rowOffset + (quarterDim + q)) * 4;
+              const idxLeft = (rowOffset + (quarterDim - 1 - q)) * 4;
+
               updateHeatColor(norm, textureData, idxRight);
               updateHeatColor(norm, textureData, idxLeft);
             }
@@ -220,6 +249,7 @@ const ThermalBox = ({
         setTexCPV(buildLayerSet(13, nz - 1));
 
         result.free();
+        console.timeEnd("Simulation Run"); // Check console for timing
       } catch (e) {
         console.error("Simulation failed:", e);
         onUpdateStats({ loading: false, status: "Error" });
@@ -227,7 +257,7 @@ const ThermalBox = ({
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [fwhm, magicArea, matrixSize, onUpdateStats]);
+  }, [fwhm, magicArea, matrixSize, focusOffset, onUpdateStats]);
 
   const hasData = texCPV && texBase && texSink;
 
@@ -294,29 +324,31 @@ const ThermalBox = ({
 // --- THERMAL PAGE (Main Component for Page 2) ---
 export default function ThermalPage() {
   const [simStats, setSimStats] = useState<SimStats>({
-    maxTemp: 25,
+    maxTemp: 0,
     pElectric: 0,
-    status: "Initializing...",
+    status: "Ready to Start",
     loading: false,
   });
 
   // UI STATE: What the user is currently editing (Does not trigger simulation)
-  const [uiFocusOffset, setUiFocusOffset] = useState(0);
-  const [uiMatrixSize, setUiMatrixSize] = useState(1);
+  const [uiFocusOffset, setUiFocusOffset] = useState(-1.5);
+  const [uiMatrixSize, setUiMatrixSize] = useState(5);
   const [uiMagicArea, setUiMagicArea] = useState(75);
 
-  // ACTIVE STATE: What is currently simulating (Triggers simulation on change)
-  const [activeParams, setActiveParams] = useState({
-    focusOffset: -1.5,
-    matrixSize: 5,
-    magicArea: 75,
-  });
+  // ACTIVE STATE: Controls when simulation runs.
+  // CRITICAL FIX: Initialize as NULL so it doesn't run on load.
+  const [activeParams, setActiveParams] = useState<{
+    focusOffset: number;
+    matrixSize: number;
+    magicArea: number;
+  } | null>(null);
 
-  // Derived FWHM for display (based on active params to match results)
-  const activeFwhm = useMemo(() => {
-    const ratio = Math.abs(activeParams.focusOffset) / 2.5;
+  // Derived FWHM for display (based on UI params since Active might be null)
+  // We use UI params here so the stats panel updates instantly as user adjusts slider
+  const displayFwhm = useMemo(() => {
+    const ratio = Math.abs(uiFocusOffset) / 2.5;
     return 0.1 + ratio * 0.5;
-  }, [activeParams.focusOffset]);
+  }, [uiFocusOffset]);
 
   // Handler to commit UI changes to Active state
   const handleRunSimulation = () => {
@@ -327,8 +359,14 @@ export default function ThermalPage() {
     });
   };
 
+  const onUpdateStats = useCallback((stats: Partial<SimStats>) => {
+    setSimStats((prev) => ({ ...prev, ...stats }));
+  }, []);
+
   // Check if there are pending changes
+  // If activeParams is null (first run), we consider it "pending"
   const hasPendingChanges =
+    !activeParams ||
     uiFocusOffset !== activeParams.focusOffset ||
     uiMatrixSize !== activeParams.matrixSize ||
     uiMagicArea !== activeParams.magicArea;
@@ -375,12 +413,10 @@ export default function ThermalPage() {
 
         {/* Thermal 3D Box - Receives ACTIVE params */}
         <ThermalBox
-          matrixSize={activeParams.matrixSize}
-          focusOffset={activeParams.focusOffset}
-          magicArea={activeParams.magicArea}
-          onUpdateStats={(newStats) =>
-            setSimStats((prev) => ({ ...prev, ...newStats }))
-          }
+          matrixSize={activeParams?.matrixSize ?? null}
+          focusOffset={activeParams?.focusOffset ?? null}
+          magicArea={activeParams?.magicArea ?? null}
+          onUpdateStats={onUpdateStats}
         />
       </Canvas>
 
@@ -473,8 +509,16 @@ export default function ThermalPage() {
           disabled={simStats.loading}
           className={`
             group flex items-center gap-3 px-6 py-3 rounded-full shadow-xl transition-all duration-300
-            ${hasPendingChanges ? "bg-gradient-to-r from-cyan-600 to-blue-600 hover:scale-105 hover:shadow-cyan-500/50 ring-2 ring-white/50" : "bg-gray-800/80 text-gray-400"}
-            ${simStats.loading ? "opacity-70 cursor-not-allowed" : "cursor-pointer"}
+            ${
+              hasPendingChanges
+                ? "bg-gradient-to-r from-cyan-600 to-blue-600 hover:scale-105 hover:shadow-cyan-500/50 ring-2 ring-white/50"
+                : "bg-gray-800/80 text-gray-400"
+            }
+            ${
+              simStats.loading
+                ? "opacity-70 cursor-not-allowed"
+                : "cursor-pointer"
+            }
           `}
         >
           {simStats.loading ? (
@@ -500,15 +544,19 @@ export default function ThermalPage() {
             </svg>
           ) : (
             <div
-              className={`w-3 h-3 rounded-full ${hasPendingChanges ? "bg-red-400 animate-pulse" : "bg-green-500"}`}
+              className={`w-3 h-3 rounded-full ${
+                hasPendingChanges ? "bg-red-400 animate-pulse" : "bg-green-500"
+              }`}
             />
           )}
           <span className="font-bold text-white uppercase tracking-wider text-sm">
             {simStats.loading
               ? "Calculant..."
-              : hasPendingChanges
-                ? "Simular Canvis"
-                : "Actualitzat"}
+              : activeParams === null
+                ? "Iniciar Simulació"
+                : hasPendingChanges
+                  ? "Simular Canvis"
+                  : "Actualitzat"}
           </span>
         </button>
       </div>
@@ -525,38 +573,58 @@ export default function ThermalPage() {
         </h3>
         <div className="space-y-1 text-xs font-mono text-gray-300">
           <div className="flex justify-between">
-            <span>Àrea Màgica:</span> <span>{activeParams.magicArea} m²</span>
+            {/* Show UI params here if activeParams is null (not run yet) */}
+            <span>Àrea Màgica:</span>{" "}
+            <span>{activeParams?.magicArea ?? uiMagicArea} m²</span>
           </div>
           <div className="flex justify-between">
             <span>Matriu CPV:</span>{" "}
             <span>
-              {activeParams.matrixSize}x{activeParams.matrixSize}
+              {activeParams?.matrixSize ?? uiMatrixSize}x
+              {activeParams?.matrixSize ?? uiMatrixSize}
             </span>
           </div>
           <div className="flex justify-between">
             <span>Desplaçament:</span>{" "}
-            <span>{activeParams.focusOffset.toFixed(2)}</span>
+            <span>
+              {(activeParams?.focusOffset ?? uiFocusOffset).toFixed(2)}
+            </span>
           </div>
           <div className="flex justify-between">
-            <span>FWHM Est.:</span> <span>{activeFwhm.toFixed(3)} m</span>
+            <span>FWHM Est.:</span> <span>{displayFwhm.toFixed(3)} m</span>
           </div>
           <div className="h-px bg-white/20 my-3"></div>
-          <div className="flex justify-between text-red-400 font-bold text-sm items-center">
-            <span>T. Màx:</span>
-            <span
-              className={`px-2 py-0.5 rounded border ${simStats.loading ? "opacity-50" : ""} bg-red-900/30 border-red-500/30`}
-            >
-              {simStats.maxTemp.toFixed(1)} °C
-            </span>
-          </div>
-          <div className="flex justify-between text-green-300 font-bold text-sm items-center mt-1">
-            <span>Potència Elèc:</span>
-            <span
-              className={`px-2 py-0.5 rounded border ${simStats.loading ? "opacity-50" : ""} bg-green-900/30 border-green-500/30`}
-            >
-              {simStats.pElectric.toFixed(2)} W
-            </span>
-          </div>
+
+          {/* Only show results if data exists (maxTemp > 0 implies run finished) */}
+          {activeParams ? (
+            <>
+              <div className="flex justify-between text-red-400 font-bold text-sm items-center">
+                <span>T. Màx:</span>
+                <span
+                  className={`px-2 py-0.5 rounded border ${
+                    simStats.loading ? "opacity-50" : ""
+                  } bg-red-900/30 border-red-500/30`}
+                >
+                  {simStats.maxTemp.toFixed(1)} °C
+                </span>
+              </div>
+              <div className="flex justify-between text-green-300 font-bold text-sm items-center mt-1">
+                <span>Potència Elèc:</span>
+                <span
+                  className={`px-2 py-0.5 rounded border ${
+                    simStats.loading ? "opacity-50" : ""
+                  } bg-green-900/30 border-green-500/30`}
+                >
+                  {simStats.pElectric.toFixed(2)} W
+                </span>
+              </div>
+            </>
+          ) : (
+            <div className="text-center text-gray-500 italic py-2">
+              Prem Iniciar Simulació per veure resultats
+            </div>
+          )}
+
           <div className="h-px bg-white/20 my-3"></div>
           <p className="text-[10px] text-gray-500 leading-tight">
             Motor: Rust + nalgebra-sparse + PCG

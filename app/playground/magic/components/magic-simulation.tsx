@@ -19,7 +19,7 @@ import { useLoader } from "@react-three/fiber";
 import { TextureLoader, RepeatWrapping } from "three";
 import ThermalPage from "./thermal-simulation";
 
-import init, { run_thermal_simulation } from "../wasm-embeddings/solar.js";
+import init, { run_thermal_simulation } from "../wasm-embeddings/v1/solar.js";
 
 // --- Constants ---
 const SKY_TEXTURE_URL = "/textures/sky.jpg";
