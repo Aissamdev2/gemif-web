@@ -21,7 +21,7 @@ import * as THREE from "three";
 // Constants
 const PLATE_WIDTH = 1.5;
 const PLATE_DEPTH = 1.5;
-const FOCUS_OFFSET_MIN = -2.5;
+const FOCUS_OFFSET_MIN = -3.5;
 const FOCUS_OFFSET_MAX = 0;
 const MATRIX_SIZE_MIN = 1;
 const MATRIX_SIZE_MAX = 5;
@@ -558,7 +558,7 @@ export default function ThermalPage() {
             </span>
           </div>
           <button
-            onClick={() => setUiMagicArea((prev) => Math.min(prev + 5, 200))}
+            onClick={() => setUiMagicArea((prev) => Math.min(prev + 5, 240))}
             className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/30 transition active:scale-95"
           >
             +

@@ -21,7 +21,7 @@ import { TextureLoader, RepeatWrapping } from "three";
 import Link from "next/link";
 
 // --- Constants ---
-const DAY_TEXTURE_URL = "/textures/sky.jpg";
+const DAY_TEXTURE_URL = "/textures/sky2.jpg";
 const NIGHT_TEXTURE_URL = "/textures/stars.jpg";
 const GROUND_TEXTURE_URL = "/textures/ground.jpg";
 
@@ -71,7 +71,7 @@ export function SkySphere({ isNight }: { isNight: boolean }) {
 
   return (
     <mesh scale={[500, 500, 500]}>
-      <sphereGeometry args={[1, 64, 64]} />
+      <sphereGeometry args={[1, 64, 64, 3*Math.PI/2]} />
       <meshBasicMaterial
         map={texture}
         color={texture ? "white" : isNight ? "#000000" : "#0f172a"}
