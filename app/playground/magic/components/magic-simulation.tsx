@@ -199,10 +199,10 @@ const GaussianPlot = ({
   return (
     <div className="absolute top-24 right-8 bg-black/70 backdrop-blur-md p-5 rounded-xl border border-white/10 shadow-2xl text-white w-[260px]">
       <h3 className="text-sm font-bold mb-1 text-cyan-400">
-        Senyal d'Incidència (Tall 1D)
+        Senyal d&apos;Incidència (Tall 1D)
       </h3>
       <p className="text-xs opacity-70 mb-4 leading-tight">
-        Distribució d'energia matriu {matrixSize}x{matrixSize}.
+        Distribució d&apos;energia matriu {matrixSize}x{matrixSize}.
         <br />
         Amplitud màxima: {(amplitude * 100).toFixed(0)}%
       </p>
@@ -703,13 +703,12 @@ const AnimatedRay = ({
   );
 
   return (
-    <line ref={lineRef} frustumCulled={false}>
+    <primitive object={new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial())} ref={lineRef} frustumCulled={false}>
       <bufferGeometry>
         <bufferAttribute
           attach="attributes-position"
+          args={[initialPositions, 3]}
           count={3}
-          array={initialPositions}
-          itemSize={3}
         />
       </bufferGeometry>
       <lineBasicMaterial
@@ -718,7 +717,7 @@ const AnimatedRay = ({
         transparent
         linewidth={1}
       />
-    </line>
+    </primitive>
   );
 };
 
