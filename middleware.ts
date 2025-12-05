@@ -67,8 +67,11 @@ export async function middleware(request: NextRequest) {
 
     } else {
       const url = new URL(request.url)
+      if (pathname.startsWith("/playground/magic")) {
+        return NextResponse.next()
+      }
       const simulationToken = url.searchParams.get('simulation-token')
-      if (pathname.startsWith('/playground') && simulationToken === process.env.SIMULATION_TOKEN) {
+      if (pathname.startsWith('/playground') && !pathname.startsWith("/playground/magic") && simulationToken === process.env.SIMULATION_TOKEN) {
         return NextResponse.next()
       }
       if (!PUBLIC_PAGES.includes(pathname)) {
