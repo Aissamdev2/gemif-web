@@ -6,6 +6,7 @@ import React, {
   useLayoutEffect,
   useState,
   useEffect,
+  Suspense, // Import Suspense
 } from "react";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import {
@@ -17,12 +18,11 @@ import {
 import * as THREE from "three";
 import { useLoader } from "@react-three/fiber";
 import { TextureLoader, RepeatWrapping } from "three";
-import ThermalPage from "./thermal-simulation";
-
-import init, { run_thermal_simulation } from "../wasm-embeddings/v1/solar.js";
+import Link from "next/link";
 
 // --- Constants ---
-const SKY_TEXTURE_URL = "/textures/sky.jpg";
+const DAY_TEXTURE_URL = "/textures/sky.jpg";
+const NIGHT_TEXTURE_URL = "/textures/stars.jpg";
 const GROUND_TEXTURE_URL = "/textures/ground.jpg";
 
 const FOCAL_LENGTH = 20;
@@ -38,39 +38,43 @@ const FOCUS_OFFSET_MAX = 0;
 const MATRIX_SIZE_MIN = 1;
 const MATRIX_SIZE_MAX = 5;
 
-// ------------------------------------------------------------------
-// SECTION 1: SHARED 3D COMPONENTS (Sky, Ground, Mount, Geometry)
-// ------------------------------------------------------------------
-
-function getSRGBEncodingIfAvailable(): number | undefined {
-  const threeAny = THREE as any;
-  return (
-    threeAny.sRGBEncoding ??
-    threeAny.SRGBEncoding ??
-    threeAny.SRGBColorSpace ??
-    undefined
-  );
+// --- UTILITY: Trigger when Suspense finishes ---
+// This component only mounts when all assets in the Suspense boundary are loaded.
+function SceneReady({ onReady }: { onReady: () => void }) {
+  useEffect(() => {
+    onReady();
+  }, [onReady]);
+  return null;
 }
 
-export function SkySphere() {
-  const texture = useLoader(TextureLoader, SKY_TEXTURE_URL) as
-    | THREE.Texture
-    | undefined;
+// ------------------------------------------------------------------
+// SECTION 1: SHARED 3D COMPONENTS
+// ------------------------------------------------------------------
 
-  useEffect(() => {
+export function SkySphere({ isNight }: { isNight: boolean }) {
+  const textureUrl = isNight ? NIGHT_TEXTURE_URL : DAY_TEXTURE_URL;
+  const texture = useLoader(TextureLoader, textureUrl) as THREE.Texture;
+
+  useLayoutEffect(() => {
     if (!texture) return;
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.ClampToEdgeWrapping;
-    texture.repeat.set(1, 1);
+    if (isNight) {
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(6, 6);
+    } else {
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.ClampToEdgeWrapping;
+      texture.repeat.set(1, 1);
+    }
     texture.needsUpdate = true;
-  }, [texture]);
+  }, [texture, isNight]);
 
   return (
     <mesh scale={[500, 500, 500]}>
       <sphereGeometry args={[1, 64, 64]} />
       <meshBasicMaterial
-        map={texture ?? undefined}
-        color={texture ? "white" : "#0f172a"}
+        map={texture}
+        color={texture ? "white" : isNight ? "#000000" : "#0f172a"}
         side={THREE.BackSide}
         fog={false}
       />
@@ -78,12 +82,10 @@ export function SkySphere() {
   );
 }
 
-export function TexturedGround() {
-  const texture = useLoader(TextureLoader, GROUND_TEXTURE_URL) as
-    | THREE.Texture
-    | undefined;
+export function TexturedGround({ isNight }: { isNight: boolean }) {
+  const texture = useLoader(TextureLoader, GROUND_TEXTURE_URL) as THREE.Texture;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!texture) return;
     texture.wrapS = texture.wrapT = RepeatWrapping;
     texture.repeat.set(15, 15);
@@ -94,8 +96,8 @@ export function TexturedGround() {
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2.5, 0]} receiveShadow>
       <planeGeometry args={[1000, 1000]} />
       <meshStandardMaterial
-        map={texture ?? undefined}
-        color={texture ? "white" : "#1c1917"}
+        map={texture}
+        color={isNight ? "#222" : "white"}
         roughness={0.9}
       />
     </mesh>
@@ -174,7 +176,7 @@ const DishBackFrame = () => {
 
   return (
     <group position={[0, 0, 0]}>
-      <mesh position={[0, hubDepth, 0]} rotation={[Math.PI / 2, 0, 0]}>
+      <mesh position={[0, hubDepth, 0]} >
         <cylinderGeometry args={[1.2, 1.2, 0.5, 32]} />
         <meshStandardMaterial color="#333" />
       </mesh>
@@ -266,7 +268,7 @@ const MountBase = () => {
 };
 
 // ------------------------------------------------------------------
-// SECTION 2: PAGE 1 - TELESCOPE & RAYS
+// SECTION 2: TELESCOPE & RAYS
 // ------------------------------------------------------------------
 
 const AnimatedRay = ({
@@ -371,7 +373,7 @@ const AnimatedRay = ({
         />
       </bufferGeometry>
       <lineBasicMaterial
-        color="#00ffff"
+        color="#ff0000"
         opacity={0.6}
         transparent
         linewidth={1}
@@ -512,7 +514,7 @@ const CPVGrid = ({ matrixSize }: { matrixSize: number }) => {
             rotation={[-Math.PI / 2, 0, 0]}
           >
             <boxGeometry args={[size, size, 0.2]} />
-            <meshBasicMaterial color="#ef4444" />
+            <meshBasicMaterial color="#6b6eff" />
           </mesh>
         );
       }
@@ -588,7 +590,7 @@ const GaussianPlot = ({
   const sigma =
     SIGMA_MIN +
     (SIGMA_MAX - SIGMA_MIN) * (Math.abs(focusOffset) / OFFSET_RANGE);
-  const amplitude = 0.9 / matrixSize;
+  const amplitude = 1 / matrixSize;
   const spacing = 0.6;
   const width = 220;
   const height = 140;
@@ -630,10 +632,10 @@ const GaussianPlot = ({
   return (
     <div className="absolute top-24 right-8 bg-black/70 backdrop-blur-md p-5 rounded-xl border border-white/10 shadow-2xl text-white w-[260px]">
       <h3 className="text-sm font-bold mb-1 text-cyan-400">
-        Senyal d&apos;Incidència (Tall 1D)
+        Distribució d&apos;Incidència (Tall 1D)
       </h3>
       <p className="text-xs opacity-70 mb-4 leading-tight">
-        Distribució d&apos;energia matriu {matrixSize}x{matrixSize}.
+        Distribució d&apos;energia, matriu {matrixSize}x{matrixSize}.
         <br />
         Amplitud màxima: {(amplitude * 100).toFixed(0)}%
       </p>
@@ -687,10 +689,31 @@ export default function TelescopePage() {
   const [focusOffset, setFocusOffset] = useState(0);
   const [matrixSize, setMatrixSize] = useState(1);
 
+  // --- LOADING & INTRO STATE ---
+  const [loaded, setLoaded] = useState(false);
+  const [introFinished, setIntroFinished] = useState(false);
+
+  // Trigger the transition timer ONLY after the SceneReady component (inside Suspense) fires
+  useEffect(() => {
+    if (loaded) {
+      const timer = setTimeout(() => {
+        setIntroFinished(true);
+      }, 3500); // 3.5 seconds of intro after loading
+      return () => clearTimeout(timer);
+    }
+  }, [loaded]);
+
+  const isNight = !introFinished;
+
   return (
-    <div className="w-full h-screen bg-black relative flex flex-col">
+    // overflow-hidden prevents layout shift from scrollbars
+    <div className="w-full h-screen bg-black relative flex flex-col overflow-hidden rounded-2xl">
       {/* Header Overlay */}
-      <div className="absolute w-full top-0 left-0 px-10 py-3 text-black bg-gray-300 z-50 pointer-events-none select-none drop-shadow-lg flex justify-between items-center">
+      <div
+        className={`absolute w-full top-0 left-0 px-10 py-3 text-black bg-gray-300 z-50 pointer-events-none select-none drop-shadow-lg flex justify-between items-center transition-opacity duration-1000 ${
+          introFinished ? "opacity-100" : "opacity-0"
+        }`}
+      >
         <div>
           <h1 className="text-2xl font-bold tracking-tighter">
             Telescopi MAGIC
@@ -700,49 +723,76 @@ export default function TelescopePage() {
           </p>
         </div>
 
-        <button
-          onClick={() => {
-            window.location.href = "/playground/magic/thermal-simulation";
-          }}
-          className="px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-semibold hover:bg-blue-500 transition active:scale-95 pointer-events-auto"
+        <Link
+          href="magic/thermal-simulation"
+          className={`
+            font-bold text-white uppercase tracking-wider text-sm cursor-pointer pointer-events-auto flex items-center gap-3 px-3 py-1 rounded-full transition-all duration-300 bg-gradient-to-r from-cyan-600 to-blue-600 hover:scale-105 hover:shadow-cyan-500/50 ring-2 ring-white/50`}
         >
           Simulació Tèrmica &rarr;
-        </button>
+        </Link>
+      </div>
+
+      {/* --- INTRO OVERLAY --- */}
+      <div
+        className={`absolute inset-0 z-40 flex items-center justify-center pointer-events-none transition-all duration-1000 ease-in-out ${
+          !introFinished
+            ? "opacity-100 blur-0 scale-100"
+            : "opacity-0 blur-xl scale-110"
+        }`}
+      >
+        <div className="text-center">
+          <h1 className="text-7xl md:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-br from-indigo-200 via-purple-200 to-white drop-shadow-[0_0_25px_rgba(255,255,255,0.6)] animate-pulse tracking-widest">
+            STARRY SKY
+          </h1>
+          <p className="text-white/60 font-mono mt-4 text-sm tracking-[0.5em] uppercase">
+            Preparant telescopi...
+          </p>
+        </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 relative">
-        <div className="relative w-full h-full">
-          <Canvas shadows dpr={[1, 2]}>
-            <PerspectiveCamera makeDefault position={[30, 20, 30]} fov={50} />
-            <OrbitControls
-              makeDefault
-              maxPolarAngle={Math.PI / 2 - 0.05}
-              minDistance={2}
-              maxDistance={150}
-              target={[0, 10, 0]}
-              enablePan={true}
-              panSpeed={1.0}
-            />
-            <ambientLight intensity={1.0} />
+      {/* Opacity transition prevents 'pop-in' of the scene. It stays black (invisible) until loaded=true */}
+      <div
+        className={`flex-1 relative w-full h-full transition-opacity duration-1000 ${
+          loaded ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        {/* gl={{ alpha: false }} forces a black canvas background by default, preventing white flash */}
+        <Canvas shadows dpr={[1, 2]} gl={{ alpha: false, antialias: true }}>
+          {/* Explicitly paint the 3D void black immediately */}
+          <color attach="background" args={["#000000"]} />
+
+          <PerspectiveCamera makeDefault position={[30, 20, 30]} fov={50} />
+          <OrbitControls
+            makeDefault
+            maxPolarAngle={Math.PI / 2 - 0.05}
+            minDistance={2}
+            maxDistance={150}
+            target={[0, 10, 0]}
+            enablePan={true}
+            panSpeed={1.0}
+            autoRotate={loaded && !introFinished}
+            autoRotateSpeed={0.5}
+          />
+
+          {/* SUSPENSE WRAPPER: Nothing inside here mounts until textures are ready */}
+          <Suspense fallback={null}>
+            {/* The Trigger: This component only mounts when Sky/Ground are ready */}
+            <SceneReady onReady={() => setLoaded(true)} />
+
+            {/* --- DYNAMIC LIGHTING --- */}
+            <ambientLight intensity={isNight ? 0.2 : 1.0} />
             <directionalLight
               position={[100, 200, 50]}
-              intensity={4.0}
+              intensity={isNight ? 0.5 : 4.0}
               castShadow
               shadow-mapSize={[2048, 2048]}
-              color="#fffaed"
+              color={isNight ? "#b0c4de" : "#fffaed"}
             />
-            <Environment preset="park" />
-            <SkySphere />
-            <TexturedGround />
-            <ContactShadows
-              opacity={0.4}
-              scale={60}
-              blur={2.5}
-              far={15}
-              resolution={512}
-              color="#000000"
-            />
+            <Environment preset={isNight ? "night" : "park"} />
+
+            <SkySphere isNight={isNight} />
+            <TexturedGround isNight={isNight} />
 
             {/* 3D Scene Content */}
             <MountBase />
@@ -754,84 +804,90 @@ export default function TelescopePage() {
                 <RayTracer focusOffset={focusOffset} matrixSize={matrixSize} />
               )}
             </group>
-          </Canvas>
+          </Suspense>
+        </Canvas>
 
-          {/* UI Overlays */}
-          <div className="absolute top-24 left-8 flex flex-col items-center gap-4 pointer-events-auto">
-            {/* Focus Control */}
-            <div className="flex items-center gap-4 bg-black/60 backdrop-blur-md p-2 rounded-full text-white shadow-lg border border-white/20">
-              <button
-                onClick={() =>
-                  setFocusOffset((prev) =>
-                    Math.max(prev - 0.5, FOCUS_OFFSET_MIN)
-                  )
-                }
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/30 transition active:scale-95"
-              >
-                -
-              </button>
-              <div className="flex flex-col items-center min-w-[100px]">
-                <span className="text-[10px] text-white/70 uppercase tracking-widest font-semibold">
-                  Desplaçament
-                </span>
-                <span className="font-mono text-lg font-bold text-cyan-400">
-                  {focusOffset > 0 ? "+" : ""}
-                  {focusOffset.toFixed(1)}
-                </span>
-              </div>
-              <button
-                onClick={() =>
-                  setFocusOffset((prev) =>
-                    Math.min(prev + 0.5, FOCUS_OFFSET_MAX)
-                  )
-                }
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/30 transition active:scale-95"
-              >
-                +
-              </button>
-            </div>
-
-            {/* Matrix Control */}
-            <div className="flex items-center gap-4 bg-black/60 backdrop-blur-md p-2 rounded-full text-white shadow-lg border border-white/20">
-              <button
-                onClick={() =>
-                  setMatrixSize((prev) => Math.max(prev - 1, MATRIX_SIZE_MIN))
-                }
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/30 transition active:scale-95"
-              >
-                -
-              </button>
-              <div className="flex flex-col items-center min-w-[100px]">
-                <span className="text-[10px] text-white/70 uppercase tracking-widest font-semibold">
-                  Matriu NxN
-                </span>
-                <span className="font-mono text-lg font-bold text-yellow-400">
-                  {matrixSize}x{matrixSize}
-                </span>
-              </div>
-              <button
-                onClick={() =>
-                  setMatrixSize((prev) => Math.min(prev + 1, MATRIX_SIZE_MAX))
-                }
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/30 transition active:scale-95"
-              >
-                +
-              </button>
-            </div>
-
-            {/* Ray Toggle */}
+        {/* UI Overlays */}
+        <div
+          className={`absolute top-24 left-8 flex flex-col items-center gap-4 pointer-events-auto transition-all duration-1000 delay-500 ${
+            introFinished
+              ? "opacity-100 translate-x-0"
+              : "opacity-0 -translate-x-10"
+          }`}
+        >
+          {/* Focus Control */}
+          <div className="flex items-center gap-4 bg-black/60 backdrop-blur-md p-2 rounded-full text-white shadow-lg border border-white/20">
             <button
-              onClick={() => setShowRays(!showRays)}
-              className={`px-6 py-2 rounded-full font-bold transition-all duration-300 shadow-xl border border-white/20 text-sm ${showRays ? "bg-cyan-500 text-black hover:bg-cyan-400" : "bg-black/70 text-white hover:bg-black/90"}`}
+              onClick={() =>
+                setFocusOffset((prev) => Math.max(prev - 0.5, FOCUS_OFFSET_MIN))
+              }
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/30 transition active:scale-95"
             >
-              {showRays ? "Desactivar Traçat" : "Activar Traçat"}
+              -
+            </button>
+            <div className="flex flex-col items-center min-w-[100px]">
+              <span className="text-[10px] text-white/70 uppercase tracking-widest font-semibold">
+                Desplaçament
+              </span>
+              <span className="font-mono text-lg font-bold text-cyan-400">
+                {focusOffset > 0 ? "+" : ""}
+                {focusOffset.toFixed(1)}
+              </span>
+            </div>
+            <button
+              onClick={() =>
+                setFocusOffset((prev) => Math.min(prev + 0.5, FOCUS_OFFSET_MAX))
+              }
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/30 transition active:scale-95"
+            >
+              +
             </button>
           </div>
 
-          {showRays && (
-            <GaussianPlot focusOffset={focusOffset} matrixSize={matrixSize} />
-          )}
+          {/* Matrix Control */}
+          <div className="flex items-center gap-4 bg-black/60 backdrop-blur-md p-2 rounded-full text-white shadow-lg border border-white/20">
+            <button
+              onClick={() =>
+                setMatrixSize((prev) => Math.max(prev - 1, MATRIX_SIZE_MIN))
+              }
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/30 transition active:scale-95"
+            >
+              -
+            </button>
+            <div className="flex flex-col items-center min-w-[100px]">
+              <span className="text-[10px] text-white/70 uppercase tracking-widest font-semibold">
+                Matriu NxN
+              </span>
+              <span className="font-mono text-lg font-bold text-yellow-400">
+                {matrixSize}x{matrixSize}
+              </span>
+            </div>
+            <button
+              onClick={() =>
+                setMatrixSize((prev) => Math.min(prev + 1, MATRIX_SIZE_MAX))
+              }
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/30 transition active:scale-95"
+            >
+              +
+            </button>
+          </div>
+
+          {/* Ray Toggle */}
+          <button
+            onClick={() => setShowRays(!showRays)}
+            className={`px-6 py-2 cursor-pointer rounded-full font-bold transition-all duration-300 shadow-xl border border-white/20 text-sm ${
+              showRays
+                ? "bg-cyan-500 text-black hover:bg-cyan-400"
+                : "bg-black/70 text-white hover:bg-black/90"
+            }`}
+          >
+            {showRays ? "Desactivar Traçat" : "Activar Traçat"}
+          </button>
         </div>
+
+        {showRays && (
+          <GaussianPlot focusOffset={focusOffset} matrixSize={matrixSize} />
+        )}
       </div>
     </div>
   );
