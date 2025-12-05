@@ -13,8 +13,7 @@ export const experimental_ppr = true
 export default async function PlaygroundLayout({ children }: { children: React.ReactNode }) {
 
   return (
-    <div className="flex flex-col max-h-screen">
-      <Header />
+    <div className="flex flex-col max-h-screen py-3">
       {children}
     </div>
   );
