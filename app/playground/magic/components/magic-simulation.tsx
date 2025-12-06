@@ -6,17 +6,20 @@ import React, {
   useLayoutEffect,
   useState,
   useEffect,
-  Suspense, // Import Suspense
+  Suspense,
+  memo,
 } from "react";
-import { Canvas, useThree, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import {
   OrbitControls,
   PerspectiveCamera,
   Environment,
+  Instances,
+  Instance,
+  useTexture,
+  Stats,
 } from "@react-three/drei";
 import * as THREE from "three";
-import { useLoader } from "@react-three/fiber";
-import { TextureLoader, RepeatWrapping } from "three";
 import Link from "next/link";
 
 // --- Constants ---
@@ -32,13 +35,62 @@ const TUBE_THICKNESS = 0.2;
 const RAY_SPEED = 0.8;
 const PLATE_WIDTH = 1.5;
 const PLATE_DEPTH = 1.5;
-const FOCUS_OFFSET_MIN = -2.5;
+const FOCUS_OFFSET_MIN = -3.5;
 const FOCUS_OFFSET_MAX = 0;
 const MATRIX_SIZE_MIN = 1;
 const MATRIX_SIZE_MAX = 5;
 
-// --- UTILITY: Trigger when Suspense finishes ---
-// This component only mounts when all assets in the Suspense boundary are loaded.
+// Shared Geometry/Material to prevent re-creation
+const tubeGeo = new THREE.CylinderGeometry(1, 1, 1, 8);
+const sphereGeo = new THREE.SphereGeometry(1, 16, 16);
+const boxGeo = new THREE.BoxGeometry(1, 1, 1);
+
+// ------------------------------------------------------------------
+// SECTION 1: UI SUB-COMPONENTS
+// ------------------------------------------------------------------
+
+// Extracted UI Control Row for cleaner code and performance
+const ControlRow = memo(
+  ({
+    label,
+    value,
+    onDec,
+    onInc,
+  }: {
+    label: string;
+    value: string | number;
+    onDec: () => void;
+    onInc: () => void;
+  }) => (
+    // OPTIMIZATION: Solid background, no blur
+    <div className="flex items-center gap-4 bg-neutral-900 p-2 pr-5 rounded-xl text-white shadow-xl border border-white/10">
+      <button
+        onClick={onDec}
+        className="w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 hover:text-white border border-white/5 transition active:scale-95 text-lg font-bold"
+      >
+        -
+      </button>
+      <div className="flex flex-col items-center min-w-[100px]">
+        <span className="text-[10px] text-cyan-400 uppercase tracking-widest font-bold mb-1">
+          {label}
+        </span>
+        <span className="font-mono text-xl font-bold text-white">{value}</span>
+      </div>
+      <button
+        onClick={onInc}
+        className="w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 hover:text-white border border-white/5 transition active:scale-95 text-lg font-bold"
+      >
+        +
+      </button>
+    </div>
+  )
+);
+ControlRow.displayName = "ControlRow";
+
+// ------------------------------------------------------------------
+// SECTION 2: SHARED 3D COMPONENTS
+// ------------------------------------------------------------------
+
 function SceneReady({ onReady }: { onReady: () => void }) {
   useEffect(() => {
     onReady();
@@ -46,34 +98,28 @@ function SceneReady({ onReady }: { onReady: () => void }) {
   return null;
 }
 
-// ------------------------------------------------------------------
-// SECTION 1: SHARED 3D COMPONENTS
-// ------------------------------------------------------------------
-
 export function SkySphere({ isNight }: { isNight: boolean }) {
-  const textureUrl = isNight ? NIGHT_TEXTURE_URL : DAY_TEXTURE_URL;
-  const texture = useLoader(TextureLoader, textureUrl) as THREE.Texture;
+  const map = useTexture(isNight ? NIGHT_TEXTURE_URL : DAY_TEXTURE_URL);
 
   useLayoutEffect(() => {
-    if (!texture) return;
     if (isNight) {
-      texture.wrapS = THREE.RepeatWrapping;
-      texture.wrapT = THREE.RepeatWrapping;
-      texture.repeat.set(6, 6);
+      map.wrapS = THREE.RepeatWrapping;
+      map.wrapT = THREE.RepeatWrapping;
+      map.repeat.set(6, 6);
     } else {
-      texture.wrapS = THREE.RepeatWrapping;
-      texture.wrapT = THREE.ClampToEdgeWrapping;
-      texture.repeat.set(1, 1);
+      map.wrapS = THREE.RepeatWrapping;
+      map.wrapT = THREE.ClampToEdgeWrapping;
+      map.repeat.set(1, 1);
     }
-    texture.needsUpdate = true;
-  }, [texture, isNight]);
+    map.needsUpdate = true;
+  }, [map, isNight]);
 
   return (
     <mesh scale={[500, 500, 500]}>
-      <sphereGeometry args={[1, 64, 64, (3 * Math.PI) / 2]} />
+      <sphereGeometry args={[1, 64, 64]} />
       <meshBasicMaterial
-        map={texture}
-        color={texture ? "white" : isNight ? "#000000" : "#0f172a"}
+        map={map}
+        color="white"
         side={THREE.BackSide}
         fog={false}
       />
@@ -81,144 +127,210 @@ export function SkySphere({ isNight }: { isNight: boolean }) {
   );
 }
 
-export function TexturedGround({ isNight }: { isNight: boolean }) {
-  const texture = useLoader(TextureLoader, GROUND_TEXTURE_URL) as THREE.Texture;
-
+export function TexturedGround() {
+  
+  const map = useTexture(GROUND_TEXTURE_URL);
+  
   useLayoutEffect(() => {
-    if (!texture) return;
-    texture.wrapS = texture.wrapT = RepeatWrapping;
-    texture.repeat.set(15, 15);
-    texture.needsUpdate = true;
-  }, [texture]);
-
+    map.wrapS = map.wrapT = THREE.RepeatWrapping;
+    map.repeat.set(15, 15);
+  }, [map]);
+  
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2.5, 0]} receiveShadow>
+    <mesh
+      rotation={[-Math.PI / 2, 0, 0]}
+      position={[0, -2.5, 0]}
+      receiveShadow
+    >
       <planeGeometry args={[1000, 1000]} />
       <meshStandardMaterial
-        map={texture}
-        color={isNight ? "#222" : "white"}
+        map={map}
         roughness={0.9}
       />
     </mesh>
   );
 }
 
-const DynamicTube = ({
+
+const TubeInstance = ({
   start,
   end,
   thickness = 0.2,
-  color = "#888",
 }: {
   start: THREE.Vector3;
   end: THREE.Vector3;
   thickness?: number;
-  color?: string;
 }) => {
-  const meshRef = useRef<THREE.Mesh>(null);
-  useLayoutEffect(() => {
-    if (meshRef.current) {
-      const direction = new THREE.Vector3().subVectors(end, start);
-      const length = direction.length();
-      const midpoint = new THREE.Vector3()
-        .addVectors(start, end)
-        .multiplyScalar(0.5);
-      meshRef.current.position.copy(midpoint);
-      const up = new THREE.Vector3(0, 1, 0);
-      meshRef.current.quaternion.setFromUnitVectors(up, direction.normalize());
-      meshRef.current.scale.set(1, length, 1);
-    }
-  }, [start, end]);
-  return (
-    <mesh ref={meshRef} castShadow>
-      <cylinderGeometry args={[thickness, thickness, 1, 16]} />
-      <meshStandardMaterial color={color} />
-    </mesh>
-  );
+  const { position, rotation, scale } = useMemo(() => {
+    const direction = new THREE.Vector3().subVectors(end, start);
+    const length = direction.length();
+    const midpoint = new THREE.Vector3()
+      .addVectors(start, end)
+      .multiplyScalar(0.5);
+    const up = new THREE.Vector3(0, 1, 0);
+    const quat = new THREE.Quaternion().setFromUnitVectors(
+      up,
+      direction.normalize()
+    );
+    return {
+      position: midpoint,
+      rotation: new THREE.Euler().setFromQuaternion(quat),
+      scale: [thickness, length, thickness] as [number, number, number],
+    };
+  }, [start, end, thickness]);
+
+  return <Instance position={position} rotation={rotation} scale={scale} />;
 };
 
-const ConnectedTube = ({
-  start,
-  end,
-  thickness = 0.2,
-  color = "#888",
+// ------------------------------------------------------------------
+// SECTION 3: TELESCOPE & STRUCTURE
+// ------------------------------------------------------------------
+
+const Structure = ({
+  focusOffset,
+  matrixSize,
 }: {
-  start: THREE.Vector3;
-  end: THREE.Vector3;
-  thickness?: number;
-  color?: string;
+  focusOffset: number;
+  matrixSize: number;
 }) => {
+  const dishEdgeHeight = (DISH_RADIUS * DISH_RADIUS) / (4 * FOCAL_LENGTH);
+  const currentFocusY = FOCAL_LENGTH + focusOffset;
+
+  const points = useMemo(() => {
+    const dishLeft = new THREE.Vector3(-DISH_RADIUS, dishEdgeHeight, 0);
+    const dishRight = new THREE.Vector3(DISH_RADIUS, dishEdgeHeight, 0);
+    const plateLeft = new THREE.Vector3(-PLATE_WIDTH / 2, currentFocusY, 0);
+    const plateRight = new THREE.Vector3(PLATE_WIDTH / 2, currentFocusY, 0);
+    return { dishLeft, dishRight, plateLeft, plateRight };
+  }, [currentFocusY, dishEdgeHeight]);
+
   return (
     <group>
-      <mesh position={start} castShadow>
-        <sphereGeometry args={[thickness * 1.5, 16, 16]} />
-        <meshStandardMaterial color={color} />
+      <mesh
+        position={[0, currentFocusY, 0]}
+        castShadow
+        receiveShadow
+        geometry={boxGeo}
+        scale={[PLATE_WIDTH, 0.1, PLATE_DEPTH]}
+      >
+        <meshStandardMaterial color="#222" roughness={0.7} metalness={0.2} />
       </mesh>
-      <DynamicTube
-        start={start}
-        end={end}
-        thickness={thickness}
-        color={color}
-      />
+
+      <group position={[0, currentFocusY, 0]}>
+        <CPVGrid matrixSize={matrixSize} />
+      </group>
+
+      {Math.abs(focusOffset) > 0.1 && (
+        <mesh
+          position={[0, FOCAL_LENGTH, 0]}
+          geometry={sphereGeo}
+          scale={0.05}
+        >
+          <meshBasicMaterial color="red" transparent opacity={0.6} />
+        </mesh>
+      )}
+
+      <mesh
+        position={[0, dishEdgeHeight, 0]}
+        rotation={[Math.PI / 2, 0, 0]}
+        castShadow
+      >
+        <torusGeometry args={[DISH_RADIUS, TUBE_THICKNESS, 16, 64]} />
+        <meshStandardMaterial color="#888" />
+      </mesh>
+
+      <Instances range={2} geometry={tubeGeo} castShadow receiveShadow>
+        <meshStandardMaterial color="#888" />
+        <TubeInstance
+          start={points.dishLeft}
+          end={points.plateLeft}
+          thickness={TUBE_THICKNESS}
+        />
+        <TubeInstance
+          start={points.dishRight}
+          end={points.plateRight}
+          thickness={TUBE_THICKNESS}
+        />
+      </Instances>
     </group>
   );
 };
 
 const DishBackFrame = () => {
-  const numRibs = 12;
-  const dishEdgeHeight = (DISH_RADIUS * DISH_RADIUS) / (4 * FOCAL_LENGTH);
-  const hubDepth = -2.5;
-  const outerRingRadius = DISH_RADIUS * 0.95;
-  const outerRingHeight = dishEdgeHeight - 0.3;
-  const midRingRadius = DISH_RADIUS * 0.5;
-  const midRingHeight =
-    (midRingRadius * midRingRadius) / (4 * FOCAL_LENGTH) - 0.8;
+  const { ribsData, rings } = useMemo(() => {
+    const numRibs = 12;
+    const dishEdgeHeight = (DISH_RADIUS * DISH_RADIUS) / (4 * FOCAL_LENGTH);
+    const hubDepth = -2.5;
+    const outerRingRadius = DISH_RADIUS * 0.95;
+    const outerRingHeight = dishEdgeHeight - 0.3;
+    const midRingRadius = DISH_RADIUS * 0.5;
+    const midRingHeight =
+      (midRingRadius * midRingRadius) / (4 * FOCAL_LENGTH) - 0.8;
+
+    const ribs = [];
+    for (let i = 0; i < numRibs; i++) {
+      const angle = (i / numRibs) * Math.PI * 2;
+      const xOuter = Math.cos(angle) * outerRingRadius;
+      const zOuter = Math.sin(angle) * outerRingRadius;
+      const xMid = Math.cos(angle) * midRingRadius;
+      const zMid = Math.sin(angle) * midRingRadius;
+
+      const outerPoint = new THREE.Vector3(xOuter, outerRingHeight, zOuter);
+      const midPoint = new THREE.Vector3(xMid, midRingHeight, zMid);
+      const centerPoint = new THREE.Vector3(0, hubDepth, 0);
+      ribs.push({ outerPoint, midPoint, centerPoint });
+    }
+
+    return {
+      ribsData: ribs,
+      rings: { outerRingRadius, outerRingHeight, midRingRadius, midRingHeight },
+    };
+  }, []);
 
   return (
     <group position={[0, 0, 0]}>
-      <mesh position={[0, hubDepth, 0]}>
+      <mesh position={[0, -2.5, 0]}>
         <cylinderGeometry args={[1.2, 1.2, 0.5, 32]} />
         <meshStandardMaterial color="#333" />
       </mesh>
-      <mesh position={[0, outerRingHeight, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[outerRingRadius, 0.25, 16, 32]} />
+
+      <mesh
+        position={[0, rings.outerRingHeight, 0]}
+        rotation={[Math.PI / 2, 0, 0]}
+      >
+        <torusGeometry args={[rings.outerRingRadius, 0.25, 16, 32]} />
         <meshStandardMaterial color="#555" />
       </mesh>
-      <mesh position={[0, midRingHeight, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[midRingRadius, 0.2, 16, 32]} />
+      <mesh
+        position={[0, rings.midRingHeight, 0]}
+        rotation={[Math.PI / 2, 0, 0]}
+      >
+        <torusGeometry args={[rings.midRingRadius, 0.2, 16, 32]} />
         <meshStandardMaterial color="#555" />
       </mesh>
-      {Array.from({ length: numRibs }).map((_, i) => {
-        const angle = (i / numRibs) * Math.PI * 2;
-        const xOuter = Math.cos(angle) * outerRingRadius;
-        const zOuter = Math.sin(angle) * outerRingRadius;
-        const xMid = Math.cos(angle) * midRingRadius;
-        const zMid = Math.sin(angle) * midRingRadius;
-        const outerPoint = new THREE.Vector3(xOuter, outerRingHeight, zOuter);
-        const midPoint = new THREE.Vector3(xMid, midRingHeight, zMid);
-        const centerPoint = new THREE.Vector3(0, hubDepth, 0);
-        return (
+
+      <Instances range={ribsData.length * 3} geometry={tubeGeo} castShadow>
+        <meshStandardMaterial color="#777" />
+        {ribsData.map((rib, i) => (
           <group key={i}>
-            <DynamicTube
-              start={outerPoint}
-              end={midPoint}
+            <TubeInstance
+              start={rib.outerPoint}
+              end={rib.midPoint}
               thickness={0.15}
-              color="#777"
             />
-            <DynamicTube
-              start={midPoint}
-              end={centerPoint}
+            <TubeInstance
+              start={rib.midPoint}
+              end={rib.centerPoint}
               thickness={0.2}
-              color="#777"
             />
-            <DynamicTube
-              start={outerPoint}
-              end={centerPoint}
+            <TubeInstance
+              start={rib.outerPoint}
+              end={rib.centerPoint}
               thickness={0.12}
-              color="#666"
             />
           </group>
-        );
-      })}
+        ))}
+      </Instances>
     </group>
   );
 };
@@ -238,28 +350,36 @@ const MountBase = () => {
         <cylinderGeometry args={[9, 10, 0.2, 64]} />
         <meshStandardMaterial color="#333" roughness={0.9} />
       </mesh>
+
       <group rotation={[0, 0.5, 0]}>
-        <mesh position={[8, -2.2, 0]}>
-          <boxGeometry args={[1.5, 0.8, 1]} />
+        <mesh position={[8, -2.2, 0]} geometry={boxGeo} scale={[1.5, 0.8, 1]}>
           <meshStandardMaterial color="#222" />
         </mesh>
-        <mesh position={[-8, -2.2, 0]}>
-          <boxGeometry args={[1.5, 0.8, 1]} />
+        <mesh position={[-8, -2.2, 0]} geometry={boxGeo} scale={[1.5, 0.8, 1]}>
           <meshStandardMaterial color="#222" />
         </mesh>
       </group>
+
       <group>
-        <mesh position={[-9, 3, 0]} castShadow>
-          <boxGeometry args={[1.5, 12, 3]} />
+        <mesh
+          position={[-9, 1.8, 0]}
+          castShadow
+          geometry={boxGeo}
+          scale={[1.5, 12, 3]}
+        >
           <meshStandardMaterial color="#666" />
         </mesh>
-        <mesh position={[-9, 0, 0]} rotation={[0, 0, 0.5]}>
-          <boxGeometry args={[0.5, 8, 0.5]} />
-          <meshStandardMaterial color="#444" />
-        </mesh>
-        <mesh position={[9, 3, 0]} castShadow>
-          <boxGeometry args={[1.5, 12, 3]} />
+        <mesh
+          position={[9, 1.8, 0]}
+          castShadow
+          geometry={boxGeo}
+          scale={[1.5, 12, 3]}
+        >
           <meshStandardMaterial color="#666" />
+        </mesh>
+        <mesh position={[0, -1, 0]} castShadow>
+          <coneGeometry args={[8, 3, 12]} />
+          <meshStandardMaterial color="#555" />
         </mesh>
       </group>
     </group>
@@ -267,7 +387,7 @@ const MountBase = () => {
 };
 
 // ------------------------------------------------------------------
-// SECTION 2: TELESCOPE & RAYS
+// SECTION 4: ANIMATED RAYS
 // ------------------------------------------------------------------
 
 const AnimatedRay = ({
@@ -279,63 +399,17 @@ const AnimatedRay = ({
   impact: THREE.Vector3;
   endPoint: THREE.Vector3;
 }) => {
-  const lineRef =
-    useRef<THREE.Line<THREE.BufferGeometry, THREE.LineBasicMaterial>>(null);
-  const currentTipPos = useRef(start.clone());
+  const lineRef = useRef<THREE.Line>(null);
+  const currentTipPos = useRef(new THREE.Vector3());
   const phase = useRef<"incoming" | "reflecting" | "finished">("incoming");
-  const distToImpact = start.distanceTo(impact);
-  const distToEndpoint = impact.distanceTo(endPoint);
-
-  useLayoutEffect(() => {
-    currentTipPos.current.copy(start);
-    phase.current = "incoming";
-    if (lineRef.current) {
-      const positions = lineRef.current.geometry.attributes.position
-        .array as Float32Array;
-      for (let i = 0; i < 9; i++) positions[i] = start.getComponent(i % 3);
-      lineRef.current.geometry.attributes.position.needsUpdate = true;
-    }
-  }, [start, impact, endPoint]);
-
-  useFrame((state, delta) => {
-    if (!lineRef.current || phase.current === "finished") return;
-    const geometry = lineRef.current.geometry;
-    const positions = geometry.attributes.position.array as Float32Array;
-    const moveDistance = RAY_SPEED * delta * 60;
-
-    if (phase.current === "incoming") {
-      const direction = impact.clone().sub(start).normalize();
-      currentTipPos.current.add(direction.multiplyScalar(moveDistance));
-      if (start.distanceTo(currentTipPos.current) >= distToImpact) {
-        currentTipPos.current.copy(impact);
-        phase.current = "reflecting";
-        positions[3] = impact.x;
-        positions[4] = impact.y;
-        positions[5] = impact.z;
-        positions[6] = impact.x;
-        positions[7] = impact.y;
-        positions[8] = impact.z;
-      } else {
-        positions[3] = currentTipPos.current.x;
-        positions[4] = currentTipPos.current.y;
-        positions[5] = currentTipPos.current.z;
-        positions[6] = currentTipPos.current.x;
-        positions[7] = currentTipPos.current.y;
-        positions[8] = currentTipPos.current.z;
-      }
-    } else if (phase.current === "reflecting") {
-      const direction = endPoint.clone().sub(impact).normalize();
-      currentTipPos.current.add(direction.multiplyScalar(moveDistance));
-      if (impact.distanceTo(currentTipPos.current) >= distToEndpoint) {
-        currentTipPos.current.copy(endPoint);
-        phase.current = "finished";
-      }
-      positions[6] = currentTipPos.current.x;
-      positions[7] = currentTipPos.current.y;
-      positions[8] = currentTipPos.current.z;
-    }
-    geometry.attributes.position.needsUpdate = true;
-  });
+  const distToImpact = useMemo(
+    () => start.distanceTo(impact),
+    [start, impact]
+  );
+  const distToEndpoint = useMemo(
+    () => impact.distanceTo(endPoint),
+    [impact, endPoint]
+  );
 
   const initialPositions = useMemo(
     () =>
@@ -353,15 +427,72 @@ const AnimatedRay = ({
     [start]
   );
 
+  useLayoutEffect(() => {
+    currentTipPos.current.copy(start);
+    phase.current = "incoming";
+    if (lineRef.current && lineRef.current.geometry) {
+      const posAttr = lineRef.current.geometry.getAttribute(
+        "position"
+      ) as THREE.BufferAttribute;
+      posAttr.set(initialPositions);
+      posAttr.needsUpdate = true;
+    }
+  }, [start, impact, endPoint, initialPositions]);
+
+  useFrame((state, delta) => {
+    if (!lineRef.current || phase.current === "finished") return;
+
+    const geometry = lineRef.current.geometry;
+    const posAttr = geometry.getAttribute(
+      "position"
+    ) as THREE.BufferAttribute;
+    const positions = posAttr.array as Float32Array;
+    const moveDistance = RAY_SPEED * delta * 60;
+
+    if (phase.current === "incoming") {
+      const direction = impact.clone().sub(start).normalize();
+      currentTipPos.current.add(direction.multiplyScalar(moveDistance));
+
+      if (start.distanceTo(currentTipPos.current) >= distToImpact) {
+        currentTipPos.current.copy(impact);
+        phase.current = "reflecting";
+        positions[3] = positions[6] = impact.x;
+        positions[4] = positions[7] = impact.y;
+        positions[5] = positions[8] = impact.z;
+      } else {
+        positions[3] = positions[6] = currentTipPos.current.x;
+        positions[4] = positions[7] = currentTipPos.current.y;
+        positions[5] = positions[8] = currentTipPos.current.z;
+      }
+    } else if (phase.current === "reflecting") {
+      const direction = endPoint.clone().sub(impact).normalize();
+      currentTipPos.current.add(direction.multiplyScalar(moveDistance));
+
+      if (impact.distanceTo(currentTipPos.current) >= distToEndpoint) {
+        currentTipPos.current.copy(endPoint);
+        phase.current = "finished";
+      }
+      positions[6] = currentTipPos.current.x;
+      positions[7] = currentTipPos.current.y;
+      positions[8] = currentTipPos.current.z;
+    }
+    posAttr.needsUpdate = true;
+  });
+
   return (
     <primitive
+      ref={lineRef as any}
       object={
         new THREE.Line(
           new THREE.BufferGeometry(),
-          new THREE.LineBasicMaterial()
+          new THREE.LineBasicMaterial({
+            color: "#ff0000",
+            opacity: 0.6,
+            transparent: true,
+            linewidth: 1,
+          })
         )
       }
-      ref={lineRef}
       frustumCulled={false}
     >
       <bufferGeometry>
@@ -390,7 +521,7 @@ const RayTracer = ({
 }) => {
   const rays = useMemo(() => {
     const _rays = [];
-    const rayCount = 80;
+    const rayCount = 40;
     const plateY = FOCAL_LENGTH + focusOffset;
     const spacing = 0.4;
     const targets: THREE.Vector3[] = [];
@@ -403,6 +534,7 @@ const RayTracer = ({
         targets.push(new THREE.Vector3(targetX, FOCAL_LENGTH, targetZ));
       }
     }
+
     for (let i = 0; i < rayCount; i++) {
       const r = Math.sqrt(Math.random()) * (DISH_RADIUS - 0.5);
       const theta = Math.random() * 2 * Math.PI;
@@ -411,10 +543,12 @@ const RayTracer = ({
       const yImpact = (x * x + z * z) / (4 * FOCAL_LENGTH);
       const start = new THREE.Vector3(x, FOCAL_LENGTH + 25, z);
       const impact = new THREE.Vector3(x, yImpact, z);
-      const target = targets[Math.floor(Math.random() * targets.length)];
+
+      const target = targets[i % targets.length];
       const reflectDir = new THREE.Vector3()
         .subVectors(target, impact)
         .normalize();
+
       if (Math.abs(reflectDir.y) > 0.0001) {
         const t = (plateY - yImpact) / reflectDir.y;
         if (t > 0) {
@@ -442,6 +576,10 @@ const RayTracer = ({
   );
 };
 
+// ------------------------------------------------------------------
+// SECTION 5: INSTANCED MESHES
+// ------------------------------------------------------------------
+
 const MirrorDish = ({ focusOffset }: { focusOffset: number }) => {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const currentTargetPoint = useMemo(
@@ -449,9 +587,8 @@ const MirrorDish = ({ focusOffset }: { focusOffset: number }) => {
     [focusOffset]
   );
 
-  const { count, matrices } = useMemo(() => {
-    const dummy = new THREE.Object3D();
-    const tempMatrices: THREE.Matrix4[] = [];
+  const { count, initialData } = useMemo(() => {
+    const data = [];
     const range = Math.ceil(DISH_RADIUS / (MIRROR_SIZE + MIRROR_GAP));
     for (let x = -range; x <= range; x++) {
       for (let y = -range; y <= range; y++) {
@@ -459,22 +596,24 @@ const MirrorDish = ({ focusOffset }: { focusOffset: number }) => {
         const yPos = y * (MIRROR_SIZE + MIRROR_GAP);
         if (xPos * xPos + yPos * yPos <= DISH_RADIUS * DISH_RADIUS) {
           const zHeight = (xPos * xPos + yPos * yPos) / (4 * FOCAL_LENGTH);
-          dummy.position.set(xPos, zHeight, yPos);
-          dummy.lookAt(currentTargetPoint);
-          dummy.updateMatrix();
-          tempMatrices.push(dummy.matrix.clone());
+          data.push({ position: new THREE.Vector3(xPos, zHeight, yPos) });
         }
       }
     }
-    return { count: tempMatrices.length, matrices: tempMatrices };
-  }, [currentTargetPoint]);
+    return { count: data.length, initialData: data };
+  }, []);
 
   useLayoutEffect(() => {
-    if (meshRef.current) {
-      matrices.forEach((mat, i) => meshRef.current!.setMatrixAt(i, mat));
-      meshRef.current.instanceMatrix.needsUpdate = true;
-    }
-  }, [matrices]);
+    if (!meshRef.current) return;
+    const dummy = new THREE.Object3D();
+    initialData.forEach((data, i) => {
+      dummy.position.copy(data.position);
+      dummy.lookAt(currentTargetPoint);
+      dummy.updateMatrix();
+      meshRef.current!.setMatrixAt(i, dummy.matrix);
+    });
+    meshRef.current.instanceMatrix.needsUpdate = true;
+  }, [currentTargetPoint, initialData]);
 
   return (
     <instancedMesh
@@ -495,86 +634,43 @@ const MirrorDish = ({ focusOffset }: { focusOffset: number }) => {
 };
 
 const CPVGrid = ({ matrixSize }: { matrixSize: number }) => {
+  const meshRef = useRef<THREE.InstancedMesh>(null);
   const spacing = PLATE_WIDTH / matrixSize;
   const size = spacing * 0.7;
-  const startOffset = -((matrixSize - 1) * spacing) / 2;
-  const pixels = useMemo(() => {
-    const _pixels = [];
+  const count = matrixSize * matrixSize;
+
+  useLayoutEffect(() => {
+    if (!meshRef.current) return;
+    const dummy = new THREE.Object3D();
+    const startOffset = -((matrixSize - 1) * spacing) / 2;
+    let index = 0;
+
     for (let i = 0; i < matrixSize; i++) {
       for (let j = 0; j < matrixSize; j++) {
-        _pixels.push(
-          <mesh
-            key={`${i}-${j}`}
-            position={[
-              startOffset + i * spacing,
-              0.0,
-              startOffset + j * spacing,
-            ]}
-            rotation={[-Math.PI / 2, 0, 0]}
-          >
-            <boxGeometry args={[size, size, 0.2]} />
-            <meshBasicMaterial color="#6b6eff" />
-          </mesh>
+        dummy.position.set(
+          startOffset + i * spacing,
+          0,
+          startOffset + j * spacing
         );
+        dummy.rotation.set(-Math.PI / 2, 0, 0);
+        dummy.updateMatrix();
+        meshRef.current.setMatrixAt(index++, dummy.matrix);
       }
     }
-    return _pixels;
-  }, [matrixSize, startOffset, spacing, size]);
-  return <group>{pixels}</group>;
-};
-
-const Structure = ({
-  focusOffset,
-  matrixSize,
-}: {
-  focusOffset: number;
-  matrixSize: number;
-}) => {
-  const dishEdgeHeight = (DISH_RADIUS * DISH_RADIUS) / (4 * FOCAL_LENGTH);
-  const currentFocusY = FOCAL_LENGTH + focusOffset;
-  const dishLeft = new THREE.Vector3(-DISH_RADIUS, dishEdgeHeight, 0);
-  const dishRight = new THREE.Vector3(DISH_RADIUS, dishEdgeHeight, 0);
-  const plateLeft = new THREE.Vector3(-PLATE_WIDTH / 2, currentFocusY, 0);
-  const plateRight = new THREE.Vector3(PLATE_WIDTH / 2, currentFocusY, 0);
+    meshRef.current.instanceMatrix.needsUpdate = true;
+  }, [matrixSize, spacing]);
 
   return (
-    <group>
-      <mesh position={[0, currentFocusY, 0]} castShadow receiveShadow>
-        <boxGeometry args={[PLATE_WIDTH, 0.1, PLATE_DEPTH]} />
-        <meshStandardMaterial color="#222" roughness={0.7} metalness={0.2} />
-      </mesh>
-      <group position={[0, currentFocusY, 0]}>
-        <CPVGrid matrixSize={matrixSize} />
-      </group>
-      {Math.abs(focusOffset) > 0.1 && (
-        <mesh position={[0, FOCAL_LENGTH, 0]}>
-          <sphereGeometry args={[0.05]} />
-          <meshBasicMaterial color="red" transparent opacity={0.6} />
-        </mesh>
-      )}
-      <mesh
-        position={[0, dishEdgeHeight, 0]}
-        rotation={[Math.PI / 2, 0, 0]}
-        castShadow
-      >
-        <torusGeometry args={[DISH_RADIUS, TUBE_THICKNESS, 16, 100]} />
-        <meshStandardMaterial color="#888" />
-      </mesh>
-      <ConnectedTube
-        start={dishLeft}
-        end={plateLeft}
-        thickness={TUBE_THICKNESS}
-        color="#888"
-      />
-      <ConnectedTube
-        start={dishRight}
-        end={plateRight}
-        thickness={TUBE_THICKNESS}
-        color="#888"
-      />
-    </group>
+    <instancedMesh ref={meshRef} args={[undefined, undefined, count]}>
+      <boxGeometry args={[size, size, 0.2]} />
+      <meshBasicMaterial color="#6b6eff" />
+    </instancedMesh>
   );
 };
+
+// ------------------------------------------------------------------
+// SECTION 6: UI & MAIN PAGE
+// ------------------------------------------------------------------
 
 const GaussianPlot = ({
   focusOffset,
@@ -590,7 +686,7 @@ const GaussianPlot = ({
     SIGMA_MIN +
     (SIGMA_MAX - SIGMA_MIN) * (Math.abs(focusOffset) / OFFSET_RANGE);
   const amplitude = 1 / matrixSize;
-  const spacing = 0.6;
+  const spacing = 0.8;
   const width = 220;
   const height = 140;
   const padding = 20;
@@ -599,7 +695,7 @@ const GaussianPlot = ({
 
   const points = useMemo(() => {
     const plotPoints: [number, number][] = [];
-    const numPoints = 150;
+    const numPoints = 100;
     const xRange = 4.0;
     const centers: number[] = [];
     if (matrixSize === 1) centers.push(0);
@@ -629,57 +725,87 @@ const GaussianPlot = ({
       : "";
 
   return (
-    <div className="absolute top-24 right-8 bg-black/70 backdrop-blur-md p-5 rounded-xl border border-white/10 shadow-2xl text-white w-[260px]">
-      <h3 className="text-sm font-bold mb-1 text-cyan-400">
-        Distribució d&apos;Incidència (Tall 1D)
-      </h3>
-      <p className="text-xs opacity-70 mb-4 leading-tight">
-        Distribució d&apos;energia, matriu {matrixSize}x{matrixSize}.
-        <br />
-        Amplitud màxima: {(amplitude * 100).toFixed(0)}%
-      </p>
-      <div className="relative">
-        <svg width={width} height={height} className="overflow-visible">
+    // OPTIMIZATION: Solid background, no blur
+    <div className="absolute top-28 right-8 w-[280px] bg-neutral-900 p-5 rounded-2xl border border-white/20 shadow-2xl text-white transition-all duration-300 hover:border-cyan-500/30">
+      <div className="flex items-center justify-between mb-4 border-b border-white/10 pb-2">
+        <h3 className="text-xs font-extrabold uppercase tracking-widest text-cyan-400">
+          Distribució Incident
+        </h3>
+        <div className="flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+          <span className="text-[10px] font-mono text-cyan-200/70">
+            TALL 1D
+          </span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 mb-4">
+        <div className="bg-white/5 rounded-lg p-2 border border-white/5">
+          <p className="text-[9px] text-gray-400 uppercase tracking-wider mb-0.5">
+            Resolució
+          </p>
+          <p className="font-mono text-sm font-bold text-white">
+            {matrixSize}
+            <span className="text-white/40 text-xs">x</span>
+            {matrixSize}
+          </p>
+        </div>
+        <div className="bg-white/5 rounded-lg p-2 border border-white/5">
+          <p className="text-[9px] text-gray-400 uppercase tracking-wider mb-0.5">
+            Pic Amplitud
+          </p>
+          <p className="font-mono text-sm font-bold text-cyan-300">
+            {(amplitude * 100).toFixed(0)}%
+          </p>
+        </div>
+      </div>
+
+      <div className="relative bg-black/60 rounded-lg border border-white/10 overflow-hidden shadow-inner">
+        <div
+          className="absolute inset-0 opacity-10 pointer-events-none"
+          style={{
+            backgroundImage:
+              "linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)",
+            backgroundSize: "20px 20px",
+          }}
+        />
+
+        <svg
+          width={width}
+          height={height}
+          className="overflow-visible relative z-10"
+        >
           <defs>
             <linearGradient id="plotGradient" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.2" />
-              <stop offset="100%" stopColor="#06b6d4" stopOpacity="0" />
+              <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.4" />
+              <stop offset="100%" stopColor="#22d3ee" stopOpacity="0" />
             </linearGradient>
+            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+              <feMerge>
+                <feMergeNode in="coloredBlur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
           </defs>
+
           <path
             d={`${pathData} L ${width - padding} ${
               height - padding
             } L ${padding} ${height - padding} Z`}
             fill="url(#plotGradient)"
           />
+
           <path
             d={pathData}
             fill="none"
-            stroke="#06b6d4"
-            strokeWidth="2.5"
+            stroke="#22d3ee"
+            strokeWidth="2"
             strokeLinecap="round"
-          />
-          <line
-            x1={padding}
-            y1={height - padding}
-            x2={width - padding}
-            y2={height - padding}
-            stroke="white"
-            strokeOpacity="0.3"
-          />
-          <line
-            x1={width / 2}
-            y1={height - padding}
-            x2={width / 2}
-            y2={padding}
-            stroke="white"
-            strokeOpacity="0.1"
-            strokeDasharray="4"
+            strokeLinejoin="round"
+            filter="url(#glow)"
           />
         </svg>
-        <div className="absolute top-0 right-0 bg-cyan-900/50 px-2 py-1 rounded text-[10px] font-mono text-cyan-300 border border-cyan-700/50">
-          σ = {sigma.toFixed(3)}
-        </div>
       </div>
     </div>
   );
@@ -689,17 +815,14 @@ export default function TelescopePage() {
   const [showRays, setShowRays] = useState(false);
   const [focusOffset, setFocusOffset] = useState(0);
   const [matrixSize, setMatrixSize] = useState(1);
-
-  // --- LOADING & INTRO STATE ---
   const [loaded, setLoaded] = useState(false);
   const [introFinished, setIntroFinished] = useState(false);
 
-  // Trigger the transition timer ONLY after the SceneReady component (inside Suspense) fires
   useEffect(() => {
     if (loaded) {
       const timer = setTimeout(() => {
         setIntroFinished(true);
-      }, 3500); // 3.5 seconds of intro after loading
+      }, 3500);
       return () => clearTimeout(timer);
     }
   }, [loaded]);
@@ -707,35 +830,53 @@ export default function TelescopePage() {
   const isNight = !introFinished;
 
   return (
-    // overflow-hidden prevents layout shift from scrollbars
     <div className="w-full h-screen bg-black relative flex flex-col overflow-hidden rounded-2xl">
-      {/* Header Overlay */}
+      {/* --- HEADER OVERLAY --- */}
+      {/* OPTIMIZATION: Solid background */}
       <div
-        className={`absolute w-full top-0 left-0 px-10 py-3 text-black bg-gray-300 z-50 pointer-events-none select-none drop-shadow-lg flex justify-between items-center transition-opacity duration-1000 ${
-          introFinished ? "opacity-100" : "opacity-0"
+        className={`absolute w-full top-0 left-0 px-8 py-3 z-50 pointer-events-none select-none flex justify-between items-center transition-all duration-1000 ease-out border-b border-white/20 bg-neutral-900 shadow-2xl ${
+          introFinished
+            ? "opacity-100 translate-y-0"
+            : "opacity-0 -translate-y-4"
         }`}
       >
-        <div>
-          <h1 className="text-2xl font-bold tracking-tighter">
-            Telescopi MAGIC
+        {/* Left Side: Branding */}
+        <div className="flex flex-col">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tighter text-white drop-shadow-md">
+            STARRY SKY
           </h1>
-          <p className="text-xs opacity-90">
-            Aissam Khadraoui, Candela García, Filip Denis
-          </p>
+          <div className="flex items-center gap-2 text-[10px] md:text-xs font-medium text-cyan-400 uppercase tracking-widest ">
+            <span className="opacity-80">Aissam Khadraoui</span>
+            <span className="text-white/20">•</span>
+            <span className="opacity-80">Candela García</span>
+            <span className="text-white/20">•</span>
+            <span className="opacity-80">Filip Denis</span>
+          </div>
         </div>
 
+        {/* Right Side: CTA */}
         <Link
           href="magic/thermal-simulation"
           className={`
-            font-bold text-white uppercase tracking-wider text-sm cursor-pointer pointer-events-auto flex items-center gap-3 px-3 py-1 rounded-full transition-all duration-300 bg-gradient-to-r from-cyan-600 to-blue-600 hover:scale-105 hover:shadow-cyan-500/50 ring-2 ring-white/50`}
+        pointer-events-auto group relative overflow-hidden rounded-full bg-cyan-600 px-6 py-2.5 transition-all duration-300 
+        hover:bg-cyan-500 hover:scale-105 hover:shadow-[0_0_20px_rgba(34,211,238,0.6)]
+        border border-white/20 shadow-lg
+      `}
         >
-          Simulació Tèrmica &rarr;
+          <div className="flex items-center gap-2">
+            <span className="relative z-10 text-xs font-extrabold uppercase tracking-wider text-white">
+              Simulació Tèrmica
+            </span>
+            <span className="relative z-10 text-white transition-transform duration-300 group-hover:translate-x-1">
+              &rarr;
+            </span>
+          </div>
         </Link>
       </div>
 
       {/* --- INTRO OVERLAY --- */}
       <div
-        className={`absolute inset-0 z-40 flex items-center justify-center pointer-events-none transition-all duration-1000 ease-in-out ${
+        className={`absolute inset-0 bg-black/50 z-40 flex items-center justify-center pointer-events-none transition-all duration-1000 ease-in-out ${
           !introFinished
             ? "opacity-100 blur-0 scale-100"
             : "opacity-0 blur-xl scale-110"
@@ -751,18 +892,25 @@ export default function TelescopePage() {
         </div>
       </div>
 
-      {/* Main Content Area */}
-      {/* Opacity transition prevents 'pop-in' of the scene. It stays black (invisible) until loaded=true */}
+      {/* --- 3D SCENE --- */}
       <div
         className={`flex-1 relative w-full h-full transition-opacity duration-1000 ${
           loaded ? "opacity-100" : "opacity-0"
         }`}
       >
-        {/* gl={{ alpha: false }} forces a black canvas background by default, preventing white flash */}
-        <Canvas shadows dpr={[1, 2]} gl={{ alpha: false, antialias: true }}>
-          {/* Explicitly paint the 3D void black immediately */}
+        {/* OPTIMIZATION: dpr=1, powerPreference, no stencil/antialias */}
+        <Canvas
+          shadows
+          dpr={[1,2]}
+          gl={{
+            alpha: false,
+            antialias: false, // OFF for perf
+            powerPreference: "high-performance",
+            stencil: false,
+          }}
+        >
           <color attach="background" args={["#000000"]} />
-
+          <Stats />
           <PerspectiveCamera makeDefault position={[30, 20, 30]} fov={50} />
           <OrbitControls
             makeDefault
@@ -771,23 +919,21 @@ export default function TelescopePage() {
             maxDistance={150}
             target={[0, 10, 0]}
             enablePan={true}
-            panSpeed={1.0}
             autoRotate={loaded && !introFinished}
             autoRotateSpeed={0.5}
           />
 
-          {/* SUSPENSE WRAPPER: Nothing inside here mounts until textures are ready */}
           <Suspense fallback={null}>
-            {/* The Trigger: This component only mounts when Sky/Ground are ready */}
             <SceneReady onReady={() => setLoaded(true)} />
 
-            {/* --- DYNAMIC LIGHTING --- */}
             <ambientLight intensity={isNight ? 0.2 : 1.0} />
+            {/* OPTIMIZATION: Lower shadow map resolution + bias */}
             <directionalLight
               position={[100, 200, 50]}
               intensity={isNight ? 0.5 : 4.0}
               castShadow
-              shadow-mapSize={[2048, 2048]}
+              shadow-mapSize={[512, 512]}
+              shadow-bias={-0.0001}
               color={isNight ? "#b0c4de" : "#fffaed"}
             />
             <Environment
@@ -796,93 +942,67 @@ export default function TelescopePage() {
             />
 
             <SkySphere isNight={isNight} />
-            <TexturedGround isNight={isNight} />
+            {
+              !isNight && (
+                <TexturedGround />
+              )
+            }
 
-            {/* 3D Scene Content */}
             <MountBase />
             <group position={[0, 8, 0]} rotation={[Math.PI / 4, 0, 0]}>
               <DishBackFrame />
               <MirrorDish focusOffset={focusOffset} />
               <Structure focusOffset={focusOffset} matrixSize={matrixSize} />
               {showRays && (
-                <RayTracer focusOffset={focusOffset} matrixSize={matrixSize} />
+                <RayTracer
+                  focusOffset={focusOffset}
+                  matrixSize={matrixSize}
+                />
               )}
             </group>
           </Suspense>
         </Canvas>
 
-        {/* UI Overlays */}
+        {/* --- FLOATING CONTROLS (Optimized) --- */}
         <div
-          className={`absolute top-24 left-8 flex flex-col items-center gap-4 pointer-events-auto transition-all duration-1000 delay-500 ${
+          className={`absolute top-28 left-8 flex flex-col items-start gap-4 pointer-events-auto transition-all duration-1000 delay-500 ${
             introFinished
               ? "opacity-100 translate-x-0"
               : "opacity-0 -translate-x-10"
           }`}
         >
-          {/* Focus Control */}
-          <div className="flex items-center gap-4 bg-black/60 backdrop-blur-md p-2 rounded-full text-white shadow-lg border border-white/20">
-            <button
-              onClick={() =>
-                setFocusOffset((prev) => Math.max(prev - 0.5, FOCUS_OFFSET_MIN))
-              }
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/30 transition active:scale-95"
-            >
-              -
-            </button>
-            <div className="flex flex-col items-center min-w-[100px]">
-              <span className="text-[10px] text-white/70 uppercase tracking-widest font-semibold">
-                Desplaçament
-              </span>
-              <span className="font-mono text-lg font-bold text-cyan-400">
-                {focusOffset > 0 ? "+" : ""}
-                {focusOffset.toFixed(1)}
-              </span>
-            </div>
-            <button
-              onClick={() =>
-                setFocusOffset((prev) => Math.min(prev + 0.5, FOCUS_OFFSET_MAX))
-              }
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/30 transition active:scale-95"
-            >
-              +
-            </button>
-          </div>
+          <ControlRow
+            label="Desplaçament"
+            value={
+              focusOffset > 0
+                ? "+" + focusOffset.toFixed(1)
+                : focusOffset.toFixed(1)
+            }
+            onDec={() =>
+              setFocusOffset((prev) => Math.max(prev - 0.5, FOCUS_OFFSET_MIN))
+            }
+            onInc={() =>
+              setFocusOffset((prev) => Math.min(prev + 0.5, FOCUS_OFFSET_MAX))
+            }
+          />
 
-          {/* Matrix Control */}
-          <div className="flex items-center gap-4 bg-black/60 backdrop-blur-md p-2 rounded-full text-white shadow-lg border border-white/20">
-            <button
-              onClick={() =>
-                setMatrixSize((prev) => Math.max(prev - 1, MATRIX_SIZE_MIN))
-              }
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/30 transition active:scale-95"
-            >
-              -
-            </button>
-            <div className="flex flex-col items-center min-w-[100px]">
-              <span className="text-[10px] text-white/70 uppercase tracking-widest font-semibold">
-                Matriu NxN
-              </span>
-              <span className="font-mono text-lg font-bold text-yellow-400">
-                {matrixSize}x{matrixSize}
-              </span>
-            </div>
-            <button
-              onClick={() =>
-                setMatrixSize((prev) => Math.min(prev + 1, MATRIX_SIZE_MAX))
-              }
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/30 transition active:scale-95"
-            >
-              +
-            </button>
-          </div>
+          <ControlRow
+            label="Matriu NxN"
+            value={`${matrixSize}x${matrixSize}`}
+            onDec={() =>
+              setMatrixSize((prev) => Math.max(prev - 1, MATRIX_SIZE_MIN))
+            }
+            onInc={() =>
+              setMatrixSize((prev) => Math.min(prev + 1, MATRIX_SIZE_MAX))
+            }
+          />
 
-          {/* Ray Toggle */}
           <button
             onClick={() => setShowRays(!showRays)}
-            className={`px-6 py-2 cursor-pointer rounded-full font-bold transition-all duration-300 shadow-xl border border-white/20 text-sm ${
+            className={`w-full py-3 cursor-pointer rounded-xl font-bold uppercase tracking-wider text-xs transition-all duration-300 shadow-xl border ${
               showRays
-                ? "bg-cyan-500 text-black hover:bg-cyan-400"
-                : "bg-black/70 text-white hover:bg-black/90"
+                ? "bg-cyan-600 border-cyan-400 text-white shadow-cyan-500/20 hover:bg-cyan-500"
+                : "bg-neutral-900 border-white/20 text-gray-300 hover:bg-neutral-800 hover:text-white"
             }`}
           >
             {showRays ? "Desactivar Traçat" : "Activar Traçat"}

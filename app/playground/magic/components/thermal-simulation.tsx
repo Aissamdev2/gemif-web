@@ -3,20 +3,22 @@
 import React, {
   useMemo,
   useRef,
-  useLayoutEffect,
   useState,
   useEffect,
   useCallback,
+  memo,
 } from "react";
-import { Canvas, useThree, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import {
   OrbitControls,
   PerspectiveCamera,
   Html,
+  Stats,
 } from "@react-three/drei";
 import * as THREE from "three";
+import Link from "next/link";
 
-// Constants
+// --- CONSTANTS ---
 const PLATE_WIDTH = 1.5;
 const PLATE_DEPTH = 1.5;
 const FOCUS_OFFSET_MIN = -3.5;
@@ -24,6 +26,7 @@ const FOCUS_OFFSET_MAX = 0;
 const MATRIX_SIZE_MIN = 1;
 const MATRIX_SIZE_MAX = 5;
 
+// --- TYPES ---
 type LayerTextures = [
   THREE.Texture,
   THREE.Texture,
@@ -35,16 +38,24 @@ type LayerTextures = [
 
 interface SimStats {
   maxTemp: number;
-  minTemp: number; // Added
-  hoverTemp: number | null; // Added
+  minTemp: number;
+  hoverTemp: number | null;
   pElectric: number;
   status: string;
   loading: boolean;
 }
 
-// Helper to reconstruct textures from Worker data
-const createTexturesFromData = (dataArray: any[6]): LayerTextures => {
-  return dataArray.map((item: any) => {
+interface WorkerMessageData {
+  data: Uint8Array;
+  width: number;
+  height: number;
+}
+
+// --- HELPERS ---
+const createTexturesFromData = (
+  dataArray: WorkerMessageData[]
+): LayerTextures => {
+  const textures = dataArray.map((item) => {
     const tex = new THREE.DataTexture(item.data, item.width, item.height);
     tex.format = THREE.RGBAFormat;
     tex.type = THREE.UnsignedByteType;
@@ -52,451 +63,529 @@ const createTexturesFromData = (dataArray: any[6]): LayerTextures => {
     tex.minFilter = THREE.LinearFilter;
     tex.needsUpdate = true;
     return tex;
-  }) as LayerTextures;
+  });
+  
+  if (textures.length !== 6) {
+    throw new Error(`Expected 6 textures, but received ${textures.length}`);
+  }
+  
+  return textures as unknown as LayerTextures;
 };
 
+// --- SUB-COMPONENTS (UI) ---
+
+// 1. Reusable Control Row
+const ControlRow = memo(
+  ({
+    label,
+    value,
+    unit = "",
+    colorClass,
+    onDec,
+    onInc,
+    disableDec,
+    disableInc,
+  }: {
+    label: string;
+    value: string | number;
+    unit?: string;
+    colorClass: string;
+    onDec: () => void;
+    onInc: () => void;
+    disableDec?: boolean;
+    disableInc?: boolean;
+  }) => (
+    // OPTIMIZATION: Removed backdrop-blur, used solid bg-neutral-900
+    <div className="flex items-center gap-4 bg-neutral-900 p-2 pr-5 rounded-xl text-white shadow-xl border border-white/10">
+      <button
+        onClick={onDec}
+        disabled={disableDec}
+        aria-label={`Decrease ${label}`}
+        className="cursor-pointer w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 hover:text-white border border-white/5 transition duration-75 active:scale-95 text-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        -
+      </button>
+      <div className="flex flex-col items-center min-w-[100px]">
+        <span
+          className={`text-[10px] uppercase tracking-widest font-bold mb-1 ${colorClass}`}
+        >
+          {label}
+        </span>
+        <span className="font-mono text-xl font-bold text-white">
+          {value}
+          {unit}
+        </span>
+      </div>
+      <button
+        onClick={onInc}
+        disabled={disableInc}
+        aria-label={`Increase ${label}`}
+        className="cursor-pointer w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 hover:text-white border border-white/5 transition duration-75 active:scale-95 text-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        +
+      </button>
+    </div>
+  )
+);
+ControlRow.displayName = "ControlRow";
+
+// 2. Reusable Stat Item
+const StatItem = memo(
+  ({
+    label,
+    value,
+    colorBg,
+    colorBorder,
+    colorLabel,
+    colorValue,
+    colSpan = 1,
+  }: {
+    label: string;
+    value: string | number;
+    colorBg?: string;
+    colorBorder: string;
+    colorLabel: string;
+    colorValue?: string;
+    colSpan?: number;
+  }) => (
+    <div
+      className={`${colorBg} rounded-lg p-2.5 border ${colorBorder} ${
+        colSpan > 1 ? "col-span-" + colSpan : ""
+      }`}
+    >
+      <p className={`text-[9px] uppercase tracking-wider mb-0.5 ${colorLabel}`}>
+        {label}
+      </p>
+      <p className={`font-mono font-bold ${colorValue || "text-white"}`}>
+        {value}
+      </p>
+    </div>
+  )
+);
+StatItem.displayName = "StatItem";
+
 // --- 3D COMPONENT: THERMAL BOX ---
-const ThermalBox = ({
-  matrixSize,
-  visualMatrixSize, // NEW PROP
-  focusOffset,
-  magicArea,
-  hasPendingChanges,
-  status,
-  onUpdateStats,
-}: {
-  matrixSize: number | null;
-  visualMatrixSize: number; // NEW PROP TYPE
-  focusOffset: number | null;
-  magicArea: number | null;
-  hasPendingChanges: boolean;
-  status: SimStats;
-  onUpdateStats: (stats: Partial<SimStats>) => void;
-}) => {
-  const [texSink, setTexSink] = useState<LayerTextures | null>(null);
-  const [texBase, setTexBase] = useState<LayerTextures | null>(null);
-  const [texCPV, setTexCPV] = useState<LayerTextures | null>(null);
-  const [split, setSplit] = useState(false);
+const ThermalBox = memo(
+  ({
+    matrixSize,
+    visualMatrixSize,
+    focusOffset,
+    magicArea,
+    hasPendingChanges,
+    status,
+    onUpdateStats,
+  }: {
+    matrixSize: number | null;
+    visualMatrixSize: number;
+    focusOffset: number | null;
+    magicArea: number | null;
+    hasPendingChanges: boolean;
+    status: SimStats;
+    onUpdateStats: (stats: Partial<SimStats>) => void;
+  }) => {
+    const [texSink, setTexSink] = useState<LayerTextures | null>(null);
+    const [texBase, setTexBase] = useState<LayerTextures | null>(null);
+    const [texCPV, setTexCPV] = useState<LayerTextures | null>(null);
+    const [tempRange, setTempRange] = useState({ min: 0, max: 100 });
 
-  // Animation Refs
-  const sinkRef = useRef<THREE.Group>(null);
-  const baseRef = useRef<THREE.Group>(null);
-  const cpvRef = useRef<THREE.Group>(null);
+    // Refs
+    const sinkRef = useRef<THREE.Group>(null);
+    const baseRef = useRef<THREE.Group>(null);
+    const cpvRef = useRef<THREE.Group>(null);
+    const currentExpansion = useRef(0);
+    const workerRef = useRef<Worker | null>(null);
 
-  const [tempRange, setTempRange] = useState({ min: 0, max: 100 });
+    // Derived State
+    const fwhm = useMemo(() => {
+      if (focusOffset === null) return 0.1;
+      const ratio = Math.abs(focusOffset) / 2.5;
+      return 0.1 + ratio * 0.5;
+    }, [focusOffset]);
 
-  // Animation State: 0 = Stacked, 1 = Split
-  const targetExpansion = useRef(0);
-  const currentExpansion = useRef(0);
+    // Dispose textures on unmount/change to prevent memory leaks
+    useEffect(() => {
+      return () => {
+        texSink?.forEach((t) => t.dispose());
+        texBase?.forEach((t) => t.dispose());
+        texCPV?.forEach((t) => t.dispose());
+      };
+    }, [texSink, texBase, texCPV]);
 
-  const fwhm = useMemo(() => {
-    if (focusOffset === null) return 0.1;
-    const ratio = Math.abs(focusOffset) / 2.5;
-    return 0.1 + ratio * 0.5;
-  }, [focusOffset]);
-
-  // Initial Expand on Mount
-  useEffect(() => {
-    // Start collapsed, then expand immediately
-    currentExpansion.current = 0;
-    targetExpansion.current = 1;
-  }, []);
-
-  // Worker Reference
-  const workerRef = useRef<Worker | null>(null);
-
-  useEffect(() => {
-    // Initialize Worker
-    // NOTE: Adjust path './thermal.worker.js' to where you saved the file
-    workerRef.current = new Worker(
-      new URL("../logic/thermal.worker.js", import.meta.url)
-    );
-
-    workerRef.current.onmessage = (e) => {
-      const { status, stats, sinkData, baseData, cpvData, error } = e.data;
-
-      if (status === "error") {
-        console.error("Worker Error:", error);
-        onUpdateStats({ loading: false, status: "Error" });
+    // --- WORKER LIFECYCLE ---
+    useEffect(() => {
+      // 1. STOP Condition
+      if (matrixSize === null || magicArea === null || focusOffset === null) {
+        setTexSink(null);
+        setTexBase(null);
+        setTexCPV(null);
         return;
       }
 
-      // 1. Update Textures (Main Thread)
-      setTexSink(createTexturesFromData(sinkData));
-      setTexBase(createTexturesFromData(baseData));
-      setTexCPV(createTexturesFromData(cpvData));
+      // 2. Start Loading
+      onUpdateStats({ loading: true, status: "Calculating..." });
 
-      // 2. Sync Range
-      // Use maxGlobal from the JS loop (which drives the colors) 
-      // instead of stats.maxTemp (from Rust) to ensure consistency.
-      const consistentMax = stats.maxGlobal || stats.maxTemp;
-      const consistentMin = stats.minGlobal;
+      // 3. Init Worker
+      workerRef.current = new Worker(
+        new URL("../logic/thermal.worker.js", import.meta.url)
+      );
 
-      setTempRange({ min: consistentMin, max: consistentMax });
+      // 4. Handle Messages
+      workerRef.current.onmessage = (e) => {
+        const {
+          status: msgStatus,
+          stats,
+          sinkData,
+          baseData,
+          cpvData,
+          error,
+        } = e.data;
 
-      // 2. Update Stats
-      onUpdateStats({
-        maxTemp: consistentMax, // <--- CHANGED: Uses the visual max
-        minTemp: consistentMin,
-        pElectric: stats.pElectric,
-        loading: false,
-        status: "Done",
+        if (msgStatus === "error") {
+          console.error("Worker Error:", error);
+          onUpdateStats({ loading: false, status: "Error" });
+          return;
+        }
+
+        setTexSink(createTexturesFromData(sinkData));
+        setTexBase(createTexturesFromData(baseData));
+        setTexCPV(createTexturesFromData(cpvData));
+
+        const consistentMax = stats.maxGlobal || stats.maxTemp;
+        const consistentMin = stats.minGlobal;
+        setTempRange({ min: consistentMin, max: consistentMax });
+
+        onUpdateStats({
+          maxTemp: consistentMax,
+          minTemp: consistentMin,
+          pElectric: stats.pElectric,
+          loading: false,
+          status: "Done",
+        });
+      };
+
+      // 5. WASM & Start
+      const relativePath = new URL(
+        "../wasm-embeddings/vc1/solar_bg.wasm",
+        import.meta.url
+      ).toString();
+      const wasmUrl = new URL(relativePath, window.location.origin).href;
+
+      workerRef.current.postMessage({
+        fwhm,
+        magicArea,
+        wasmUrl,
+        matrixSize,
       });
 
-      setSplit((prev) => !prev);
-    };
+      // 6. Cleanup
+      return () => {
+        if (workerRef.current) {
+          workerRef.current.terminate();
+          workerRef.current = null;
+        }
+      };
+    }, [matrixSize, magicArea, focusOffset, fwhm, onUpdateStats]);
 
-    return () => {
-      workerRef.current?.terminate();
-    };
-  }, [onUpdateStats]);
+    // --- ANIMATION LOOP ---
+    const SINK_TARGET_Y = -0.6;
+    const BASE_TARGET_Y = 0;
+    const CPV_TARGET_Y = 0.4;
 
-  // Initial Expand on Mount
-  useEffect(() => {
-    // Start collapsed
-    currentExpansion.current = 0;
-    targetExpansion.current = 0;
+    useFrame((_, delta) => {
+      // 1. Define the visualization condition based on your requirements
+      const isVisualizing = texSink !== null && !hasPendingChanges && !status.loading;
+      
+      // 2. Set Target: 1 = Expanded, 0 = Collapsed/Closed
+      const targetExpansion = isVisualizing ? 1 : 0;
 
-    // Add 1.5 second delay before initial split
-    const timer = setTimeout(() => {
-      targetExpansion.current = 1;
-    }, 500);
+      // 3. Smoothly damp the current expansion value
+      currentExpansion.current = THREE.MathUtils.damp(
+        currentExpansion.current,
+        targetExpansion,
+        3.0, // Animation speed
+        delta
+      );
 
-    return () => clearTimeout(timer);
-  }, [split]);
+      const t = currentExpansion.current;
 
-  // Simulation Logic Trigger
-  useEffect(() => {
-    if (matrixSize === null || magicArea === null || focusOffset === null) {
-      return;
-    }
-
-    onUpdateStats({ loading: true, status: "Calculating..." });
-
-    const relativePath = new URL(
-      "../wasm-embeddings/vc1/solar_bg.wasm",
-      import.meta.url
-    ).toString();
-    const wasmUrl = new URL(relativePath, window.location.origin).href;
-    console.log("WASM URL:", wasmUrl);
-
-    // Send data to worker
-    workerRef.current?.postMessage({
-      fwhm,
-      magicArea,
-      wasmUrl,
-      matrixSize,
+      // 4. Update Positions (Lerp from Closed to Open)
+      if (sinkRef.current) {
+        // Collapsed: -0.2 (Touching bottom of base) -> Expanded: -0.6
+        sinkRef.current.position.y = THREE.MathUtils.lerp(-0.24, SINK_TARGET_Y, t);
+      }
+      if (baseRef.current) {
+        // Base stays centered at 0
+        baseRef.current.position.y = THREE.MathUtils.lerp(0, BASE_TARGET_Y, t);
+      }
+      if (cpvRef.current) {
+        // Collapsed: 0.16 (Touching top of base) -> Expanded: 0.4
+        cpvRef.current.position.y = THREE.MathUtils.lerp(0.16, CPV_TARGET_Y, t);
+      }
     });
-  }, [fwhm, magicArea, matrixSize, focusOffset, onUpdateStats]);
 
-  // --- ANIMATION LOOP ---
-  // Define geometry constants
-  const SINK_TARGET_Y = -0.6;
-  const BASE_TARGET_Y = 0;
-  const CPV_TARGET_Y = 0.4;
+    // --- HOVER LOGIC ---
+    const handlePointerMove = useCallback(
+      (e: any, textures: LayerTextures | null) => {
+        if (!textures || hasPendingChanges || status.loading) return;
+        e.stopPropagation();
 
-  useFrame((state, delta) => {
-    // Smoothly interpolate currentExpansion towards targetExpansion
-    // Speed factor: 4.0
-    currentExpansion.current = THREE.MathUtils.damp(
-      currentExpansion.current,
-      targetExpansion.current,
-      3.0,
-      delta
+        const matIndex = e.face?.materialIndex;
+        if (matIndex === undefined) return;
+
+        const texture = textures[matIndex];
+        const image = texture.image;
+        if (!e.uv || !image) return;
+
+        const x = Math.floor(e.uv.x * image.width);
+        const y = Math.floor(e.uv.y * image.height);
+        const index = (y * image.width + x) * 4;
+        const r = image.data[index];
+        const g = image.data[index + 1];
+
+        // Reconstruct value from color (Worker encoding logic)
+        let normVal = 0;
+        const rn = r / 255;
+        const gn = g / 255;
+
+        if (gn > 0.05) {
+          normVal = gn / 2.0 + 0.5;
+        } else {
+          normVal = rn / 2.0;
+        }
+
+        const actualTemp =
+          normVal * (tempRange.max - tempRange.min) + tempRange.min;
+        onUpdateStats({ hoverTemp: actualTemp });
+      },
+      [status.loading, hasPendingChanges, tempRange, onUpdateStats]
     );
 
-    const t = currentExpansion.current;
+    const handlePointerOut = useCallback(() => {
+      onUpdateStats({ hoverTemp: null });
+    }, [onUpdateStats]);
 
-    // Interpolate positions based on t (0 = Center/Stacked, 1 = Target/Split)
-    // We assume 'Stacked' is at y=0 for all (or very close)
-    if (sinkRef.current)
-      sinkRef.current.position.y = THREE.MathUtils.lerp(
-        texSink ? -0.2 : -0.25,
-        SINK_TARGET_Y,
-        t
-      );
-    if (baseRef.current)
-      baseRef.current.position.y = THREE.MathUtils.lerp(0, BASE_TARGET_Y, t);
-    if (cpvRef.current)
-      cpvRef.current.position.y = THREE.MathUtils.lerp(0.16, CPV_TARGET_Y, t);
-  });
+    // --- MEMOIZED GEOMETRIES/MATERIALS (Performance) ---
+    // Prevent creating new geometries/materials in the loop for Fallback mode
+    const fallbackMaterials = useMemo(() => {
+      return {
+        sink: new THREE.MeshStandardMaterial({
+          color: "#A0A0A0",
+          roughness: 0.5,
+          metalness: 0.6,
+        }),
+        base: new THREE.MeshStandardMaterial({
+          color: "#9e5b54",
+          emissive: "#9e5b54",
+          emissiveIntensity: 0.4,
+          roughness: 0.3,
+          metalness: 0.2,
+        }),
+        cpvSubstrate: new THREE.MeshStandardMaterial({
+          color: "#ffffff",
+          roughness: 0.2,
+          metalness: 0.6,
+        }),
+        cpvCell: new THREE.MeshStandardMaterial({
+          color: "#1a237e",
+          roughness: 0.2,
+          metalness: 0.5,
+        }),
+      };
+    }, []);
 
-  // HOVER LOGIC
-  const handlePointerMove = useCallback(
-    (e: any, textures: LayerTextures | null) => {
-      // Only calculate if we have textures and aren't loading/pending
-      if (!textures || hasPendingChanges || status.loading) return;
+    const fallbackGeos = useMemo(() => {
+      return {
+        sinkMain: new THREE.BoxGeometry(PLATE_WIDTH, 0.1, PLATE_DEPTH),
+        sinkFin: new THREE.BoxGeometry(0.02, 0.1, PLATE_DEPTH),
+        base: new THREE.BoxGeometry(PLATE_WIDTH, 0.3, PLATE_DEPTH),
+        cpvSubstrate: new THREE.BoxGeometry(PLATE_WIDTH, 0.02, PLATE_DEPTH),
+      };
+    }, []);
 
-      e.stopPropagation();
+    const annotationStyle = {
+      color: "white",
+      background: "rgba(0,0,0,0.7)",
+      padding: "2px 6px",
+      borderRadius: "4px",
+      fontSize: "10px",
+      fontFamily: "monospace",
+      border: "1px solid rgba(255,255,255,0.2)",
+      fontWeight: "bold",
+      pointerEvents: "none" as const,
+    };
 
-      // e.face.materialIndex gives us the side of the cube (0-5)
-      // 0:Right, 1:Left, 2:Top, 3:Bottom, 4:Front, 5:Back
-      const matIndex = e.face?.materialIndex;
-      if (matIndex === undefined) return;
-
-      const texture = textures[matIndex];
-      const image = texture.image; // { data: Uint8Array, width, height }
-      const uv = e.uv;
-
-      if (!uv || !image) return;
-
-      // Calculate pixel coordinates
-      const x = Math.floor(uv.x * image.width);
-      const y = Math.floor(uv.y * image.height);
-
-      // Get Data Index (RGBA = 4 channels)
-      const index = (y * image.width + x) * 4;
-      const data = image.data;
-
-      // Read RGB
-      const r = data[index];
-      const g = data[index + 1];
-      // const b = data[index + 2];
-
-      // Reverse Engineer the Color-to-Value Mapping from the Worker
-      // Worker Logic:
-      // if val < 0.5: R = val*2, G = 0
-      // else: R = 1, G = (val-0.5)*2
-
-      let normVal = 0;
-
-      // Normalize 0-255 to 0-1
-      const rn = r / 255;
-      const gn = g / 255;
-
-      if (gn > 0.05) {
-        // Upper half of temp range (Yellow to White)
-        // gn = (val - 0.5) * 2  ->  val = (gn / 2) + 0.5
-        normVal = gn / 2.0 + 0.5;
-      } else {
-        // Lower half of temp range (Black to Red)
-        // rn = val * 2  ->  val = rn / 2
-        normVal = rn / 2.0;
-      }
-
-      // Map normalized value back to Celsius
-      const actualTemp =
-        normVal * (tempRange.max - tempRange.min) + tempRange.min;
-
-      onUpdateStats({ hoverTemp: actualTemp });
-    },
-    [status.loading, hasPendingChanges, tempRange, onUpdateStats]
-  );
-
-  const handlePointerOut = useCallback(() => {
-    onUpdateStats({ hoverTemp: null });
-  }, [onUpdateStats]);
-
-  // Annotation Style
-  const annotationStyle = {
-    color: "white",
-    background: "rgba(0,0,0,0.7)",
-    padding: "2px 6px",
-    borderRadius: "4px",
-    fontSize: "10px",
-    fontFamily: "monospace",
-    border: "1px solid rgba(255,255,255,0.2)",
-    fontWeight: "bold",
-    pointerEvents: "none" as const,
-  };
-
-  return (
-    <group rotation={[Math.PI / 6, Math.PI / 4, 0]} position={[0, 0, 0]}>
-      {/* --- LAYER 1: SINK (Aluminum) --- */}
-      <group ref={sinkRef} position={[0, 0, 0]}>
-        {/* If texture exists, show Heatmap Mesh. If not, show Physical Model with Fins */}
-        {texSink && !hasPendingChanges && !status.loading ? (
-          <mesh
-            onPointerMove={(e) => handlePointerMove(e, texSink)}
-            onPointerOut={handlePointerOut}
-          >
-            <boxGeometry args={[PLATE_WIDTH, 0.1, PLATE_DEPTH]} />
-            {texSink.map((tex, i) => (
-              <meshStandardMaterial
-                key={i}
-                attach={`material-${i}`}
-                emissiveMap={tex}
-                emissiveIntensity={2.0}
-                emissive="white"
-                roughness={0.4}
-                metalness={0.2}
-                color="gray"
-              />
-            ))}
-          </mesh>
-        ) : (
-          // PHYSICAL MODEL: Heatsink with Fins
-          <group>
-            {/* Base Plate of Sink */}
-            <mesh position={[0, 0.04, 0]}>
-              <boxGeometry args={[PLATE_WIDTH, 0.1, PLATE_DEPTH]} />
-              <meshStandardMaterial
-                color="#A0A0A0"
-                roughness={0.5}
-                metalness={0.6}
-              />
+    return (
+      <group rotation={[Math.PI / 6, Math.PI / 4, 0]} position={[0, 0, 0]}>
+        {/* SINK */}
+        <group ref={sinkRef}>
+          {texSink && !hasPendingChanges && !status.loading ? (
+            <mesh
+              onPointerMove={(e) => handlePointerMove(e, texSink)}
+              onPointerOut={handlePointerOut}
+              geometry={fallbackGeos.sinkMain}
+            >
+              {texSink.map((tex, i) => (
+                <meshStandardMaterial
+                  key={i}
+                  attach={`material-${i}`}
+                  emissiveMap={tex}
+                  emissiveIntensity={2.0}
+                  emissive="white"
+                  roughness={0.4}
+                  metalness={0.2}
+                  color="gray"
+                />
+              ))}
             </mesh>
-            {/* Fins Generation */}
-            {Array.from({ length: 15 }).map((_, i) => {
-              const spacing = PLATE_WIDTH / 15;
-              const pos = -PLATE_WIDTH / 2 + spacing / 2 + i * spacing;
-              return (
-                <mesh key={i} position={[pos, -0.02, 0]}>
-                  <boxGeometry args={[0.02, 0.1, PLATE_DEPTH]} />
-                  <meshStandardMaterial
-                    color="#A0A0A0"
-                    roughness={0.5}
-                    metalness={0.6}
-                  />
-                </mesh>
-              );
-            })}
-          </group>
-        )}
-
-        <Html position={[0.8, 0, 0]} center>
-          <div
-            style={{
-              ...annotationStyle,
-              opacity: status.loading ? "0" : "100",
-              transition: "opacity 0.2s",
-            }}
-          >
-            Al
-          </div>
-        </Html>
-      </group>
-
-      {/* --- LAYER 2: BASE (Copper) --- */}
-      <group ref={baseRef} position={[0, 0, 0]}>
-        <mesh
-          onPointerMove={(e) => handlePointerMove(e, texBase)}
-          onPointerOut={handlePointerOut}
-        >
-          <boxGeometry args={[PLATE_WIDTH, 0.3, PLATE_DEPTH]} />
-          {texBase && !hasPendingChanges && !status.loading ? (
-            texBase.map((tex, i) => (
-              <meshStandardMaterial
-                key={i}
-                attach={`material-${i}`}
-                emissiveMap={tex}
-                emissiveIntensity={0.4}
-                emissive="white"
-                roughness={0.3}
-                metalness={0.5}
-                color="#8B4513"
-              />
-            ))
           ) : (
-            <meshStandardMaterial
-              color="#9e5b54"
-              emissive="#9e5b54"
-              emissiveIntensity={0.4}
-              roughness={0.3}
-              metalness={0.2}
-            />
+            <group>
+              <mesh
+                position={[0, 0.04, 0]}
+                geometry={fallbackGeos.sinkMain}
+                material={fallbackMaterials.sink}
+              />
+              {Array.from({ length: 15 }).map((_, i) => {
+                const spacing = PLATE_WIDTH / 15;
+                const pos = -PLATE_WIDTH / 2 + spacing / 2 + i * spacing;
+                return (
+                  <mesh
+                    key={i}
+                    position={[pos, -0.02, 0]}
+                    geometry={fallbackGeos.sinkFin}
+                    material={fallbackMaterials.sink}
+                  />
+                );
+              })}
+            </group>
           )}
-        </mesh>
-        <Html position={[0.8, 0, 0]} center>
-          <div
-            style={{
-              ...annotationStyle,
-              opacity: status.loading ? "0" : "100",
-              transition: "opacity 0.2s",
-            }}
-          >
-            Cu
-          </div>
-        </Html>
-      </group>
+          <Html position={[0.8, 0, 0]} center>
+            <div
+              style={{
+                ...annotationStyle,
+                opacity: status.loading ? "0" : "100",
+                transition: "opacity 0.2s",
+              }}
+            >
+              Al
+            </div>
+          </Html>
+        </group>
 
-      {/* --- LAYER 3: CPV (Silicon + Ag) --- */}
-      <group ref={cpvRef} position={[0, 0, 0]}>
-        {texCPV && !hasPendingChanges && !status.loading ? (
-          // HEATMAP VISUALIZATION
+        {/* BASE */}
+        <group ref={baseRef}>
           <mesh
-            onPointerMove={(e) => handlePointerMove(e, texCPV)}
+            onPointerMove={(e) => handlePointerMove(e, texBase)}
             onPointerOut={handlePointerOut}
+            geometry={fallbackGeos.base}
           >
-            <boxGeometry args={[PLATE_WIDTH, 0.02, PLATE_DEPTH]} />
-            {texCPV.map((tex, i) => (
-              <meshStandardMaterial
-                key={i}
-                attach={`material-${i}`}
-                emissiveMap={tex}
-                emissiveIntensity={2.0}
-                emissive="white"
-                roughness={0.5}
-                color="gray"
-              />
-            ))}
+            {texBase && !hasPendingChanges && !status.loading ? (
+              texBase.map((tex, i) => (
+                <meshStandardMaterial
+                  key={i}
+                  attach={`material-${i}`}
+                  emissiveMap={tex}
+                  emissiveIntensity={0.4}
+                  emissive="white"
+                  roughness={0.3}
+                  metalness={0.5}
+                  color="#8B4513"
+                />
+              ))
+            ) : (
+              <primitive object={fallbackMaterials.base} />
+            )}
           </mesh>
-        ) : (
-          // PHYSICAL MODEL: Polished Silver + CPV Cells
-          <group>
-            {/* Polished Silver Substrate */}
-            <mesh>
-              <boxGeometry args={[PLATE_WIDTH, 0.02, PLATE_DEPTH]} />
-              <meshStandardMaterial
-                color="#ffffff"
-                roughness={0.2}
-                metalness={0.6} // Reduced from 1.0 to ensure visibility without EnvMap
-              />
+          <Html position={[0.8, 0, 0]} center>
+            <div
+              style={{
+                ...annotationStyle,
+                opacity: status.loading ? "0" : "100",
+                transition: "opacity 0.2s",
+              }}
+            >
+              Cu
+            </div>
+          </Html>
+        </group>
+
+        {/* CPV */}
+        <group ref={cpvRef}>
+          {texCPV && !hasPendingChanges && !status.loading ? (
+            <mesh
+              onPointerMove={(e) => handlePointerMove(e, texCPV)}
+              onPointerOut={handlePointerOut}
+              geometry={fallbackGeos.cpvSubstrate}
+            >
+              {texCPV.map((tex, i) => (
+                <meshStandardMaterial
+                  key={i}
+                  attach={`material-${i}`}
+                  emissiveMap={tex}
+                  emissiveIntensity={2.0}
+                  emissive="white"
+                  roughness={0.5}
+                  color="gray"
+                />
+              ))}
             </mesh>
+          ) : (
+            <group>
+              <mesh
+                geometry={fallbackGeos.cpvSubstrate}
+                material={fallbackMaterials.cpvSubstrate}
+              />
+              {/* CPV Cells Logic */}
+              {(() => {
+                const n = visualMatrixSize;
+                const cellSpacing = (PLATE_WIDTH * 0.9) / n;
+                const startOffset = -((n - 1) * cellSpacing) / 2;
+                const cells = [];
+                // Create geometry once for this size
+                const cellGeo = new THREE.BoxGeometry(
+                  cellSpacing * 0.8,
+                  0.01,
+                  cellSpacing * 0.8
+                );
 
-            {/* CPV Cells Matrix */}
-            {(() => {
-              // USE visualMatrixSize HERE instead of matrixSize
-              const n = visualMatrixSize;
-              const cellSpacing = (PLATE_WIDTH * 0.9) / n;
-              const startOffset = -((n - 1) * cellSpacing) / 2;
-              const cells = [];
-
-              for (let x = 0; x < n; x++) {
-                for (let z = 0; z < n; z++) {
-                  cells.push(
-                    <mesh
-                      key={`${x}-${z}`}
-                      position={[
-                        startOffset + x * cellSpacing,
-                        0.02,
-                        startOffset + z * cellSpacing,
-                      ]}
-                    >
-                      <boxGeometry
-                        args={[cellSpacing * 0.8, 0.01, cellSpacing * 0.8]}
+                for (let x = 0; x < n; x++) {
+                  for (let z = 0; z < n; z++) {
+                    cells.push(
+                      <mesh
+                        key={`${x}-${z}`}
+                        position={[
+                          startOffset + x * cellSpacing,
+                          0.02,
+                          startOffset + z * cellSpacing,
+                        ]}
+                        geometry={cellGeo}
+                        material={fallbackMaterials.cpvCell}
                       />
-                      <meshStandardMaterial
-                        color="#1a237e"
-                        roughness={0.2}
-                        metalness={0.5}
-                      />
-                    </mesh>
-                  );
+                    );
+                  }
                 }
-              }
-              return cells;
-            })()}
-          </group>
-        )}
-
-        <Html position={[0.8, 0, 0]} center>
-          <div
-            style={{
-              ...annotationStyle,
-              opacity: status.loading ? "0" : "100",
-              transition: "opacity 0.2s",
-            }}
-          >
-            Si+Ag
-          </div>
-        </Html>
+                return cells;
+              })()}
+            </group>
+          )}
+          <Html position={[0.8, 0, 0]} center>
+            <div
+              style={{
+                ...annotationStyle,
+                opacity: status.loading ? "0" : "100",
+                transition: "opacity 0.2s",
+              }}
+            >
+              Si+Ag
+            </div>
+          </Html>
+        </group>
       </group>
-    </group>
-  );
-};
+    );
+  }
+);
+ThermalBox.displayName = "ThermalBox";
 
-// --- MAIN COMPONENT ---
+// --- MAIN PAGE COMPONENT ---
 export default function ThermalPage() {
   const [simStats, setSimStats] = useState<SimStats>({
     maxTemp: 0,
@@ -542,57 +631,100 @@ export default function ThermalPage() {
   }, []);
 
   useEffect(() => {
-    setHasPendingChanges((prev) => {
-      return (
-        !activeParams ||
+    setHasPendingChanges(
+      !activeParams ||
         uiFocusOffset !== activeParams.focusOffset ||
         uiMatrixSize !== activeParams.matrixSize ||
         uiMagicArea !== activeParams.magicArea
-      );
-    });
+    );
   }, [uiFocusOffset, uiMatrixSize, uiMagicArea, activeParams]);
 
   return (
-    <div className="relative w-full h-full bg-gray-900">
-      {/* Header */}
-      <div className="absolute w-full top-0 left-0 px-10 py-3 text-black bg-gray-300 z-50 pointer-events-none select-none drop-shadow-lg flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tighter">
-            Telescopi MAGIC
+    <div className="relative w-full h-full bg-black overflow-hidden rounded-2xl">
+      {/* --- HEADER --- */}
+      {/* OPTIMIZATION: Replaced backdrop-blur with bg-neutral-900 (solid color for performance) */}
+      <div className="absolute w-full top-0 left-0 px-8 py-3 z-50 pointer-events-none select-none flex justify-between items-center transition-all duration-1000 ease-out border-b border-white/10 bg-neutral-900 shadow-2xl">
+        <div className="flex flex-col">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tighter text-white drop-shadow-md">
+            STARRY SKY
           </h1>
-          <p className="text-xs opacity-90">
-            Aissam Khadraoui, Candela García, Filip Denis
-          </p>
+          <div className="flex items-center gap-2 text-[10px] md:text-xs font-medium text-cyan-400 uppercase tracking-widest">
+            <span className="opacity-80">Aissam Khadraoui</span>
+            <span className="text-white/20">•</span>
+            <span className="opacity-80">Candela García</span>
+            <span className="text-white/20">•</span>
+            <span className="opacity-80">Filip Denis</span>
+          </div>
         </div>
-        <button
-          onClick={() => (window.location.href = "/playground/magic")}
-          className={`
-            font-bold text-white uppercase tracking-wider text-sm cursor-pointer px-3 py-1 pointer-events-auto rounded-full transition-all duration-300 bg-gradient-to-r from-cyan-600 to-blue-600 hover:scale-105 hover:shadow-cyan-500/50 ring-2 ring-white/50`}
+
+        <Link
+          href="/playground/magic"
+          className="pointer-events-auto group relative overflow-hidden rounded-full bg-cyan-600 px-6 py-2.5 transition-all duration-300 hover:bg-cyan-500 hover:scale-105 hover:shadow-[0_0_20px_rgba(34,211,238,0.6)] border border-white/20 shadow-lg"
         >
-          Visualització del telescopi &rarr;
-        </button>
+          <div className="flex items-center gap-2">
+            <span className="relative z-10 text-xs font-extrabold uppercase tracking-wider text-white">
+              Visualització telescopi
+            </span>
+            <span className="relative z-10 text-white transition-transform duration-300 group-hover:translate-x-1">
+              &rarr;
+            </span>
+          </div>
+        </Link>
       </div>
 
-      {/* --- STARRY SKY LOADING OVERLAY --- */}
+      {/* --- LOADING OVERLAY --- */}
       <div
-        className={`absolute inset-0 z-40 flex items-center justify-center bg-gray-700/70 pointer-events-none transition-all duration-500 ${
+        className={`absolute inset-0 z-40 flex items-center justify-center bg-black/90 transition-all duration-500 ${
           simStats.loading
-            ? "opacity-100 backdrop-blur-sm pointer-events-none"
+            ? "opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"
         }`}
       >
-        <div className="text-center transform transition-transform duration-700 hover:scale-105">
-          <h1 className="text-6xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-br from-indigo-200 via-purple-200 to-white drop-shadow-[0_0_25px_rgba(255,255,255,0.6)] animate-pulse tracking-widest">
+        <div className="flex flex-col items-center justify-center">
+          <h1 className="hover:scale-105 transform transition-transform duration-700 text-6xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-br from-indigo-200 via-purple-200 to-white drop-shadow-[0_0_25px_rgba(255,255,255,0.6)] animate-pulse tracking-widest">
             STARRY SKY
           </h1>
-          <p className="text-white/80 font-mono mt-4 text-sm tracking-[0.5em] uppercase">
-            Executant simulació, esperi...
+          <p className="cursor-pointer text-white/80 font-mono mt-4 text-sm tracking-[0.5em] uppercase">
+            Executant simulació...
           </p>
+
+          <button
+            onClick={handleStopSimulation}
+            className="mt-10 group relative px-8 py-3 bg-red-500/10 border border-red-500/50 text-red-50 rounded-full overflow-hidden transition-all duration-300 hover:bg-red-600 hover:border-red-600 hover:text-white shadow-[0_0_20px_rgba(220,38,38,0.2)] hover:shadow-[0_0_40px_rgba(220,38,38,0.6)] cursor-pointer"
+          >
+            <span className="relative z-10 font-bold uppercase tracking-widest text-xs flex items-center gap-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="w-4 h-4"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M4.5 7.5a3 3 0 013-3h9a3 3 0 013 3v9a3 3 0 01-3 3h-9a3 3 0 01-3-3v-9z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              Aturar
+            </span>
+          </button>
         </div>
       </div>
 
-      <Canvas shadows dpr={[1, 2]}>
-        <color attach="background" args={["#c4faff"]} />
+      {/* --- 3D SCENE --- */}
+      {/* OPTIMIZATION: dpr=1, performance preference, stencil/depth tuning */}
+      <Canvas
+        shadows
+        dpr={[1,2]}
+        gl={{
+          powerPreference: "high-performance",
+          antialias: true,
+          stencil: false,
+          depth: true,
+        }}
+      >
+        <Stats />
+        <color attach="background" args={["#ffffff"]} />
         <PerspectiveCamera makeDefault position={[4, 0, 0]} fov={40} />
         <OrbitControls
           makeDefault
@@ -603,7 +735,10 @@ export default function ThermalPage() {
           panSpeed={1.0}
         />
         <ambientLight intensity={0.5} />
+        {/* OPTIMIZATION: Reduced shadow map size and added bias */}
         <directionalLight
+          shadow-mapSize={[512, 512]}
+          shadow-bias={-0.0001}
           position={[10, 20, 5]}
           intensity={2.0}
           castShadow
@@ -612,7 +747,7 @@ export default function ThermalPage() {
 
         <ThermalBox
           matrixSize={activeParams?.matrixSize ?? null}
-          visualMatrixSize={uiMatrixSize} // PASS THE LIVE UI VALUE HERE
+          visualMatrixSize={uiMatrixSize}
           focusOffset={activeParams?.focusOffset ?? null}
           magicArea={activeParams?.magicArea ?? null}
           hasPendingChanges={hasPendingChanges}
@@ -621,199 +756,165 @@ export default function ThermalPage() {
         />
       </Canvas>
 
-      {/* UI Controls */}
-      <div className="absolute z-50 top-24 left-8 flex flex-col items-center gap-4 pointer-events-auto">
-        {/* Focus Offset Control */}
-        <div className="flex items-center gap-4 bg-black/60 backdrop-blur-md p-2 rounded-full text-white shadow-lg border border-white/20">
-          <button
-            onClick={() =>
-              setUiFocusOffset((prev) => Math.max(prev - 0.5, FOCUS_OFFSET_MIN))
-            }
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/30 transition active:scale-95"
-          >
-            -
-          </button>
-          <div className="flex flex-col items-center min-w-[100px]">
-            <span className="text-[10px] text-white/70 uppercase tracking-widest font-semibold">
-              Desplaçament
-            </span>
-            <span className="font-mono text-lg font-bold text-cyan-400">
-              {uiFocusOffset > 0 ? "+" : ""}
-              {uiFocusOffset.toFixed(1)}
-            </span>
-          </div>
-          <button
-            onClick={() =>
-              setUiFocusOffset((prev) => Math.min(prev + 0.5, FOCUS_OFFSET_MAX))
-            }
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/30 transition active:scale-95"
-          >
-            +
-          </button>
-        </div>
-
-        {/* Matrix Control */}
-        <div className="flex items-center gap-4 bg-black/60 backdrop-blur-md p-2 rounded-full text-white shadow-lg border border-white/20">
-          <button
-            onClick={() =>
-              setUiMatrixSize((prev) => Math.max(prev - 1, MATRIX_SIZE_MIN))
-            }
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/30 transition active:scale-95"
-          >
-            -
-          </button>
-          <div className="flex flex-col items-center min-w-[100px]">
-            <span className="text-[10px] text-white/70 uppercase tracking-widest font-semibold">
-              Matriu NxN
-            </span>
-            <span className="font-mono text-lg font-bold text-yellow-400">
-              {uiMatrixSize}x{uiMatrixSize}
-            </span>
-          </div>
-          <button
-            onClick={() =>
-              setUiMatrixSize((prev) => Math.min(prev + 1, MATRIX_SIZE_MAX))
-            }
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/30 transition active:scale-95"
-          >
-            +
-          </button>
-        </div>
-
-        {/* Area Control */}
-        <div className="flex items-center gap-4 bg-black/60 backdrop-blur-md p-2 rounded-full text-white shadow-lg border border-white/20">
-          <button
-            onClick={() => setUiMagicArea((prev) => Math.max(prev - 5, 10))}
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/30 transition active:scale-95"
-          >
-            -
-          </button>
-          <div className="flex flex-col items-center min-w-[100px]">
-            <span className="text-[10px] text-white/70 uppercase tracking-widest font-semibold">
-              Àrea (m²)
-            </span>
-            <span className="font-mono text-lg font-bold text-green-400">
-              {uiMagicArea}
-            </span>
-          </div>
-          <button
-            onClick={() => setUiMagicArea((prev) => Math.min(prev + 5, 240))}
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/30 transition active:scale-95"
-          >
-            +
-          </button>
-        </div>
-
-        {/* MAIN BUTTON (RUN / STOP) */}
-        <button
-          onClick={
-            simStats.loading ? handleStopSimulation : handleRunSimulation
+      {/* --- LEFT CONTROL PANEL --- */}
+      <div className="absolute z-30 top-28 left-8 flex flex-col items-start gap-4 pointer-events-auto">
+        <ControlRow
+          label="Desplaçament"
+          value={
+            uiFocusOffset > 0
+              ? "+" + uiFocusOffset.toFixed(1)
+              : uiFocusOffset.toFixed(1)
           }
-          className={`
-            group flex items-center gap-3 px-6 py-3 rounded-full shadow-xl transition-all duration-300
-            ${
-              simStats.loading
-                ? "bg-red-600 hover:bg-red-500 hover:scale-105 ring-2 ring-red-400/50"
-                : hasPendingChanges
-                ? "bg-gradient-to-r from-cyan-600 to-blue-600 hover:scale-105 hover:shadow-cyan-500/50 ring-2 ring-white/50"
-                : "bg-gray-800/80 text-gray-400"
-            }
-            cursor-pointer
-          `}
+          colorClass="text-cyan-400"
+          onDec={() =>
+            setUiFocusOffset((p) => Math.max(p - 0.5, FOCUS_OFFSET_MIN))
+          }
+          onInc={() =>
+            setUiFocusOffset((p) => Math.min(p + 0.5, FOCUS_OFFSET_MAX))
+          }
+        />
+
+        <ControlRow
+          label="Matriu NxN"
+          value={`${uiMatrixSize}x${uiMatrixSize}`}
+          colorClass="text-yellow-400"
+          onDec={() => setUiMatrixSize((p) => Math.max(p - 1, MATRIX_SIZE_MIN))}
+          onInc={() => setUiMatrixSize((p) => Math.min(p + 1, MATRIX_SIZE_MAX))}
+        />
+
+        <ControlRow
+          label="Àrea (m²)"
+          value={uiMagicArea}
+          colorClass="text-green-400"
+          onDec={() => setUiMagicArea((p) => Math.max(p - 5, 10))}
+          onInc={() => setUiMagicArea((p) => Math.min(p + 5, 240))}
+        />
+
+        <button
+          onClick={simStats.loading ? undefined : handleRunSimulation}
+          disabled={simStats.loading}
+          className={`w-full cursor-pointer group flex items-center justify-center gap-3 px-6 py-4 rounded-xl shadow-xl transition-all duration-300 border ${
+            simStats.loading
+              ? "cursor-wait bg-neutral-800/80 border-white/10 text-gray-500"
+              : hasPendingChanges
+              ? "bg-cyan-600/90 border-cyan-400 hover:bg-cyan-500 hover:scale-105 shadow-cyan-900/50 text-white"
+              : "bg-neutral-800/90 border-white/20 text-gray-400 hover:bg-neutral-700 hover:text-white"
+          }`}
         >
           {simStats.loading ? (
-            // STOP ICON
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
               strokeWidth={2.5}
               stroke="currentColor"
-              className="w-5 h-5 text-white animate-pulse"
+              className="w-5 h-5 text-cyan-400 animate-spin"
             >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                d="M5.25 7.5A2.25 2.25 0 017.5 5.25h9a2.25 2.25 0 012.25 2.25v9a2.25 2.25 0 01-2.25 2.25h-9a2.25 2.25 0 01-2.25-2.25v-9z"
+                d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"
               />
             </svg>
           ) : (
-            // STATUS DOT
             <div
-              className={`w-3 h-3 rounded-full ${
-                hasPendingChanges ? "bg-red-400 animate-pulse" : "bg-green-500"
+              className={`w-3 h-3 rounded-full shadow-lg ${
+                hasPendingChanges ? "bg-white animate-pulse" : "bg-green-500"
               }`}
             />
           )}
-          <span className="font-bold text-white uppercase tracking-wider text-sm">
+          <span className="font-extrabold uppercase tracking-widest text-xs">
             {simStats.loading
-              ? "ATURAR"
+              ? "Processant..."
               : activeParams === null
               ? "Iniciar Simulació"
               : hasPendingChanges
               ? "Simular Canvis"
-              : "Actualitzat"}
+              : "Sistema Actualitzat"}
           </span>
         </button>
       </div>
 
-      {/* Stats Panel */}
-      <div className="absolute top-24 right-8 pointer-events-auto bg-gray-900/90 p-4 rounded-lg border border-cyan-500/50 w-80 text-left shadow-2xl backdrop-blur-sm z-30">
-        <h3 className="text-lg font-bold text-cyan-400 mb-2 flex items-center gap-2">
-          Resultats Simulació
-        </h3>
-        <div className="space-y-1 text-xs font-mono text-gray-300">
-          <div className="flex justify-between">
-            <span>Àrea Telescopi:</span>{" "}
-            <span>{activeParams?.magicArea ?? uiMagicArea} m²</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Matriu CPV:</span>{" "}
-            <span>
-              {activeParams?.matrixSize ?? uiMatrixSize}x
-              {activeParams?.matrixSize ?? uiMatrixSize}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span>FWHM:</span> <span>{displayFwhm.toFixed(3)} m</span>
-          </div>
-          <div className="h-px bg-white/20 my-3"></div>
+      {/* --- RIGHT STATS PANEL --- */}
+      <div className="absolute top-28 right-8 w-[320px] pointer-events-auto bg-neutral-900 p-5 rounded-2xl border border-white/20 shadow-2xl transition-all duration-300 hover:border-cyan-500/30">
+        <div className="flex items-center justify-between mb-4 border-b border-white/10 pb-2">
+          <h3 className="text-xs font-extrabold uppercase tracking-widest text-cyan-400">
+            Resultats en Temps Real
+          </h3>
+        </div>
 
-          {activeParams && simStats.maxTemp > 0 ? (
+        <div className="grid grid-cols-2 gap-3 text-white">
+          <StatItem
+            label="Àrea Telescopi"
+            value={(activeParams?.magicArea ?? uiMagicArea) + " m²"}
+            colorBorder="border-white/10"
+            colorLabel="text-gray-400"
+          />
+          <StatItem
+            label="Matriu CPV"
+            value={`${activeParams?.matrixSize ?? uiMatrixSize} x ${
+              activeParams?.matrixSize ?? uiMatrixSize
+            }`}
+            colorBorder="border-white/10"
+            colorLabel="text-gray-400"
+          />
+
+          {activeParams &&
+          simStats.maxTemp > 0 &&
+          simStats.status !== "Stopped" &&
+          !simStats.loading ? (
             <>
-              <div className="flex justify-between text-red-400 font-bold text-sm items-center">
-                <span>T. Màx:</span>
-                <span className="px-2 py-0.5 rounded border bg-red-900/30 border-red-500/30">
-                  {simStats.maxTemp.toFixed(1)} °C
-                </span>
-              </div>
-              {/* NEW HOVER STAT */}
-              <div className="flex justify-between text-yellow-300 font-bold text-sm items-center mt-1">
-                <span>T. Punter:</span>
-                <span className="px-2 py-0.5 rounded border bg-yellow-900/30 border-yellow-500/30 min-w-[70px] text-right">
-                  {simStats.hoverTemp !== null &&
-                  simStats.hoverTemp !== undefined
-                    ? `${simStats.hoverTemp.toFixed(1)} °C`
-                    : "--.- °C"}
-                </span>
-              </div>
-              <div className="flex justify-between text-green-300 font-bold text-sm items-center mt-1">
-                <span>Potència Elèc:</span>
-                <span className="px-2 py-0.5 rounded border bg-green-900/30 border-green-500/30">
-                  {simStats.pElectric.toFixed(2)} W
-                </span>
+              <StatItem
+                label="Temp. Màxima"
+                value={simStats.maxTemp.toFixed(1) + " °C"}
+                colorBg="bg-red-900/20"
+                colorBorder="border-red-500/30"
+                colorLabel="text-red-300"
+                colorValue="text-red-400"
+              />
+              <StatItem
+                label="Potència Elec."
+                value={simStats.pElectric.toFixed(1) + " W"}
+                colorBg="bg-green-900/20"
+                colorBorder="border-green-500/30"
+                colorLabel="text-green-300"
+                colorValue="text-green-400"
+              />
+              {/* Complex item for hover/FWHM */}
+              <div className="col-span-2 bg-yellow-900/20 rounded-lg p-2.5 border border-yellow-500/30 flex justify-between items-center">
+                <div>
+                  <p className="text-[9px] text-yellow-300 uppercase tracking-wider mb-0.5">
+                    Temp. Punter (Mouse)
+                  </p>
+                  <p className="font-mono text-lg font-bold text-yellow-400">
+                    {simStats.hoverTemp !== null &&
+                    simStats.hoverTemp !== undefined
+                      ? `${simStats.hoverTemp.toFixed(1)} °C`
+                      : "--.- °C"}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[9px] text-yellow-300/70 uppercase tracking-wider mb-0.5">
+                    FWHM
+                  </p>
+                  <p className="font-mono text-sm text-yellow-200/80">
+                    {displayFwhm.toFixed(3)} m
+                  </p>
+                </div>
               </div>
             </>
           ) : (
-            <div className="text-center text-gray-500 italic py-2">
-              Prem Iniciar Simulació per veure resultats segons els paràmetres.
+            <div className="col-span-2 py-6 text-center text-xs text-gray-500 italic border border-dashed border-white/10 rounded-lg">
+              Inicieu la simulació per veure resultats tèrmics.
             </div>
           )}
+        </div>
 
-          <div className="h-px bg-white/20 my-3"></div>
-          <p className="text-[10px] text-gray-500 leading-tight">
-            Simulació lleugera. Bona aproximació. Per resultats precisos empreu
-            la versió MATLAB.
+        <div className="mt-4 pt-3 border-t border-white/10">
+          <p className="text-[10px] text-gray-400 leading-tight">
+            <span className="text-cyan-400 font-bold">NOTA:</span> Simulació
+            Simplificada en Web. Per a precisió científica, utilitzeu
+            l&apos;entorn MATLAB.
           </p>
         </div>
       </div>
