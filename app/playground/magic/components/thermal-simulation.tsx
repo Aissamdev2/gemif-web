@@ -13,7 +13,6 @@ import {
   OrbitControls,
   PerspectiveCamera,
   Html,
-  Stats,
 } from "@react-three/drei";
 import * as THREE from "three";
 import Link from "next/link";
@@ -64,17 +63,16 @@ const createTexturesFromData = (
     tex.needsUpdate = true;
     return tex;
   });
-  
+
   if (textures.length !== 6) {
     throw new Error(`Expected 6 textures, but received ${textures.length}`);
   }
-  
+
   return textures as unknown as LayerTextures;
 };
 
 // --- SUB-COMPONENTS (UI) ---
 
-// 1. Reusable Control Row
 const ControlRow = memo(
   ({
     label,
@@ -95,12 +93,10 @@ const ControlRow = memo(
     disableDec?: boolean;
     disableInc?: boolean;
   }) => (
-    // OPTIMIZATION: Removed backdrop-blur, used solid bg-neutral-900
     <div className="flex items-center gap-4 bg-neutral-900 p-2 pr-5 rounded-xl text-white shadow-xl border border-white/10">
       <button
         onClick={onDec}
         disabled={disableDec}
-        aria-label={`Decrease ${label}`}
         className="cursor-pointer w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 hover:text-white border border-white/5 transition duration-75 active:scale-95 text-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed"
       >
         -
@@ -119,7 +115,6 @@ const ControlRow = memo(
       <button
         onClick={onInc}
         disabled={disableInc}
-        aria-label={`Increase ${label}`}
         className="cursor-pointer w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 hover:text-white border border-white/5 transition duration-75 active:scale-95 text-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed"
       >
         +
@@ -129,7 +124,39 @@ const ControlRow = memo(
 );
 ControlRow.displayName = "ControlRow";
 
-// 2. Reusable Stat Item
+const ToggleRow = memo(
+  ({
+    label,
+    checked,
+    onChange,
+  }: {
+    label: string;
+    checked: boolean;
+    onChange: (val: boolean) => void;
+  }) => (
+    <div className="flex items-center justify-between gap-4 bg-neutral-900 p-3 px-5 rounded-xl text-white shadow-xl border border-white/10">
+      <span className="text-[10px] text-cyan-400 uppercase tracking-widest font-bold">
+        {label}
+      </span>
+      <button
+        onClick={() => onChange(!checked)}
+        className={`relative w-10 h-5 rounded-full transition-all duration-300 ease-out focus:outline-none ${
+          checked
+            ? "bg-cyan-600 shadow-[0_0_10px_rgba(8,145,178,0.4)]"
+            : "bg-white/10 hover:bg-white/20"
+        }`}
+      >
+        <div
+          className={`absolute top-1 left-1 w-3 h-3 bg-white rounded-full shadow-sm transition-transform duration-300 ease-out ${
+            checked ? "translate-x-5" : "translate-x-0"
+          }`}
+        />
+      </button>
+    </div>
+  )
+);
+ToggleRow.displayName = "ToggleRow";
+
 const StatItem = memo(
   ({
     label,
@@ -149,7 +176,7 @@ const StatItem = memo(
     colSpan?: number;
   }) => (
     <div
-      className={`${colorBg} rounded-lg p-2.5 border ${colorBorder} ${
+      className={`${colorBg || "bg-white/5"} rounded-lg p-2.5 border ${colorBorder} ${
         colSpan > 1 ? "col-span-" + colSpan : ""
       }`}
     >
@@ -164,23 +191,121 @@ const StatItem = memo(
 );
 StatItem.displayName = "StatItem";
 
+const GaussianOverlay = memo(
+  ({ fwhm, matrixSize, magicArea }: { fwhm: number; matrixSize: number, magicArea: number }) => {
+    const geometry = useMemo(() => {
+      // 1. Setup high-res plane
+      const geo = new THREE.PlaneGeometry(PLATE_WIDTH, PLATE_DEPTH, 100, 100);
+      geo.rotateX(-Math.PI / 2); // Rotate flat
+
+      const posAttribute = geo.attributes.position;
+      const vertex = new THREE.Vector3();
+
+      // 2. Math Constants
+      // FWHM = 2.355 * sigma. We clamp fwhm to avoid division by zero or infinite spikes.
+      const sigma = fwhm / 2.355;
+      const twoSigmaSq = 2 * sigma * sigma;
+
+      // Cell Positioning Logic (Must match the physical CPV cell layout)
+      const cellSpacing = (PLATE_WIDTH * 0.9) / matrixSize;
+      const startOffset = -((matrixSize - 1) * cellSpacing) / 2;
+
+      // 3. Pre-calculate centers
+      const centers: { x: number; z: number }[] = [];
+      for (let i = 0; i < matrixSize; i++) {
+        for (let j = 0; j < matrixSize; j++) {
+          centers.push({
+            x: startOffset + i * cellSpacing,
+            z: startOffset + j * cellSpacing,
+          });
+        }
+      }
+
+      // 4. Height Scaling
+      // We scale the peak height down as the matrix grows to keep visualization manageable
+      // A single peak is height 0.6. A 5x5 matrix scales individual peaks down.
+      const baseHeight = 0.5;
+      // If peaks overlap significantly (large sigma), the sum grows. We normalize slightly.
+      const amplitude = baseHeight * magicArea / (twoSigmaSq * Math.PI * matrixSize * matrixSize * 240);
+
+      // 5. Generate Surface
+      for (let i = 0; i < posAttribute.count; i++) {
+        vertex.fromBufferAttribute(posAttribute, i);
+
+        let totalY = 0;
+
+        // Sum contribution from every Gaussian center (Superposition)
+        for (let c = 0; c < centers.length; c++) {
+          const dx = vertex.x - centers[c].x;
+          const dz = vertex.z - centers[c].z;
+          const distSq = dx * dx + dz * dz;
+
+          // Gaussian: A * exp(-dist^2 / 2*sigma^2)
+          totalY += amplitude * Math.exp(-distSq / twoSigmaSq);
+        }
+
+        // Update Y
+        posAttribute.setXYZ(i, vertex.x, totalY, vertex.z);
+      }
+
+      geo.computeVertexNormals();
+      return geo;
+    }, [fwhm, matrixSize, magicArea]); // Re-run whenever FWHM or MatrixSize changes
+
+    return (
+      <group position={[0, 0.03, 0]}>
+        {" "}
+        {/* Float slightly above CPV layer */}
+        {/* 1. The Energy Field (Glow) */}
+        <mesh geometry={geometry}>
+          <meshBasicMaterial
+            color="#eb757d" // Cyan-500
+            transparent
+            opacity={0.3}
+            side={THREE.DoubleSide}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
+        {/* 2. The Topological Lines (Wireframe) */}
+        <mesh geometry={geometry}>
+          <meshBasicMaterial
+            color="#eb757d" // Cyan-100
+            transparent
+            opacity={0.15}
+            wireframe
+            depthWrite={false}
+          />
+        </mesh>
+      </group>
+    );
+  }
+);
+GaussianOverlay.displayName = "GaussianOverlay";
+
 // --- 3D COMPONENT: THERMAL BOX ---
 const ThermalBox = memo(
   ({
-    matrixSize,
-    visualMatrixSize,
-    focusOffset,
-    magicArea,
-    hasPendingChanges,
+    simMatrixSize,
+    simFocusOffset,
+    simMagicArea,
+    visMatrixSize,
+    visFocusOffset,
+    visMagicArea,
     status,
+    showGaussian,
+    hasPendingChanges,
     onUpdateStats,
   }: {
-    matrixSize: number | null;
-    visualMatrixSize: number;
-    focusOffset: number | null;
-    magicArea: number | null;
-    hasPendingChanges: boolean;
+    simMatrixSize: number | null;
+    simFocusOffset: number | null;
+    simMagicArea: number | null;
+    visMatrixSize: number;
+    visFocusOffset: number;
+    visMagicArea: number;
     status: SimStats;
+    showGaussian: boolean;
+    hasPendingChanges: boolean;
     onUpdateStats: (stats: Partial<SimStats>) => void;
   }) => {
     const [texSink, setTexSink] = useState<LayerTextures | null>(null);
@@ -188,21 +313,34 @@ const ThermalBox = memo(
     const [texCPV, setTexCPV] = useState<LayerTextures | null>(null);
     const [tempRange, setTempRange] = useState({ min: 0, max: 100 });
 
-    // Refs
     const sinkRef = useRef<THREE.Group>(null);
     const baseRef = useRef<THREE.Group>(null);
     const cpvRef = useRef<THREE.Group>(null);
     const currentExpansion = useRef(0);
     const workerRef = useRef<Worker | null>(null);
 
-    // Derived State
-    const fwhm = useMemo(() => {
-      if (focusOffset === null) return 0.1;
-      const ratio = Math.abs(focusOffset) / 2.5;
-      return 0.1 + ratio * 0.5;
-    }, [focusOffset]);
+    // Derived States for Math
+    const simFwhm = useMemo(() => {
+        if (simFocusOffset === null) return 0.1;
+        const ratio = Math.abs(simFocusOffset) / 2.5;
+        return 0.1 + ratio * 0.5;
+    }, [simFocusOffset]);
 
-    // Dispose textures on unmount/change to prevent memory leaks
+    const visFwhm = useMemo(() => {
+        const ratio = Math.abs(visFocusOffset) / 2.5;
+        return 0.1 + ratio * 0.5;
+    }, [visFocusOffset]);
+
+    // Force texture cleanup when loading starts
+    useEffect(() => {
+        if (status.loading) {
+            setTexSink(null);
+            setTexBase(null);
+            setTexCPV(null);
+        }
+    }, [status.loading]);
+
+    // Dispose textures on unmount
     useEffect(() => {
       return () => {
         texSink?.forEach((t) => t.dispose());
@@ -213,14 +351,15 @@ const ThermalBox = memo(
 
     // --- WORKER LIFECYCLE ---
     useEffect(() => {
-      // 1. STOP Condition
-      if (matrixSize === null || magicArea === null || focusOffset === null) {
+      // 1. STOP Condition: If any Sim param is null, we are stopped.
+      if (simMatrixSize === null || simMagicArea === null || simFocusOffset === null) {
         setTexSink(null);
         setTexBase(null);
         setTexCPV(null);
         return;
       }
 
+      
       // 2. Start Loading
       onUpdateStats({ loading: true, status: "Calculating..." });
 
@@ -231,14 +370,7 @@ const ThermalBox = memo(
 
       // 4. Handle Messages
       workerRef.current.onmessage = (e) => {
-        const {
-          status: msgStatus,
-          stats,
-          sinkData,
-          baseData,
-          cpvData,
-          error,
-        } = e.data;
+        const { status: msgStatus, stats, sinkData, baseData, cpvData, error } = e.data;
 
         if (msgStatus === "error") {
           console.error("Worker Error:", error);
@@ -264,27 +396,23 @@ const ThermalBox = memo(
       };
 
       // 5. WASM & Start
-      const relativePath = new URL(
-        "../wasm-embeddings/vc1/solar_bg.wasm",
-        import.meta.url
-      ).toString();
+      const relativePath = new URL("../wasm-embeddings/vc1/solar_bg.wasm", import.meta.url).toString();
       const wasmUrl = new URL(relativePath, window.location.origin).href;
 
       workerRef.current.postMessage({
-        fwhm,
-        magicArea,
+        fwhm: simFwhm,
+        magicArea: simMagicArea,
         wasmUrl,
-        matrixSize,
+        matrixSize: simMatrixSize,
       });
 
-      // 6. Cleanup
       return () => {
         if (workerRef.current) {
           workerRef.current.terminate();
           workerRef.current = null;
         }
       };
-    }, [matrixSize, magicArea, focusOffset, fwhm, onUpdateStats]);
+    }, [simMatrixSize, simMagicArea, simFocusOffset, simFwhm, onUpdateStats]);
 
     // --- ANIMATION LOOP ---
     const SINK_TARGET_Y = -0.6;
@@ -292,41 +420,30 @@ const ThermalBox = memo(
     const CPV_TARGET_Y = 0.4;
 
     useFrame((_, delta) => {
-      // 1. Define the visualization condition based on your requirements
-      const isVisualizing = texSink !== null && !hasPendingChanges && !status.loading;
-      
-      // 2. Set Target: 1 = Expanded, 0 = Collapsed/Closed
+      // Expand ONLY if we have results, we are NOT loading, and there are NO pending changes.
+      const isVisualizing = texSink !== null && !status.loading && !hasPendingChanges;
+
       const targetExpansion = isVisualizing ? 1 : 0;
 
-      // 3. Smoothly damp the current expansion value
       currentExpansion.current = THREE.MathUtils.damp(
         currentExpansion.current,
         targetExpansion,
-        3.0, // Animation speed
+        3.0,
         delta
       );
 
       const t = currentExpansion.current;
 
-      // 4. Update Positions (Lerp from Closed to Open)
-      if (sinkRef.current) {
-        // Collapsed: -0.2 (Touching bottom of base) -> Expanded: -0.6
-        sinkRef.current.position.y = THREE.MathUtils.lerp(-0.24, SINK_TARGET_Y, t);
-      }
-      if (baseRef.current) {
-        // Base stays centered at 0
-        baseRef.current.position.y = THREE.MathUtils.lerp(0, BASE_TARGET_Y, t);
-      }
-      if (cpvRef.current) {
-        // Collapsed: 0.16 (Touching top of base) -> Expanded: 0.4
-        cpvRef.current.position.y = THREE.MathUtils.lerp(0.16, CPV_TARGET_Y, t);
-      }
+      if (sinkRef.current) sinkRef.current.position.y = THREE.MathUtils.lerp(-0.24, SINK_TARGET_Y, t);
+      if (baseRef.current) baseRef.current.position.y = THREE.MathUtils.lerp(0, BASE_TARGET_Y, t);
+      if (cpvRef.current) cpvRef.current.position.y = THREE.MathUtils.lerp(0.16, CPV_TARGET_Y, t);
     });
 
     // --- HOVER LOGIC ---
     const handlePointerMove = useCallback(
       (e: any, textures: LayerTextures | null) => {
-        if (!textures || hasPendingChanges || status.loading) return;
+        // Only hover if active visualization
+        if (!textures || status.loading || hasPendingChanges) return;
         e.stopPropagation();
 
         const matIndex = e.face?.materialIndex;
@@ -342,7 +459,6 @@ const ThermalBox = memo(
         const r = image.data[index];
         const g = image.data[index + 1];
 
-        // Reconstruct value from color (Worker encoding logic)
         let normVal = 0;
         const rn = r / 255;
         const gn = g / 255;
@@ -353,8 +469,7 @@ const ThermalBox = memo(
           normVal = rn / 2.0;
         }
 
-        const actualTemp =
-          normVal * (tempRange.max - tempRange.min) + tempRange.min;
+        const actualTemp = normVal * (tempRange.max - tempRange.min) + tempRange.min;
         onUpdateStats({ hoverTemp: actualTemp });
       },
       [status.loading, hasPendingChanges, tempRange, onUpdateStats]
@@ -364,32 +479,13 @@ const ThermalBox = memo(
       onUpdateStats({ hoverTemp: null });
     }, [onUpdateStats]);
 
-    // --- MEMOIZED GEOMETRIES/MATERIALS (Performance) ---
-    // Prevent creating new geometries/materials in the loop for Fallback mode
+    // --- MEMOIZED ASSETS ---
     const fallbackMaterials = useMemo(() => {
       return {
-        sink: new THREE.MeshStandardMaterial({
-          color: "#A0A0A0",
-          roughness: 0.5,
-          metalness: 0.6,
-        }),
-        base: new THREE.MeshStandardMaterial({
-          color: "#9e5b54",
-          emissive: "#9e5b54",
-          emissiveIntensity: 0.4,
-          roughness: 0.3,
-          metalness: 0.2,
-        }),
-        cpvSubstrate: new THREE.MeshStandardMaterial({
-          color: "#ffffff",
-          roughness: 0.2,
-          metalness: 0.6,
-        }),
-        cpvCell: new THREE.MeshStandardMaterial({
-          color: "#1a237e",
-          roughness: 0.2,
-          metalness: 0.5,
-        }),
+        sink: new THREE.MeshStandardMaterial({ color: "#A0A0A0", roughness: 0.5, metalness: 0.6 }),
+        base: new THREE.MeshStandardMaterial({ color: "#9e5b54", emissive: "#9e5b54", emissiveIntensity: 0.4, roughness: 0.3, metalness: 0.2 }),
+        cpvSubstrate: new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.2, metalness: 0.6 }),
+        cpvCell: new THREE.MeshStandardMaterial({ color: "#1a237e", roughness: 0.2, metalness: 0.5 }),
       };
     }, []);
 
@@ -439,35 +535,18 @@ const ThermalBox = memo(
             </mesh>
           ) : (
             <group>
-              <mesh
-                position={[0, 0.04, 0]}
-                geometry={fallbackGeos.sinkMain}
-                material={fallbackMaterials.sink}
-              />
+              <mesh position={[0, 0.04, 0]} geometry={fallbackGeos.sinkMain} material={fallbackMaterials.sink} />
               {Array.from({ length: 15 }).map((_, i) => {
                 const spacing = PLATE_WIDTH / 15;
                 const pos = -PLATE_WIDTH / 2 + spacing / 2 + i * spacing;
                 return (
-                  <mesh
-                    key={i}
-                    position={[pos, -0.02, 0]}
-                    geometry={fallbackGeos.sinkFin}
-                    material={fallbackMaterials.sink}
-                  />
+                  <mesh key={i} position={[pos, -0.02, 0]} geometry={fallbackGeos.sinkFin} material={fallbackMaterials.sink} />
                 );
               })}
             </group>
           )}
           <Html position={[0.8, 0, 0]} center>
-            <div
-              style={{
-                ...annotationStyle,
-                opacity: status.loading ? "0" : "100",
-                transition: "opacity 0.2s",
-              }}
-            >
-              Al
-            </div>
+            <div style={{ ...annotationStyle, opacity: status.loading ? "0" : "100", transition: "opacity 0.2s" }}>Al</div>
           </Html>
         </group>
 
@@ -496,15 +575,7 @@ const ThermalBox = memo(
             )}
           </mesh>
           <Html position={[0.8, 0, 0]} center>
-            <div
-              style={{
-                ...annotationStyle,
-                opacity: status.loading ? "0" : "100",
-                transition: "opacity 0.2s",
-              }}
-            >
-              Cu
-            </div>
+            <div style={{ ...annotationStyle, opacity: status.loading ? "0" : "100", transition: "opacity 0.2s" }}>Cu</div>
           </Html>
         </group>
 
@@ -530,33 +601,22 @@ const ThermalBox = memo(
             </mesh>
           ) : (
             <group>
-              <mesh
-                geometry={fallbackGeos.cpvSubstrate}
-                material={fallbackMaterials.cpvSubstrate}
-              />
+              <mesh geometry={fallbackGeos.cpvSubstrate} material={fallbackMaterials.cpvSubstrate} />
+              
               {/* CPV Cells Logic */}
               {(() => {
-                const n = visualMatrixSize;
+                const n = visMatrixSize;
                 const cellSpacing = (PLATE_WIDTH * 0.9) / n;
                 const startOffset = -((n - 1) * cellSpacing) / 2;
                 const cells = [];
-                // Create geometry once for this size
-                const cellGeo = new THREE.BoxGeometry(
-                  cellSpacing * 0.8,
-                  0.01,
-                  cellSpacing * 0.8
-                );
+                const cellGeo = new THREE.BoxGeometry(cellSpacing * 0.8, 0.01, cellSpacing * 0.8);
 
                 for (let x = 0; x < n; x++) {
                   for (let z = 0; z < n; z++) {
                     cells.push(
                       <mesh
                         key={`${x}-${z}`}
-                        position={[
-                          startOffset + x * cellSpacing,
-                          0.02,
-                          startOffset + z * cellSpacing,
-                        ]}
+                        position={[startOffset + x * cellSpacing, 0.02, startOffset + z * cellSpacing]}
                         geometry={cellGeo}
                         material={fallbackMaterials.cpvCell}
                       />
@@ -565,18 +625,19 @@ const ThermalBox = memo(
                 }
                 return cells;
               })()}
+
+              {/* GAUSSIAN PREVIEW - Only shown when in "Setup/Pending" mode and toggle ON */}
+              {showGaussian && (
+                <GaussianOverlay 
+                    fwhm={visFwhm} 
+                    matrixSize={visMatrixSize} 
+                    magicArea={visMagicArea} 
+                />
+              )}
             </group>
           )}
           <Html position={[0.8, 0, 0]} center>
-            <div
-              style={{
-                ...annotationStyle,
-                opacity: status.loading ? "0" : "100",
-                transition: "opacity 0.2s",
-              }}
-            >
-              Si+Ag
-            </div>
+            <div style={{ ...annotationStyle, opacity: status.loading ? "0" : "100", transition: "opacity 0.2s" }}>Si+Ag</div>
           </Html>
         </group>
       </group>
@@ -596,10 +657,13 @@ export default function ThermalPage() {
     loading: false,
   });
 
+  // UI STATE (Visual params driven by sliders)
   const [uiFocusOffset, setUiFocusOffset] = useState(-1.5);
   const [uiMatrixSize, setUiMatrixSize] = useState(5);
   const [uiMagicArea, setUiMagicArea] = useState(75);
+  const [showGaussian, setShowGaussian] = useState(false);
 
+  // SIMULATION STATE (Active params driven by Run button)
   const [activeParams, setActiveParams] = useState<{
     focusOffset: number;
     matrixSize: number;
@@ -614,6 +678,17 @@ export default function ThermalPage() {
   }, [uiFocusOffset]);
 
   const handleRunSimulation = () => {
+    // 1. Force loading state immediately in Parent
+    setSimStats((prev) => ({
+        ...prev,
+        loading: true,
+        status: "Calculating...",
+        // Reset old results
+        maxTemp: 0,
+        pElectric: 0,
+    }));
+
+    // 2. Trigger worker
     setActiveParams({
       focusOffset: uiFocusOffset,
       matrixSize: uiMatrixSize,
@@ -630,25 +705,28 @@ export default function ThermalPage() {
     setSimStats((prev) => ({ ...prev, ...stats }));
   }, []);
 
+  // Determine if UI differs from Active
   useEffect(() => {
+    if (!activeParams) {
+        setHasPendingChanges(false); 
+        return;
+    }
     setHasPendingChanges(
-      !activeParams ||
-        uiFocusOffset !== activeParams.focusOffset ||
-        uiMatrixSize !== activeParams.matrixSize ||
-        uiMagicArea !== activeParams.magicArea
+      uiFocusOffset !== activeParams.focusOffset ||
+      uiMatrixSize !== activeParams.matrixSize ||
+      uiMagicArea !== activeParams.magicArea
     );
   }, [uiFocusOffset, uiMatrixSize, uiMagicArea, activeParams]);
 
   return (
     <div className="relative w-full h-full bg-black overflow-hidden rounded-2xl">
       {/* --- HEADER --- */}
-      {/* OPTIMIZATION: Replaced backdrop-blur with bg-neutral-900 (solid color for performance) */}
-      <div className="absolute w-full top-0 left-0 px-8 py-3 z-50 pointer-events-none select-none flex justify-between items-center transition-all duration-1000 ease-out border-b border-white/10 bg-neutral-900 shadow-2xl">
+      <div className="absolute w-full top-0 left-0 px-8 py-5 z-50 pointer-events-none select-none flex justify-between items-center transition-all duration-1000 ease-out border-b border-white/10 bg-neutral-900 shadow-2xl">
         <div className="flex flex-col">
           <h1 className="text-2xl md:text-3xl font-bold tracking-tighter text-white drop-shadow-md">
             STARRY SKY
           </h1>
-          <div className="flex items-center gap-2 text-[10px] md:text-xs font-medium text-cyan-400 uppercase tracking-widest">
+          <div className="flex items-center gap-2 text-[10px] md:text-xs font-medium text-cyan-400 uppercase tracking-widest mt-1">
             <span className="opacity-80">Aissam Khadraoui</span>
             <span className="text-white/20">•</span>
             <span className="opacity-80">Candela García</span>
@@ -712,10 +790,9 @@ export default function ThermalPage() {
       </div>
 
       {/* --- 3D SCENE --- */}
-      {/* OPTIMIZATION: dpr=1, performance preference, stencil/depth tuning */}
       <Canvas
         shadows
-        dpr={[1,2]}
+        dpr={1}
         gl={{
           powerPreference: "high-performance",
           antialias: true,
@@ -723,7 +800,6 @@ export default function ThermalPage() {
           depth: true,
         }}
       >
-        <Stats />
         <color attach="background" args={["#ffffff"]} />
         <PerspectiveCamera makeDefault position={[4, 0, 0]} fov={40} />
         <OrbitControls
@@ -735,7 +811,6 @@ export default function ThermalPage() {
           panSpeed={1.0}
         />
         <ambientLight intensity={0.5} />
-        {/* OPTIMIZATION: Reduced shadow map size and added bias */}
         <directionalLight
           shadow-mapSize={[512, 512]}
           shadow-bias={-0.0001}
@@ -746,12 +821,19 @@ export default function ThermalPage() {
         />
 
         <ThermalBox
-          matrixSize={activeParams?.matrixSize ?? null}
-          visualMatrixSize={uiMatrixSize}
-          focusOffset={activeParams?.focusOffset ?? null}
-          magicArea={activeParams?.magicArea ?? null}
+          // SIMULATION PARAMS (Worker) - Linked to Run button
+          simMatrixSize={activeParams?.matrixSize ?? null}
+          simFocusOffset={activeParams?.focusOffset ?? null}
+          simMagicArea={activeParams?.magicArea ?? null}
+          
+          // VISUALIZATION PARAMS (UI) - Linked to Sliders
+          visMatrixSize={uiMatrixSize}
+          visFocusOffset={uiFocusOffset}
+          visMagicArea={uiMagicArea}
+          
           hasPendingChanges={hasPendingChanges}
           status={simStats}
+          showGaussian={showGaussian}
           onUpdateStats={onUpdateStats}
         />
       </Canvas>
@@ -789,6 +871,17 @@ export default function ThermalPage() {
           onDec={() => setUiMagicArea((p) => Math.max(p - 5, 10))}
           onInc={() => setUiMagicArea((p) => Math.min(p + 5, 240))}
         />
+
+        {/* TOGGLE LOGIC: Show if Stopped OR if Running but has pending changes */}
+        {!simStats.loading && (!activeParams || hasPendingChanges) && (
+          <div className="w-full">
+            <ToggleRow
+              label="Veure Distribució"
+              checked={showGaussian}
+              onChange={setShowGaussian}
+            />
+          </div>
+        )}
 
         <button
           onClick={simStats.loading ? undefined : handleRunSimulation}
@@ -862,7 +955,7 @@ export default function ThermalPage() {
           {activeParams &&
           simStats.maxTemp > 0 &&
           simStats.status !== "Stopped" &&
-          !simStats.loading ? (
+          !simStats.loading && !hasPendingChanges ? (
             <>
               <StatItem
                 label="Temp. Màxima"
@@ -895,17 +988,17 @@ export default function ThermalPage() {
                 </div>
                 <div className="text-right">
                   <p className="text-[9px] text-yellow-300/70 uppercase tracking-wider mb-0.5">
-                    FWHM
+                    FWHM (Sim)
                   </p>
                   <p className="font-mono text-sm text-yellow-200/80">
-                    {displayFwhm.toFixed(3)} m
+                    {activeParams ? ((Math.abs(activeParams.focusOffset)/2.5 * 0.5) + 0.1).toFixed(3) : "-"} m
                   </p>
                 </div>
               </div>
             </>
           ) : (
             <div className="col-span-2 py-6 text-center text-xs text-gray-500 italic border border-dashed border-white/10 rounded-lg">
-              Inicieu la simulació per veure resultats tèrmics.
+              {hasPendingChanges ? "Paràmetres modificats. Executeu la simulació." : "Inicieu la simulació per veure resultats tèrmics."}
             </div>
           )}
         </div>

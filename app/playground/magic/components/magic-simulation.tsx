@@ -17,7 +17,6 @@ import {
   Instances,
   Instance,
   useTexture,
-  Stats,
 } from "@react-three/drei";
 import * as THREE from "three";
 import Link from "next/link";
@@ -685,7 +684,7 @@ const GaussianPlot = ({
   const sigma =
     SIGMA_MIN +
     (SIGMA_MAX - SIGMA_MIN) * (Math.abs(focusOffset) / OFFSET_RANGE);
-  const amplitude = 1 / matrixSize;
+  const amplitude = 1 / (matrixSize * matrixSize);
   const spacing = 0.8;
   const width = 220;
   const height = 140;
@@ -910,7 +909,6 @@ export default function TelescopePage() {
           }}
         >
           <color attach="background" args={["#000000"]} />
-          <Stats />
           <PerspectiveCamera makeDefault position={[30, 20, 30]} fov={50} />
           <OrbitControls
             makeDefault
