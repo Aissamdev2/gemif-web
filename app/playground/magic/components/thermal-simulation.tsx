@@ -14,7 +14,7 @@ import {
   PerspectiveCamera,
   Environment,
   ContactShadows,
-  Html, // Import Html for tags
+  Html,
 } from "@react-three/drei";
 import * as THREE from "three";
 
@@ -25,30 +25,6 @@ const FOCUS_OFFSET_MIN = -3.5;
 const FOCUS_OFFSET_MAX = 0;
 const MATRIX_SIZE_MIN = 1;
 const MATRIX_SIZE_MAX = 5;
-
-// WASM Import
-import init, { run_thermal_simulation } from "../wasm-embeddings/v3/solar.js";
-
-const tempColor = new THREE.Color();
-
-// Helper to generate heatmap gradients
-function updateHeatColor(t: number, targetArray: Uint8Array, offset: number) {
-  const val = Math.min(Math.max(t, 0), 1);
-
-  // Gradient: Black -> Red -> White
-  if (val < 0.5) {
-    const intensity = val * 2;
-    tempColor.setRGB(intensity, 0, 0);
-  } else {
-    const intensity = (val - 0.5) * 2;
-    tempColor.setRGB(1, intensity, intensity);
-  }
-
-  targetArray[offset] = tempColor.r * 255;
-  targetArray[offset + 1] = tempColor.g * 255;
-  targetArray[offset + 2] = tempColor.b * 255;
-  targetArray[offset + 3] = 255;
-}
 
 type LayerTextures = [
   THREE.Texture,
@@ -66,23 +42,50 @@ interface SimStats {
   loading: boolean;
 }
 
+// Helper to reconstruct textures from Worker data
+const createTexturesFromData = (dataArray: any[6]): LayerTextures => {
+  return dataArray.map((item: any) => {
+    const tex = new THREE.DataTexture(item.data, item.width, item.height);
+    tex.format = THREE.RGBAFormat;
+    tex.type = THREE.UnsignedByteType;
+    tex.magFilter = THREE.LinearFilter;
+    tex.minFilter = THREE.LinearFilter;
+    tex.needsUpdate = true;
+    return tex;
+  }) as LayerTextures;
+};
+
 // --- 3D COMPONENT: THERMAL BOX ---
 const ThermalBox = ({
   matrixSize,
+  visualMatrixSize, // NEW PROP
   focusOffset,
   magicArea,
+  hasPendingChanges,
   status,
   onUpdateStats,
 }: {
   matrixSize: number | null;
+  visualMatrixSize: number; // NEW PROP TYPE
   focusOffset: number | null;
   magicArea: number | null;
+  hasPendingChanges: boolean;
   status: SimStats;
   onUpdateStats: (stats: Partial<SimStats>) => void;
 }) => {
   const [texSink, setTexSink] = useState<LayerTextures | null>(null);
   const [texBase, setTexBase] = useState<LayerTextures | null>(null);
   const [texCPV, setTexCPV] = useState<LayerTextures | null>(null);
+  const [split, setSplit] = useState(false);
+
+  // Animation Refs
+  const sinkRef = useRef<THREE.Group>(null);
+  const baseRef = useRef<THREE.Group>(null);
+  const cpvRef = useRef<THREE.Group>(null);
+
+  // Animation State: 0 = Stacked, 1 = Split
+  const targetExpansion = useRef(0);
+  const currentExpansion = useRef(0);
 
   const fwhm = useMemo(() => {
     if (focusOffset === null) return 0.1;
@@ -90,151 +93,115 @@ const ThermalBox = ({
     return 0.1 + ratio * 0.5;
   }, [focusOffset]);
 
-  // Init WASM
+  // Initial Expand on Mount
   useEffect(() => {
-    init()
-      .then(() => onUpdateStats({ status: "Ready" }))
-      .catch((err) => {
-        console.error("Failed to load WASM:", err);
-        onUpdateStats({ status: "Error Loading WASM" });
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Start collapsed, then expand immediately
+    currentExpansion.current = 0;
+    targetExpansion.current = 1;
   }, []);
 
-  // Simulation Logic
+  // Worker Reference
+  const workerRef = useRef<Worker | null>(null);
+
   useEffect(() => {
-    // If params are null, it means we stopped or haven't started.
-    // We do NOT clear the textures here so the last result stays visible,
-    // unless you prefer to reset them. For now, let's keep them if they exist.
+    // Initialize Worker
+    // NOTE: Adjust path './thermal.worker.js' to where you saved the file
+    workerRef.current = new Worker(
+      new URL("../logic/thermal.worker.js", import.meta.url)
+    );
+
+    workerRef.current.onmessage = (e) => {
+      const { status, stats, sinkData, baseData, cpvData, error } = e.data;
+
+      if (status === "error") {
+        console.error("Worker Error:", error);
+        onUpdateStats({ loading: false, status: "Error" });
+        return;
+      }
+
+      // 1. Update Textures (Main Thread)
+      setTexSink(createTexturesFromData(sinkData));
+      setTexBase(createTexturesFromData(baseData));
+      setTexCPV(createTexturesFromData(cpvData));
+
+      // 2. Update Stats
+      onUpdateStats({
+        maxTemp: stats.maxTemp,
+        pElectric: stats.pElectric,
+        loading: false,
+        status: "Done",
+      });
+
+      setSplit(prev => !prev);
+    };
+
+    return () => {
+      workerRef.current?.terminate();
+    };
+  }, [onUpdateStats]);
+
+  // Initial Expand on Mount
+  useEffect(() => {
+    // Start collapsed
+    currentExpansion.current = 0;
+    targetExpansion.current = 0;
+
+    // Add 1.5 second delay before initial split
+    const timer = setTimeout(() => {
+      targetExpansion.current = 1;
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [split]);
+
+  // Simulation Logic Trigger
+  useEffect(() => {
     if (matrixSize === null || magicArea === null || focusOffset === null) {
       return;
     }
 
     onUpdateStats({ loading: true, status: "Calculating..." });
 
-    // Timeout allows UI to update before blocking
-    const timer = setTimeout(() => {
-      try {
-        const result = run_thermal_simulation(fwhm, magicArea, matrixSize);
+    const relativePath = new URL('../wasm-embeddings/v3/solar_bg.wasm', import.meta.url).toString();
+    const wasmUrl = new URL(relativePath, window.location.origin).href;
+    console.log("WASM URL:", wasmUrl);
 
-        onUpdateStats({
-          maxTemp: result.get_t_max(),
-          pElectric: result.get_p_elec(),
-          loading: false,
-          status: "Done",
-        });
-
-        // --- Texture Generation Logic (Same as before) ---
-        const nx = result.get_nx();
-        const ny = result.get_ny();
-        const nz = result.get_nz();
-        const tempArray = result.get_t_3d();
-
-        let gMin = Infinity;
-        let gMax = -Infinity;
-        const len = tempArray.length;
-        for (let i = 0; i < len; i++) {
-          const val = tempArray[i];
-          if (val < gMin) gMin = val;
-          if (val > gMax) gMax = val;
-        }
-        const range = Math.max(gMax - gMin, 0.1);
-
-        const generateXYTexture = (zIndex: number) => {
-          const fullNx = nx * 2;
-          const fullNy = ny * 2;
-          const dataSize = fullNx * fullNy * 4;
-          const textureData = new Uint8Array(dataSize);
-          const zOffset = zIndex * nx * ny;
-
-          for (let j = 0; j < ny; j++) {
-            for (let i = 0; i < nx; i++) {
-              const val = tempArray[zOffset + j * nx + i];
-              const norm = (val - gMin) / range;
-              const row1 = (ny + j) * fullNx;
-              const row2 = (ny - 1 - j) * fullNx;
-              const col1 = nx + i;
-              const col2 = nx - 1 - i;
-              updateHeatColor(norm, textureData, (row1 + col1) * 4);
-              updateHeatColor(norm, textureData, (row1 + col2) * 4);
-              updateHeatColor(norm, textureData, (row2 + col2) * 4);
-              updateHeatColor(norm, textureData, (row2 + col1) * 4);
-            }
-          }
-          const tex = new THREE.DataTexture(textureData, fullNx, fullNy);
-          tex.format = THREE.RGBAFormat;
-          tex.type = THREE.UnsignedByteType;
-          tex.magFilter = THREE.LinearFilter;
-          tex.minFilter = THREE.LinearFilter;
-          tex.needsUpdate = true;
-          return tex;
-        };
-
-        const generateSideTexture = (
-          zStart: number,
-          zEnd: number,
-          isXFace: boolean
-        ) => {
-          const depth = zEnd - zStart + 1;
-          const width = isXFace ? nx * 2 : ny * 2;
-          const dataSize = width * depth * 4;
-          const textureData = new Uint8Array(dataSize);
-
-          for (let k = 0; k < depth; k++) {
-            const zIdx = zStart + k;
-            const zOffset = zIdx * nx * ny;
-            const quarterDim = isXFace ? nx : ny;
-            const rowOffset = k * width;
-
-            for (let q = 0; q < quarterDim; q++) {
-              let val;
-              if (isXFace) val = tempArray[zOffset + (ny - 1) * nx + q];
-              else val = tempArray[zOffset + q * nx + (nx - 1)];
-
-              const norm = (val - gMin) / range;
-              const idxRight = (rowOffset + (quarterDim + q)) * 4;
-              const idxLeft = (rowOffset + (quarterDim - 1 - q)) * 4;
-              updateHeatColor(norm, textureData, idxRight);
-              updateHeatColor(norm, textureData, idxLeft);
-            }
-          }
-          const tex = new THREE.DataTexture(textureData, width, depth);
-          tex.format = THREE.RGBAFormat;
-          tex.type = THREE.UnsignedByteType;
-          tex.magFilter = THREE.LinearFilter;
-          tex.minFilter = THREE.LinearFilter;
-          tex.needsUpdate = true;
-          return tex;
-        };
-
-        const buildLayerSet = (zStart: number, zEnd: number): LayerTextures => {
-          const texTop = generateXYTexture(zEnd);
-          const texBottom = generateXYTexture(zStart);
-          const texFrontBack = generateSideTexture(zStart, zEnd, true);
-          const texRightLeft = generateSideTexture(zStart, zEnd, false);
-          return [
-            texRightLeft,
-            texRightLeft,
-            texTop,
-            texBottom,
-            texFrontBack,
-            texFrontBack,
-          ];
-        };
-
-        setTexSink(buildLayerSet(0, 4));
-        setTexBase(buildLayerSet(5, 12));
-        setTexCPV(buildLayerSet(13, nz - 1));
-
-        result.free();
-      } catch (e) {
-        console.error("Simulation failed:", e);
-        onUpdateStats({ loading: false, status: "Error" });
-      }
-    }, 100); // 100ms delay to allow UI update before lock
-
-    return () => clearTimeout(timer);
+    // Send data to worker
+    workerRef.current?.postMessage({
+      fwhm,
+      magicArea,
+      wasmUrl,
+      matrixSize,
+    });
   }, [fwhm, magicArea, matrixSize, focusOffset, onUpdateStats]);
+
+  // --- ANIMATION LOOP ---
+  // Define geometry constants
+  const SINK_TARGET_Y = -0.6;
+  const BASE_TARGET_Y = 0;
+  const CPV_TARGET_Y = 0.4;
+
+  useFrame((state, delta) => {
+    // Smoothly interpolate currentExpansion towards targetExpansion
+    // Speed factor: 4.0
+    currentExpansion.current = THREE.MathUtils.damp(
+      currentExpansion.current,
+      targetExpansion.current,
+      3.0,
+      delta
+    );
+
+    const t = currentExpansion.current;
+
+    // Interpolate positions based on t (0 = Center/Stacked, 1 = Target/Split)
+    // We assume 'Stacked' is at y=0 for all (or very close)
+    if (sinkRef.current)
+      sinkRef.current.position.y = THREE.MathUtils.lerp(texSink ? -0.20 : -0.25, SINK_TARGET_Y, t);
+    if (baseRef.current)
+      baseRef.current.position.y = THREE.MathUtils.lerp(0, BASE_TARGET_Y, t);
+    if (cpvRef.current)
+      cpvRef.current.position.y = THREE.MathUtils.lerp(0.16, CPV_TARGET_Y, t);
+  });
 
   // Annotation Style
   const annotationStyle = {
@@ -249,119 +216,189 @@ const ThermalBox = ({
     pointerEvents: "none" as const,
   };
 
-  // Define geometry constants for cleaner JSX
-  const SINK_POS: [number, number, number] = [0, -0.6, 0];
-  const BASE_POS: [number, number, number] = [0, 0, 0];
-  const CPV_POS: [number, number, number] = [0, 0.4, 0];
-
   return (
     <group rotation={[Math.PI / 6, Math.PI / 4, 0]} position={[0, 0, 0]}>
       {/* --- LAYER 1: SINK (Aluminum) --- */}
-      <mesh position={SINK_POS}>
-        <boxGeometry args={[PLATE_WIDTH, 0.1, PLATE_DEPTH]} />
-        {texSink ? (
-          texSink.map((tex, i) => (
-            <meshStandardMaterial
-              key={i}
-              attach={`material-${i}`}
-              emissiveMap={tex}
-              emissiveIntensity={2.0}
-              emissive="white"
-              roughness={0.4}
-              metalness={0.2}
-              color="gray"
-            />
-          ))
+      <group ref={sinkRef} position={[0, 0, 0]}>
+        {/* If texture exists, show Heatmap Mesh. If not, show Physical Model with Fins */}
+        {texSink && !hasPendingChanges && !status.loading  ? (
+          <mesh>
+            <boxGeometry args={[PLATE_WIDTH, 0.1, PLATE_DEPTH]} />
+            {texSink.map((tex, i) => (
+              <meshStandardMaterial
+                key={i}
+                attach={`material-${i}`}
+                emissiveMap={tex}
+                emissiveIntensity={2.0}
+                emissive="white"
+                roughness={0.4}
+                metalness={0.2}
+                color="gray"
+              />
+            ))}
+          </mesh>
         ) : (
-          // Default Aluminum Look
-          <meshStandardMaterial
-            color="#A0A0A0"
-            roughness={0.3}
-            metalness={0.8}
-          />
+          // PHYSICAL MODEL: Heatsink with Fins
+          <group>
+            {/* Base Plate of Sink */}
+            <mesh position={[0, 0.04, 0]}>
+              <boxGeometry args={[PLATE_WIDTH, 0.1, PLATE_DEPTH]} />
+              <meshStandardMaterial
+                color="#A0A0A0"
+                roughness={0.5}
+                metalness={0.6}
+              />
+            </mesh>
+            {/* Fins Generation */}
+            {Array.from({ length: 15 }).map((_, i) => {
+              const spacing = PLATE_WIDTH / 15;
+              const pos = -PLATE_WIDTH / 2 + spacing / 2 + i * spacing;
+              return (
+                <mesh key={i} position={[pos, -0.02, 0]}>
+                  <boxGeometry args={[0.02, 0.1, PLATE_DEPTH]} />
+                  <meshStandardMaterial
+                    color="#A0A0A0"
+                    roughness={0.5}
+                    metalness={0.6}
+                  />
+                </mesh>
+              );
+            })}
+          </group>
         )}
+
         <Html position={[0.8, 0, 0]} center>
           <div
             style={{
               ...annotationStyle,
               opacity: status.loading ? "0" : "100",
+              transition: "opacity 0.2s",
             }}
           >
             Al
           </div>
         </Html>
-      </mesh>
+      </group>
 
       {/* --- LAYER 2: BASE (Copper) --- */}
-      <mesh position={BASE_POS}>
-        <boxGeometry args={[PLATE_WIDTH, 0.3, PLATE_DEPTH]} />
-        {texBase ? (
-          texBase.map((tex, i) => (
+      <group ref={baseRef} position={[0, 0, 0]}>
+        <mesh>
+          <boxGeometry args={[PLATE_WIDTH, 0.3, PLATE_DEPTH]} />
+          {texBase && !hasPendingChanges && !status.loading ? (
+            texBase.map((tex, i) => (
+              <meshStandardMaterial
+                key={i}
+                attach={`material-${i}`}
+                emissiveMap={tex}
+                emissiveIntensity={0.4}
+                emissive="white"
+                roughness={0.3}
+                metalness={0.5}
+                color="#8B4513"
+              />
+            ))
+          ) : (
             <meshStandardMaterial
-              key={i}
-              attach={`material-${i}`}
-              emissiveMap={tex}
-              emissiveIntensity={2.0}
-              emissive="white"
+              color="#9e5b54"
+              emissive="#9e5b54"
+              emissiveIntensity={0.4}
               roughness={0.3}
-              metalness={0.5}
-              color="#8B4513"
+              metalness={0.2}
             />
-          ))
-        ) : (
-          // Default Copper Look
-          <meshStandardMaterial
-            color="#B87333"
-            roughness={0.3}
-            metalness={0.8}
-          />
-        )}
+          )}
+        </mesh>
         <Html position={[0.8, 0, 0]} center>
           <div
             style={{
               ...annotationStyle,
               opacity: status.loading ? "0" : "100",
+              transition: "opacity 0.2s",
             }}
           >
             Cu
           </div>
         </Html>
-      </mesh>
+      </group>
 
-      {/* --- LAYER 3: CPV (Silicon) --- */}
-      <mesh position={CPV_POS}>
-        <boxGeometry args={[PLATE_WIDTH, 0.02, PLATE_DEPTH]} />
-        {texCPV ? (
-          texCPV.map((tex, i) => (
-            <meshStandardMaterial
-              key={i}
-              attach={`material-${i}`}
-              emissiveMap={tex}
-              emissiveIntensity={2.0}
-              emissive="white"
-              roughness={0.5}
-              color="gray"
-            />
-          ))
+      {/* --- LAYER 3: CPV (Silicon + Ag) --- */}
+      <group ref={cpvRef} position={[0, 0, 0]}>
+        {texCPV && !hasPendingChanges && !status.loading ? (
+          // HEATMAP VISUALIZATION
+          <mesh>
+            <boxGeometry args={[PLATE_WIDTH, 0.02, PLATE_DEPTH]} />
+            {texCPV.map((tex, i) => (
+              <meshStandardMaterial
+                key={i}
+                attach={`material-${i}`}
+                emissiveMap={tex}
+                emissiveIntensity={2.0}
+                emissive="white"
+                roughness={0.5}
+                color="gray"
+              />
+            ))}
+          </mesh>
         ) : (
-          // Default Silicon Look
-          <meshStandardMaterial
-            color="#aaaaaa"
-            roughness={0.2}
-            metalness={0.5}
-          />
+          // PHYSICAL MODEL: Polished Silver + CPV Cells
+          <group>
+            {/* Polished Silver Substrate */}
+            <mesh>
+              <boxGeometry args={[PLATE_WIDTH, 0.02, PLATE_DEPTH]} />
+              <meshStandardMaterial
+                color="#ffffff"   
+                roughness={0.2}
+                metalness={0.6} // Reduced from 1.0 to ensure visibility without EnvMap
+              />
+            </mesh>
+
+            {/* CPV Cells Matrix */}
+            {(() => {
+              // USE visualMatrixSize HERE instead of matrixSize
+              const n = visualMatrixSize; 
+              const cellSpacing = (PLATE_WIDTH * 0.9) / n; 
+              const startOffset = -((n - 1) * cellSpacing) / 2;
+              const cells = [];
+
+              for (let x = 0; x < n; x++) {
+                for (let z = 0; z < n; z++) {
+                  cells.push(
+                    <mesh
+                      key={`${x}-${z}`}
+                      position={[
+                        startOffset + x * cellSpacing,
+                        0.02, 
+                        startOffset + z * cellSpacing,
+                      ]}
+                    >
+                      <boxGeometry
+                        args={[cellSpacing * 0.8, 0.01, cellSpacing * 0.8]}
+                      />
+                      <meshStandardMaterial
+                        color="#1a237e" 
+                        roughness={0.2}
+                        metalness={0.5}
+                      />
+                    </mesh>
+                  );
+                }
+              }
+              return cells;
+            })()}
+          </group>
         )}
+
         <Html position={[0.8, 0, 0]} center>
           <div
             style={{
               ...annotationStyle,
               opacity: status.loading ? "0" : "100",
+              transition: "opacity 0.2s",
             }}
           >
             Si+Ag
           </div>
         </Html>
-      </mesh>
+      </group>
     </group>
   );
 };
@@ -385,6 +422,8 @@ export default function ThermalPage() {
     magicArea: number;
   } | null>(null);
 
+  const [hasPendingChanges, setHasPendingChanges] = useState(false)
+
   const displayFwhm = useMemo(() => {
     const ratio = Math.abs(uiFocusOffset) / 2.5;
     return 0.1 + ratio * 0.5;
@@ -399,7 +438,6 @@ export default function ThermalPage() {
   };
 
   const handleStopSimulation = () => {
-    // Setting activeParams to null triggers cleanup in ThermalBox useEffect
     setActiveParams(null);
     setSimStats((prev) => ({ ...prev, loading: false, status: "Stopped" }));
   };
@@ -408,11 +446,17 @@ export default function ThermalPage() {
     setSimStats((prev) => ({ ...prev, ...stats }));
   }, []);
 
-  const hasPendingChanges =
-    !activeParams ||
-    uiFocusOffset !== activeParams.focusOffset ||
-    uiMatrixSize !== activeParams.matrixSize ||
-    uiMagicArea !== activeParams.magicArea;
+
+  useEffect(() => {
+    setHasPendingChanges(prev => {
+      return !activeParams ||
+        uiFocusOffset !== activeParams.focusOffset ||
+        uiMatrixSize !== activeParams.matrixSize ||
+        uiMagicArea !== activeParams.magicArea;
+    })
+  }, [uiFocusOffset, uiMatrixSize, uiMagicArea, activeParams])
+
+    
 
   return (
     <div className="relative w-full h-full bg-gray-900">
@@ -436,7 +480,6 @@ export default function ThermalPage() {
       </div>
 
       {/* --- STARRY SKY LOADING OVERLAY --- */}
-      {/* Only visible when loading is true */}
       <div
         className={`absolute inset-0 z-40 flex items-center justify-center bg-gray-700/70 pointer-events-none transition-all duration-500 ${
           simStats.loading
@@ -455,8 +498,8 @@ export default function ThermalPage() {
       </div>
 
       <Canvas shadows dpr={[1, 2]}>
-        <color attach="background" args={["#ccc"]} />
-        <PerspectiveCamera makeDefault position={[5, 5, 5]} fov={50} />
+        <color attach="background" args={["#c4faff"]} />
+        <PerspectiveCamera makeDefault position={[4, 0, 0]} fov={40} />
         <OrbitControls
           makeDefault
           minDistance={2}
@@ -475,8 +518,10 @@ export default function ThermalPage() {
 
         <ThermalBox
           matrixSize={activeParams?.matrixSize ?? null}
+          visualMatrixSize={uiMatrixSize} // PASS THE LIVE UI VALUE HERE
           focusOffset={activeParams?.focusOffset ?? null}
           magicArea={activeParams?.magicArea ?? null}
+          hasPendingChanges={hasPendingChanges}
           status={simStats}
           onUpdateStats={onUpdateStats}
         />
