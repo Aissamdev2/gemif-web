@@ -7,7 +7,6 @@ const nextConfig = {
   transpilePackages: [
     'three',
   ],
-  cacheComponents: true,
 };
 
 export default nextConfig
