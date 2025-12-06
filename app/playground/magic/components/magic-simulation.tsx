@@ -70,7 +70,7 @@ export function SkySphere({ isNight }: { isNight: boolean }) {
 
   return (
     <mesh scale={[500, 500, 500]}>
-      <sphereGeometry args={[1, 64, 64, 3*Math.PI/2]} />
+      <sphereGeometry args={[1, 64, 64, (3 * Math.PI) / 2]} />
       <meshBasicMaterial
         map={texture}
         color={texture ? "white" : isNight ? "#000000" : "#0f172a"}
@@ -175,7 +175,7 @@ const DishBackFrame = () => {
 
   return (
     <group position={[0, 0, 0]}>
-      <mesh position={[0, hubDepth, 0]} >
+      <mesh position={[0, hubDepth, 0]}>
         <cylinderGeometry args={[1.2, 1.2, 0.5, 32]} />
         <meshStandardMaterial color="#333" />
       </mesh>
@@ -647,7 +647,9 @@ const GaussianPlot = ({
             </linearGradient>
           </defs>
           <path
-            d={`${pathData} L ${width - padding} ${height - padding} L ${padding} ${height - padding} Z`}
+            d={`${pathData} L ${width - padding} ${
+              height - padding
+            } L ${padding} ${height - padding} Z`}
             fill="url(#plotGradient)"
           />
           <path
@@ -788,7 +790,10 @@ export default function TelescopePage() {
               shadow-mapSize={[2048, 2048]}
               color={isNight ? "#b0c4de" : "#fffaed"}
             />
-            <Environment preset={isNight ? "night" : "park"} />
+            <Environment
+              files={"/hdri/rooitou_park_1k.hdr"}
+              background={false}
+            />
 
             <SkySphere isNight={isNight} />
             <TexturedGround isNight={isNight} />

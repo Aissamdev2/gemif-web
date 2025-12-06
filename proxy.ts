@@ -94,7 +94,7 @@ export const config = {
      * - Next.js internals (_next/static, _next/image)
      * - Common static file extensions
      */
-    '/((?!_next/static|_next/image|.*\\.(?:css|js|png|jpg|jpeg|ico|svg|xml|txt|woff|woff2|eot|ttf|otf|json)$).*)',
+    '/((?!_next/static|_next/image|.*\\.(?:css|js|png|jpg|jpeg|ico|svg|xml|txt|woff|woff2|eot|ttf|otf|json|hdr)$).*)',
     '/api/(.*)',
   ],
 };
