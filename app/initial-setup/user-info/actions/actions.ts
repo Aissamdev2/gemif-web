@@ -75,7 +75,7 @@ export async function initializeUserInfo(formData: FormData): Promise<SanitizedR
       const updateUserResult = await dbUpdateUser({ id: userId, payload: { name, primitiveId: primitiveUser.id, publicName: publicName, year, flags: mergedFlags }})
       if (isFailure(updateUserResult)) return setResource(updateUserResult, makeUserResource({ userId, email }))
     
-      revalidateTag("user")
+      revalidateTag("user", "max");
       // Update user flags [END]
     
       // Update session cookie [START]

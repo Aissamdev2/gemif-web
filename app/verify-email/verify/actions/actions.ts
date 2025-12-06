@@ -31,7 +31,7 @@ export async function verifyEmail(): Promise<SanitizedResult<boolean>> {
     const updateUserResult = await dbUpdateUser({ id: userId, payload: { flags: mergedFlags }})
     if (isFailure(updateUserResult)) return setResource(updateUserResult, makeUserEmailResource({ email }))
   
-    revalidateTag("user")
+    revalidateTag("user", "max")
     // Update is_verified user flag [END]
   
     // Update session cookie with the new flags
@@ -43,7 +43,7 @@ export async function verifyEmail(): Promise<SanitizedResult<boolean>> {
     const deletionResult = await dbDeleteVerificationToken({ userId: session.userId })
     if (isFailure(deletionResult)) return setResource(deletionResult, makeUserEmailResource({ email }))
   
-    revalidateTag("verification-tokens")
+    revalidateTag("verification-tokens", "max")
   
     // Redirect on success
     redirect('/initial-setup/user-info')

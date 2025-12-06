@@ -47,7 +47,7 @@ export async function deleteResourcesPost(formData: FormData): Promise<Sanitized
       const dbDeletionResult = await dbDeleteResourcesPost({ id })
     
       // 3. Revalidate cache/tag
-      revalidateTag('resources-posts');
+      revalidateTag('resources-posts', 'max');
     
       return r2DeletionResult
   })())

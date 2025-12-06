@@ -59,7 +59,7 @@ export async function addMainPost(formData: FormData): Promise<SanitizedResult<A
       }})
       if (isFailure(dbCreationResult)) return dbCreationResult
 
-      revalidateTag("resources-posts")
+      revalidateTag("resources-posts", "max")
     
       // Collect main post id and folder name from the db result
       const { id, folderName } = unwrap(dbCreationResult)
@@ -125,7 +125,7 @@ export async function finalizeMainPost({
     }))
   }
 
-  revalidateTag("resources-posts");
+  revalidateTag("resources-posts", "max");
 
   return success(true)
 }

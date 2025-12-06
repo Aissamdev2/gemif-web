@@ -61,7 +61,7 @@ export async function updatePrimitiveSubject(formData: FormData): Promise<Saniti
     const updateResult = await dbUpdatePrimitiveSubject({ userId, id, payload: dbPayload })
     if (isFailure(updateResult)) return setResource(updateResult, makePrimitiveSubjectResource({ primitiveId: id }))
 
-    revalidateTag("primitive-subjects")
+    revalidateTag("primitive-subjects", "max");
     return success(true)
   })())
 }

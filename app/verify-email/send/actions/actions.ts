@@ -20,7 +20,7 @@ export async function sendVerificationEmail({ id, email }: { id: string, email: 
       if (isFailure(tokenResult)) return tokenResult
     
       const token = unwrap(tokenResult);
-      revalidateTag("verification-tokens")
+      revalidateTag("verification-tokens", "max")
       
       // Email HTML structure [START]
       const url = `${(process.env.NEXT_PUBLIC_BASE_URL as string || process.env.BASE_URL as string)}/verify-email/verify?token=${encodeURIComponent(token)}`;

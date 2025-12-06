@@ -64,7 +64,7 @@ export async function updateResourcesPost(
     }})
     if (isFailure(dbUpdateResult)) return dbUpdateResult
 
-    revalidateTag("resources-posts")
+    revalidateTag("resources-posts", "max")
   
     // --- Handle files ---
     const removedFilesString = formData.get("removed") as string | null;
@@ -137,7 +137,7 @@ export async function finalizeMainPost({
     }))
   }
 
-  revalidateTag("resources-posts");
+  revalidateTag("resources-posts", "max");
 
   return success(true)
 }

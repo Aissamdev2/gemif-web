@@ -71,7 +71,7 @@ export const initializeSubjects = async (formData: FormData): Promise<SanitizedR
     const subjectCreationResult = await dbCreateSubject({ payload: toInsert })
     if (isFailure(subjectCreationResult)) return setResource(subjectCreationResult, makePrimitiveSubjectsResource({ primitiveIds: toInsert.map(p => p.primitiveId) }))
   
-    revalidateTag("subjects")
+    revalidateTag("subjects", "max");
     // Upload subjects [END]
   
     // Update user flags [START]
@@ -80,7 +80,7 @@ export const initializeSubjects = async (formData: FormData): Promise<SanitizedR
     const updateUserResult = await dbUpdateUser({ id: userId, payload: { flags: mergedFlags }});
     if (isFailure(updateUserResult)) return setResource(updateUserResult, makeUserResource({ userId, email }))
   
-    revalidateTag("user");
+    revalidateTag("user", "max");
     // Update user flags [END]
   
     // Update session cookie [START]
