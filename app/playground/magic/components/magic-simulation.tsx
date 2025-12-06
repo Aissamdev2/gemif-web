@@ -13,7 +13,6 @@ import {
   OrbitControls,
   PerspectiveCamera,
   Environment,
-  ContactShadows,
 } from "@react-three/drei";
 import * as THREE from "three";
 import { useLoader } from "@react-three/fiber";

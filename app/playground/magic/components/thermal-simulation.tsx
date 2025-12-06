@@ -12,8 +12,6 @@ import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import {
   OrbitControls,
   PerspectiveCamera,
-  Environment,
-  ContactShadows,
   Html,
 } from "@react-three/drei";
 import * as THREE from "three";
