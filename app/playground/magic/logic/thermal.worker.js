@@ -1,7 +1,6 @@
 // thermal.worker.js
-import init, { run_thermal_simulation } from "../wasm-embeddings/v3/solar.js";
+import init, { run_thermal_simulation } from "../wasm-embeddings/vc1/solar.js";
 
-// ... [Keep the tempColor and updateHeatColor helper functions exactly as they were] ...
 
 const tempColor = { r: 0, g: 0, b: 0 }; 
 
@@ -36,11 +35,6 @@ self.onmessage = async ({ data }) => {
     await init(wasmUrl);
 
     const result = run_thermal_simulation(fwhm, magicArea, matrixSize);
-    
-    const stats = {
-      maxTemp: result.get_t_max(),
-      pElectric: result.get_p_elec(),
-    };
 
     const nx = result.get_nx();
     const ny = result.get_ny();
@@ -55,6 +49,15 @@ self.onmessage = async ({ data }) => {
       if (val < gMin) gMin = val;
       if (val > gMax) gMax = val;
     }
+
+    // UPDATE: Add min/max to the stats object
+    const stats = {
+      maxTemp: result.get_t_max(),
+      pElectric: result.get_p_elec(),
+      minGlobal: gMin, // Send this back
+      maxGlobal: gMax, // Send this back
+    };
+
     const range = Math.max(gMax - gMin, 0.1);
 
     const generateXYData = (zIndex) => {

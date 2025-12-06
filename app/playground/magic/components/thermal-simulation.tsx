@@ -32,11 +32,13 @@ type LayerTextures = [
   THREE.Texture,
   THREE.Texture,
   THREE.Texture,
-  THREE.Texture,
+  THREE.Texture
 ];
 
 interface SimStats {
   maxTemp: number;
+  minTemp: number; // Added
+  hoverTemp: number | null; // Added
   pElectric: number;
   status: string;
   loading: boolean;
@@ -83,6 +85,8 @@ const ThermalBox = ({
   const baseRef = useRef<THREE.Group>(null);
   const cpvRef = useRef<THREE.Group>(null);
 
+  const [tempRange, setTempRange] = useState({ min: 0, max: 100 });
+
   // Animation State: 0 = Stacked, 1 = Split
   const targetExpansion = useRef(0);
   const currentExpansion = useRef(0);
@@ -124,15 +128,24 @@ const ThermalBox = ({
       setTexBase(createTexturesFromData(baseData));
       setTexCPV(createTexturesFromData(cpvData));
 
+      // 2. Sync Range
+      // Use maxGlobal from the JS loop (which drives the colors) 
+      // instead of stats.maxTemp (from Rust) to ensure consistency.
+      const consistentMax = stats.maxGlobal || stats.maxTemp;
+      const consistentMin = stats.minGlobal;
+
+      setTempRange({ min: consistentMin, max: consistentMax });
+
       // 2. Update Stats
       onUpdateStats({
-        maxTemp: stats.maxTemp,
+        maxTemp: consistentMax, // <--- CHANGED: Uses the visual max
+        minTemp: consistentMin,
         pElectric: stats.pElectric,
         loading: false,
         status: "Done",
       });
 
-      setSplit(prev => !prev);
+      setSplit((prev) => !prev);
     };
 
     return () => {
@@ -162,7 +175,10 @@ const ThermalBox = ({
 
     onUpdateStats({ loading: true, status: "Calculating..." });
 
-    const relativePath = new URL('../wasm-embeddings/v3/solar_bg.wasm', import.meta.url).toString();
+    const relativePath = new URL(
+      "../wasm-embeddings/vc1/solar_bg.wasm",
+      import.meta.url
+    ).toString();
     const wasmUrl = new URL(relativePath, window.location.origin).href;
     console.log("WASM URL:", wasmUrl);
 
@@ -196,12 +212,82 @@ const ThermalBox = ({
     // Interpolate positions based on t (0 = Center/Stacked, 1 = Target/Split)
     // We assume 'Stacked' is at y=0 for all (or very close)
     if (sinkRef.current)
-      sinkRef.current.position.y = THREE.MathUtils.lerp(texSink ? -0.20 : -0.25, SINK_TARGET_Y, t);
+      sinkRef.current.position.y = THREE.MathUtils.lerp(
+        texSink ? -0.2 : -0.25,
+        SINK_TARGET_Y,
+        t
+      );
     if (baseRef.current)
       baseRef.current.position.y = THREE.MathUtils.lerp(0, BASE_TARGET_Y, t);
     if (cpvRef.current)
       cpvRef.current.position.y = THREE.MathUtils.lerp(0.16, CPV_TARGET_Y, t);
   });
+
+  // HOVER LOGIC
+  const handlePointerMove = useCallback(
+    (e: any, textures: LayerTextures | null) => {
+      // Only calculate if we have textures and aren't loading/pending
+      if (!textures || hasPendingChanges || status.loading) return;
+
+      e.stopPropagation();
+
+      // e.face.materialIndex gives us the side of the cube (0-5)
+      // 0:Right, 1:Left, 2:Top, 3:Bottom, 4:Front, 5:Back
+      const matIndex = e.face?.materialIndex;
+      if (matIndex === undefined) return;
+
+      const texture = textures[matIndex];
+      const image = texture.image; // { data: Uint8Array, width, height }
+      const uv = e.uv;
+
+      if (!uv || !image) return;
+
+      // Calculate pixel coordinates
+      const x = Math.floor(uv.x * image.width);
+      const y = Math.floor(uv.y * image.height);
+
+      // Get Data Index (RGBA = 4 channels)
+      const index = (y * image.width + x) * 4;
+      const data = image.data;
+
+      // Read RGB
+      const r = data[index];
+      const g = data[index + 1];
+      // const b = data[index + 2];
+
+      // Reverse Engineer the Color-to-Value Mapping from the Worker
+      // Worker Logic:
+      // if val < 0.5: R = val*2, G = 0
+      // else: R = 1, G = (val-0.5)*2
+
+      let normVal = 0;
+
+      // Normalize 0-255 to 0-1
+      const rn = r / 255;
+      const gn = g / 255;
+
+      if (gn > 0.05) {
+        // Upper half of temp range (Yellow to White)
+        // gn = (val - 0.5) * 2  ->  val = (gn / 2) + 0.5
+        normVal = gn / 2.0 + 0.5;
+      } else {
+        // Lower half of temp range (Black to Red)
+        // rn = val * 2  ->  val = rn / 2
+        normVal = rn / 2.0;
+      }
+
+      // Map normalized value back to Celsius
+      const actualTemp =
+        normVal * (tempRange.max - tempRange.min) + tempRange.min;
+
+      onUpdateStats({ hoverTemp: actualTemp });
+    },
+    [status.loading, hasPendingChanges, tempRange, onUpdateStats]
+  );
+
+  const handlePointerOut = useCallback(() => {
+    onUpdateStats({ hoverTemp: null });
+  }, [onUpdateStats]);
 
   // Annotation Style
   const annotationStyle = {
@@ -221,8 +307,11 @@ const ThermalBox = ({
       {/* --- LAYER 1: SINK (Aluminum) --- */}
       <group ref={sinkRef} position={[0, 0, 0]}>
         {/* If texture exists, show Heatmap Mesh. If not, show Physical Model with Fins */}
-        {texSink && !hasPendingChanges && !status.loading  ? (
-          <mesh>
+        {texSink && !hasPendingChanges && !status.loading ? (
+          <mesh
+            onPointerMove={(e) => handlePointerMove(e, texSink)}
+            onPointerOut={handlePointerOut}
+          >
             <boxGeometry args={[PLATE_WIDTH, 0.1, PLATE_DEPTH]} />
             {texSink.map((tex, i) => (
               <meshStandardMaterial
@@ -282,7 +371,10 @@ const ThermalBox = ({
 
       {/* --- LAYER 2: BASE (Copper) --- */}
       <group ref={baseRef} position={[0, 0, 0]}>
-        <mesh>
+        <mesh
+          onPointerMove={(e) => handlePointerMove(e, texBase)}
+          onPointerOut={handlePointerOut}
+        >
           <boxGeometry args={[PLATE_WIDTH, 0.3, PLATE_DEPTH]} />
           {texBase && !hasPendingChanges && !status.loading ? (
             texBase.map((tex, i) => (
@@ -324,7 +416,10 @@ const ThermalBox = ({
       <group ref={cpvRef} position={[0, 0, 0]}>
         {texCPV && !hasPendingChanges && !status.loading ? (
           // HEATMAP VISUALIZATION
-          <mesh>
+          <mesh
+            onPointerMove={(e) => handlePointerMove(e, texCPV)}
+            onPointerOut={handlePointerOut}
+          >
             <boxGeometry args={[PLATE_WIDTH, 0.02, PLATE_DEPTH]} />
             {texCPV.map((tex, i) => (
               <meshStandardMaterial
@@ -345,7 +440,7 @@ const ThermalBox = ({
             <mesh>
               <boxGeometry args={[PLATE_WIDTH, 0.02, PLATE_DEPTH]} />
               <meshStandardMaterial
-                color="#ffffff"   
+                color="#ffffff"
                 roughness={0.2}
                 metalness={0.6} // Reduced from 1.0 to ensure visibility without EnvMap
               />
@@ -354,8 +449,8 @@ const ThermalBox = ({
             {/* CPV Cells Matrix */}
             {(() => {
               // USE visualMatrixSize HERE instead of matrixSize
-              const n = visualMatrixSize; 
-              const cellSpacing = (PLATE_WIDTH * 0.9) / n; 
+              const n = visualMatrixSize;
+              const cellSpacing = (PLATE_WIDTH * 0.9) / n;
               const startOffset = -((n - 1) * cellSpacing) / 2;
               const cells = [];
 
@@ -366,7 +461,7 @@ const ThermalBox = ({
                       key={`${x}-${z}`}
                       position={[
                         startOffset + x * cellSpacing,
-                        0.02, 
+                        0.02,
                         startOffset + z * cellSpacing,
                       ]}
                     >
@@ -374,7 +469,7 @@ const ThermalBox = ({
                         args={[cellSpacing * 0.8, 0.01, cellSpacing * 0.8]}
                       />
                       <meshStandardMaterial
-                        color="#1a237e" 
+                        color="#1a237e"
                         roughness={0.2}
                         metalness={0.5}
                       />
@@ -408,6 +503,8 @@ export default function ThermalPage() {
   const [simStats, setSimStats] = useState<SimStats>({
     maxTemp: 0,
     pElectric: 0,
+    minTemp: 0,
+    hoverTemp: null,
     status: "Ready to Start",
     loading: false,
   });
@@ -422,7 +519,7 @@ export default function ThermalPage() {
     magicArea: number;
   } | null>(null);
 
-  const [hasPendingChanges, setHasPendingChanges] = useState(false)
+  const [hasPendingChanges, setHasPendingChanges] = useState(false);
 
   const displayFwhm = useMemo(() => {
     const ratio = Math.abs(uiFocusOffset) / 2.5;
@@ -446,17 +543,16 @@ export default function ThermalPage() {
     setSimStats((prev) => ({ ...prev, ...stats }));
   }, []);
 
-
   useEffect(() => {
-    setHasPendingChanges(prev => {
-      return !activeParams ||
+    setHasPendingChanges((prev) => {
+      return (
+        !activeParams ||
         uiFocusOffset !== activeParams.focusOffset ||
         uiMatrixSize !== activeParams.matrixSize ||
-        uiMagicArea !== activeParams.magicArea;
-    })
-  }, [uiFocusOffset, uiMatrixSize, uiMagicArea, activeParams])
-
-    
+        uiMagicArea !== activeParams.magicArea
+      );
+    });
+  }, [uiFocusOffset, uiMatrixSize, uiMagicArea, activeParams]);
 
   return (
     <div className="relative w-full h-full bg-gray-900">
@@ -621,8 +717,8 @@ export default function ThermalPage() {
               simStats.loading
                 ? "bg-red-600 hover:bg-red-500 hover:scale-105 ring-2 ring-red-400/50"
                 : hasPendingChanges
-                  ? "bg-gradient-to-r from-cyan-600 to-blue-600 hover:scale-105 hover:shadow-cyan-500/50 ring-2 ring-white/50"
-                  : "bg-gray-800/80 text-gray-400"
+                ? "bg-gradient-to-r from-cyan-600 to-blue-600 hover:scale-105 hover:shadow-cyan-500/50 ring-2 ring-white/50"
+                : "bg-gray-800/80 text-gray-400"
             }
             cursor-pointer
           `}
@@ -655,10 +751,10 @@ export default function ThermalPage() {
             {simStats.loading
               ? "ATURAR"
               : activeParams === null
-                ? "Iniciar Simulació"
-                : hasPendingChanges
-                  ? "Simular Canvis"
-                  : "Actualitzat"}
+              ? "Iniciar Simulació"
+              : hasPendingChanges
+              ? "Simular Canvis"
+              : "Actualitzat"}
           </span>
         </button>
       </div>
@@ -691,6 +787,16 @@ export default function ThermalPage() {
                 <span>T. Màx:</span>
                 <span className="px-2 py-0.5 rounded border bg-red-900/30 border-red-500/30">
                   {simStats.maxTemp.toFixed(1)} °C
+                </span>
+              </div>
+              {/* NEW HOVER STAT */}
+              <div className="flex justify-between text-yellow-300 font-bold text-sm items-center mt-1">
+                <span>T. Punter:</span>
+                <span className="px-2 py-0.5 rounded border bg-yellow-900/30 border-yellow-500/30 min-w-[70px] text-right">
+                  {simStats.hoverTemp !== null &&
+                  simStats.hoverTemp !== undefined
+                    ? `${simStats.hoverTemp.toFixed(1)} °C`
+                    : "--.- °C"}
                 </span>
               </div>
               <div className="flex justify-between text-green-300 font-bold text-sm items-center mt-1">

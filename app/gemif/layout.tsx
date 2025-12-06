@@ -11,7 +11,6 @@ export const metadata = {
   }
 };
 
-export const experimental_ppr = true
 
 export default async function GemifLayout({ children }: { children: React.ReactNode }) {
 

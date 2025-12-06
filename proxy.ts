@@ -24,7 +24,7 @@ const returnError = ({ request, title, description, code }: { request: NextReque
       return response;
 };
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const url = request.nextUrl;
   const pathname = url.pathname;
 

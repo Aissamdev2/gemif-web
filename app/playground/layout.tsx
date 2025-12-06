@@ -8,8 +8,6 @@ export const metadata = {
   }
 };
 
-export const experimental_ppr = true
-
 export default async function PlaygroundLayout({ children }: { children: React.ReactNode }) {
 
   return (

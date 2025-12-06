@@ -13,7 +13,7 @@ export default function Footer({ id }: { id?: string}) {
         <span className="text-sm">| GEMiFWeb</span>
       </div>
       <p className="text-xs">
-        © {new Date().getFullYear()} GEMiF. Todos los derechos reservados.
+        © 2025 GEMiF. Todos los derechos reservados.
       </p>
       <p className="text-xs">
         Información legal · Política de privacidad · Contacto

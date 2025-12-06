@@ -2,12 +2,12 @@
 
 const nextConfig = {
   experimental: {
-    ppr: true,
     authInterrupts: true
   },
   transpilePackages: [
     'three',
-  ]
+  ],
+  cacheComponents: true,
 };
 
 export default nextConfig
