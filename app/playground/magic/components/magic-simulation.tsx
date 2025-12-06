@@ -841,7 +841,7 @@ export default function TelescopePage() {
       >
         {/* Left Side: Branding */}
         <div className="flex flex-col">
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tighter text-white drop-shadow-md">
+          <h1 className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-indigo-200 via-purple-200 to-white drop-shadow-[0_0_25px_rgba(255,255,255,0.6)]">
             STARRY SKY
           </h1>
           <div className="flex items-center gap-2 text-[10px] md:text-xs font-medium text-cyan-400 uppercase tracking-widest ">

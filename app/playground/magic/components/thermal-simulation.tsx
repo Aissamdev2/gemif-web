@@ -721,12 +721,12 @@ export default function ThermalPage() {
   return (
     <div className="relative w-full h-full bg-black overflow-hidden rounded-2xl">
       {/* --- HEADER --- */}
-      <div className="absolute w-full top-0 left-0 px-8 py-5 z-50 pointer-events-none select-none flex justify-between items-center transition-all duration-1000 ease-out border-b border-white/10 bg-neutral-900 shadow-2xl">
+      <div className="absolute w-full top-0 left-0 px-8 py-3 z-50 pointer-events-none select-none flex justify-between items-center transition-all duration-1000 ease-out border-b border-white/10 bg-neutral-900 shadow-2xl">
         <div className="flex flex-col">
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tighter text-white drop-shadow-md">
+          <h1 className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-indigo-200 via-purple-200 to-white drop-shadow-[0_0_25px_rgba(255,255,255,0.6)]">
             STARRY SKY
           </h1>
-          <div className="flex items-center gap-2 text-[10px] md:text-xs font-medium text-cyan-400 uppercase tracking-widest mt-1">
+          <div className="flex items-center gap-2 text-[10px] md:text-xs font-medium text-cyan-400 uppercase tracking-widest">
             <span className="opacity-80">Aissam Khadraoui</span>
             <span className="text-white/20">•</span>
             <span className="opacity-80">Candela García</span>
