@@ -1,8 +1,7 @@
 // thermal.worker.js
-import init, { run_thermal_simulation } from "../wasm-embeddings/vc3/solar.js";
+import init, { run_thermal_simulation } from "../wasm-embeddings/vc4/solar.js";
 
-
-const tempColor = { r: 0, g: 0, b: 0 }; 
+const tempColor = { r: 0, g: 0, b: 0 };
 
 function setTempColorRGB(r, g, b) {
   tempColor.r = r;
@@ -26,46 +25,46 @@ function updateHeatColor(t, targetArray, offset) {
 }
 
 self.onmessage = async ({ data }) => {
-  // 1. Destructure all new parameters from data
-  const { 
-    fwhm, 
-    magicArea, 
-    matrixSize, 
-    layerThickness, 
-    plateDim, 
-    cpvScale, 
-    nXy, 
-    nZLayer, 
-    useCircle, 
-    wasmUrl 
+  const {
+    fwhm,
+    magicArea,
+    matrixSize,
+    layerThickness,     // Base Thickness
+    sinkThickness,      // NEW: Sink Thickness
+    plateDim,
+    cpvScale,
+    nXy,
+    nZLayer,
+    useCircle,
+    // NEW: Material Properties
+    baseKt,
+    baseEmi,
+    sinkKt,
+    sinkEmi,
+    wasmUrl
   } = data;
 
   try {
     console.log("Loading WASM from URL:", wasmUrl);
     await init(wasmUrl);
 
-    console.log("Running thermal simulation with parameters:", { 
-      fwhm, 
-      magicArea, 
-      matrixSize, 
-      layerThickness, 
-      plateDim, 
-      cpvScale, 
-      nXy, 
-      nZLayer, 
-      useCircle 
-    });
-    // 2. Pass parameters in the EXACT order defined in Rust
+    // Call the Rust function with the new signature
     const result = run_thermal_simulation(
-        fwhm, 
-        magicArea, 
-        matrixSize, 
-        layerThickness, 
-        plateDim, 
-        cpvScale, 
-        nXy, 
-        nZLayer, 
-        useCircle
+        fwhm,
+        magicArea,
+        matrixSize,
+        layerThickness,
+        sinkThickness, // Pass new param
+        plateDim,
+        cpvScale,
+        nXy,
+        nZLayer,
+        useCircle,
+        // Pass Material Props
+        baseKt,
+        baseEmi,
+        sinkKt,
+        sinkEmi
     );
 
     const nx = result.get_nx();
@@ -82,12 +81,11 @@ self.onmessage = async ({ data }) => {
       if (val > gMax) gMax = val;
     }
 
-    // UPDATE: Add min/max to the stats object
     const stats = {
       maxTemp: result.get_t_max(),
       pElectric: result.get_p_elec(),
-      minGlobal: gMin, // Send this back
-      maxGlobal: gMax, // Send this back
+      minGlobal: gMin,
+      maxGlobal: gMax,
     };
 
     const range = Math.max(gMax - gMin, 0.1);
@@ -148,25 +146,23 @@ self.onmessage = async ({ data }) => {
       const bottom = generateXYData(zStart);
       const frontBack = generateSideData(zStart, zEnd, true);
       const rightLeft = generateSideData(zStart, zEnd, false);
-      
       return [rightLeft, rightLeft, top, bottom, frontBack, frontBack];
     };
 
+    // The sink layers are fixed to 0-4 in Rust for simplicity in this version, 
+    // but physically they now represent the new sink thickness.
     const sinkData = buildLayerData(0, 4);
     const baseData = buildLayerData(5, 12);
     const cpvData = buildLayerData(13, nz - 1);
 
     result.free();
 
-    // 2. Collect ALL buffers (contains duplicates because Left=Right, Front=Back)
     const allBuffers = [
       ...sinkData.map(d => d.data.buffer),
       ...baseData.map(d => d.data.buffer),
       ...cpvData.map(d => d.data.buffer)
     ];
 
-    // 3. Remove duplicates using a Set
-    // This ensures we only try to transfer each unique memory block once
     const uniqueTransferables = [...new Set(allBuffers)];
 
     self.postMessage({
@@ -175,7 +171,7 @@ self.onmessage = async ({ data }) => {
       sinkData,
       baseData,
       cpvData
-    }, uniqueTransferables); // <--- Pass the unique list here
+    }, uniqueTransferables);
 
   } catch (e) {
     self.postMessage({ status: "error", error: e.toString() });
