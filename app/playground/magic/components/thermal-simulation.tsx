@@ -9,13 +9,11 @@ import React, {
   memo,
 } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import {
-  OrbitControls,
-  PerspectiveCamera,
-  Html,
-} from "@react-three/drei";
+import { OrbitControls, PerspectiveCamera, Html } from "@react-three/drei";
 import * as THREE from "three";
 import Link from "next/link";
+
+import { Grid, Stars, Sparkles } from "@react-three/drei";
 
 // --- CONSTANTS ---
 const PLATE_WIDTH = 1.5;
@@ -93,7 +91,7 @@ const ControlRow = memo(
     disableDec?: boolean;
     disableInc?: boolean;
   }) => (
-    <div className="flex items-center gap-4 bg-neutral-900 p-2 pr-5 rounded-xl text-white shadow-xl border border-white/10">
+    <div className="flex items-center justify-center gap-4 bg-neutral-900 p-2 pr-5 rounded-xl text-white shadow-xl border border-white/10">
       <button
         onClick={onDec}
         disabled={disableDec}
@@ -134,13 +132,13 @@ const ToggleRow = memo(
     checked: boolean;
     onChange: (val: boolean) => void;
   }) => (
-    <div className="flex items-center justify-between gap-4 bg-neutral-900 p-3 px-5 rounded-xl text-white shadow-xl border border-white/10">
+    <div className="flex items-center justify-evenly gap-4 bg-neutral-900 p-3 px-5 rounded-xl text-white shadow-xl border border-white/10">
       <span className="text-[10px] text-cyan-400 uppercase tracking-widest font-bold">
         {label}
       </span>
       <button
         onClick={() => onChange(!checked)}
-        className={`relative w-10 h-5 rounded-full transition-all duration-300 ease-out focus:outline-none ${
+        className={`relative cursor-pointer w-10 h-5 rounded-full transition-all duration-300 ease-out focus:outline-none ${
           checked
             ? "bg-cyan-600 shadow-[0_0_10px_rgba(8,145,178,0.4)]"
             : "bg-white/10 hover:bg-white/20"
@@ -176,7 +174,9 @@ const StatItem = memo(
     colSpan?: number;
   }) => (
     <div
-      className={`${colorBg || "bg-white/5"} rounded-lg p-2.5 border ${colorBorder} ${
+      className={`${
+        colorBg || "bg-white/5"
+      } rounded-lg p-2.5 border ${colorBorder} ${
         colSpan > 1 ? "col-span-" + colSpan : ""
       }`}
     >
@@ -192,7 +192,15 @@ const StatItem = memo(
 StatItem.displayName = "StatItem";
 
 const GaussianOverlay = memo(
-  ({ fwhm, matrixSize, magicArea }: { fwhm: number; matrixSize: number, magicArea: number }) => {
+  ({
+    fwhm,
+    matrixSize,
+    magicArea,
+  }: {
+    fwhm: number;
+    matrixSize: number;
+    magicArea: number;
+  }) => {
     const geometry = useMemo(() => {
       // 1. Setup high-res plane
       const geo = new THREE.PlaneGeometry(PLATE_WIDTH, PLATE_DEPTH, 100, 100);
@@ -226,7 +234,9 @@ const GaussianOverlay = memo(
       // A single peak is height 0.6. A 5x5 matrix scales individual peaks down.
       const baseHeight = 0.5;
       // If peaks overlap significantly (large sigma), the sum grows. We normalize slightly.
-      const amplitude = baseHeight * magicArea / (twoSigmaSq * Math.PI * matrixSize * matrixSize * 240);
+      const amplitude =
+        (baseHeight * magicArea) /
+        (twoSigmaSq * Math.PI * matrixSize * matrixSize * 240);
 
       // 5. Generate Surface
       for (let i = 0; i < posAttribute.count; i++) {
@@ -289,22 +299,46 @@ const ThermalBox = memo(
     simMatrixSize,
     simFocusOffset,
     simMagicArea,
+    // --- NEW PARAMS ---
+    simLayerThick,
+    simPlateDim,
+    simCpvScale,
+    simNx,
+    simNz,
+    simUseCircle,
+    // ------------------
     visMatrixSize,
     visFocusOffset,
     visMagicArea,
+    // --- ADD THESE NEW PROPS ---
+    visCpvScale,
+    visUseCircle,
+    // ---------------------------
     status,
     showGaussian,
+    showAdvanced,
     hasPendingChanges,
     onUpdateStats,
   }: {
     simMatrixSize: number | null;
     simFocusOffset: number | null;
     simMagicArea: number | null;
+    // --- NEW TYPES ---
+    simLayerThick: number | null;
+    simPlateDim: number | null;
+    simCpvScale: number | null;
+    simNx: number | null;
+    simNz: number | null;
+    simUseCircle: boolean | null;
+    // -----------------
     visMatrixSize: number;
     visFocusOffset: number;
     visMagicArea: number;
+    visCpvScale: number;
+    visUseCircle: boolean;
     status: SimStats;
     showGaussian: boolean;
+    showAdvanced: boolean;
     hasPendingChanges: boolean;
     onUpdateStats: (stats: Partial<SimStats>) => void;
   }) => {
@@ -321,23 +355,23 @@ const ThermalBox = memo(
 
     // Derived States for Math
     const simFwhm = useMemo(() => {
-        if (simFocusOffset === null) return 0.1;
-        const ratio = Math.abs(simFocusOffset) / 2.5;
-        return 0.1 + ratio * 0.5;
+      if (simFocusOffset === null) return 0.1;
+      const ratio = Math.abs(simFocusOffset) / 2.5;
+      return 0.1 + ratio * 0.5;
     }, [simFocusOffset]);
 
     const visFwhm = useMemo(() => {
-        const ratio = Math.abs(visFocusOffset) / 2.5;
-        return 0.1 + ratio * 0.5;
+      const ratio = Math.abs(visFocusOffset) / 2.5;
+      return 0.1 + ratio * 0.5;
     }, [visFocusOffset]);
 
     // Force texture cleanup when loading starts
     useEffect(() => {
-        if (status.loading) {
-            setTexSink(null);
-            setTexBase(null);
-            setTexCPV(null);
-        }
+      if (status.loading) {
+        setTexSink(null);
+        setTexBase(null);
+        setTexCPV(null);
+      }
     }, [status.loading]);
 
     // Dispose textures on unmount
@@ -352,14 +386,17 @@ const ThermalBox = memo(
     // --- WORKER LIFECYCLE ---
     useEffect(() => {
       // 1. STOP Condition: If any Sim param is null, we are stopped.
-      if (simMatrixSize === null || simMagicArea === null || simFocusOffset === null) {
+      if (
+        simMatrixSize === null ||
+        simMagicArea === null ||
+        simFocusOffset === null
+      ) {
         setTexSink(null);
         setTexBase(null);
         setTexCPV(null);
         return;
       }
 
-      
       // 2. Start Loading
       onUpdateStats({ loading: true, status: "Calculating..." });
 
@@ -370,7 +407,14 @@ const ThermalBox = memo(
 
       // 4. Handle Messages
       workerRef.current.onmessage = (e) => {
-        const { status: msgStatus, stats, sinkData, baseData, cpvData, error } = e.data;
+        const {
+          status: msgStatus,
+          stats,
+          sinkData,
+          baseData,
+          cpvData,
+          error,
+        } = e.data;
 
         if (msgStatus === "error") {
           console.error("Worker Error:", error);
@@ -396,14 +440,25 @@ const ThermalBox = memo(
       };
 
       // 5. WASM & Start
-      const relativePath = new URL("../wasm-embeddings/vc1/solar_bg.wasm", import.meta.url).toString();
+      const relativePath = new URL(
+        "../wasm-embeddings/vc3/solar_bg.wasm",
+        import.meta.url
+      ).toString();
       const wasmUrl = new URL(relativePath, window.location.origin).href;
 
       workerRef.current.postMessage({
         fwhm: simFwhm,
         magicArea: simMagicArea,
-        wasmUrl,
         matrixSize: simMatrixSize,
+        // --- NEW PAYLOAD ---
+        layerThickness: simLayerThick,
+        plateDim: simPlateDim,
+        cpvScale: simCpvScale,
+        nXy: simNx,
+        nZLayer: simNz,
+        useCircle: simUseCircle,
+        // -------------------
+        wasmUrl,
       });
 
       return () => {
@@ -412,7 +467,19 @@ const ThermalBox = memo(
           workerRef.current = null;
         }
       };
-    }, [simMatrixSize, simMagicArea, simFocusOffset, simFwhm, onUpdateStats]);
+    }, [
+      simMatrixSize,
+      simMagicArea,
+      simFocusOffset,
+      simFwhm,
+      simLayerThick,
+      simPlateDim,
+      simCpvScale,
+      simNx,
+      simNz,
+      simUseCircle,
+      onUpdateStats,
+    ]);
 
     // --- ANIMATION LOOP ---
     const SINK_TARGET_Y = -0.6;
@@ -421,7 +488,8 @@ const ThermalBox = memo(
 
     useFrame((_, delta) => {
       // Expand ONLY if we have results, we are NOT loading, and there are NO pending changes.
-      const isVisualizing = texSink !== null && !status.loading && !hasPendingChanges;
+      const isVisualizing =
+        texSink !== null && !status.loading && !hasPendingChanges;
 
       const targetExpansion = isVisualizing ? 1 : 0;
 
@@ -434,9 +502,16 @@ const ThermalBox = memo(
 
       const t = currentExpansion.current;
 
-      if (sinkRef.current) sinkRef.current.position.y = THREE.MathUtils.lerp(-0.24, SINK_TARGET_Y, t);
-      if (baseRef.current) baseRef.current.position.y = THREE.MathUtils.lerp(0, BASE_TARGET_Y, t);
-      if (cpvRef.current) cpvRef.current.position.y = THREE.MathUtils.lerp(0.16, CPV_TARGET_Y, t);
+      if (sinkRef.current)
+        sinkRef.current.position.y = THREE.MathUtils.lerp(
+          -0.24,
+          SINK_TARGET_Y,
+          t
+        );
+      if (baseRef.current)
+        baseRef.current.position.y = THREE.MathUtils.lerp(0, BASE_TARGET_Y, t);
+      if (cpvRef.current)
+        cpvRef.current.position.y = THREE.MathUtils.lerp(0.16, CPV_TARGET_Y, t);
     });
 
     // --- HOVER LOGIC ---
@@ -469,7 +544,8 @@ const ThermalBox = memo(
           normVal = rn / 2.0;
         }
 
-        const actualTemp = normVal * (tempRange.max - tempRange.min) + tempRange.min;
+        const actualTemp =
+          normVal * (tempRange.max - tempRange.min) + tempRange.min;
         onUpdateStats({ hoverTemp: actualTemp });
       },
       [status.loading, hasPendingChanges, tempRange, onUpdateStats]
@@ -482,10 +558,28 @@ const ThermalBox = memo(
     // --- MEMOIZED ASSETS ---
     const fallbackMaterials = useMemo(() => {
       return {
-        sink: new THREE.MeshStandardMaterial({ color: "#A0A0A0", roughness: 0.5, metalness: 0.6 }),
-        base: new THREE.MeshStandardMaterial({ color: "#9e5b54", emissive: "#9e5b54", emissiveIntensity: 0.4, roughness: 0.3, metalness: 0.2 }),
-        cpvSubstrate: new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.2, metalness: 0.6 }),
-        cpvCell: new THREE.MeshStandardMaterial({ color: "#1a237e", roughness: 0.2, metalness: 0.5 }),
+        sink: new THREE.MeshStandardMaterial({
+          color: "#A0A0A0",
+          roughness: 0.5,
+          metalness: 0.6,
+        }),
+        base: new THREE.MeshStandardMaterial({
+          color: "#9e5b54",
+          emissive: "#9e5b54",
+          emissiveIntensity: 0.4,
+          roughness: 0.3,
+          metalness: 0.2,
+        }),
+        cpvSubstrate: new THREE.MeshStandardMaterial({
+          color: "#ffffff",
+          roughness: 0.2,
+          metalness: 0.6,
+        }),
+        cpvCell: new THREE.MeshStandardMaterial({
+          color: "#1a237e",
+          roughness: 0.2,
+          metalness: 0.5,
+        }),
       };
     }, []);
 
@@ -509,6 +603,9 @@ const ThermalBox = memo(
       fontWeight: "bold",
       pointerEvents: "none" as const,
     };
+
+    const areLabelsVisible =
+      !status.loading && !hasPendingChanges && !showAdvanced;
 
     return (
       <group rotation={[Math.PI / 6, Math.PI / 4, 0]} position={[0, 0, 0]}>
@@ -535,18 +632,36 @@ const ThermalBox = memo(
             </mesh>
           ) : (
             <group>
-              <mesh position={[0, 0.04, 0]} geometry={fallbackGeos.sinkMain} material={fallbackMaterials.sink} />
+              <mesh
+                position={[0, 0.04, 0]}
+                geometry={fallbackGeos.sinkMain}
+                material={fallbackMaterials.sink}
+              />
               {Array.from({ length: 15 }).map((_, i) => {
                 const spacing = PLATE_WIDTH / 15;
                 const pos = -PLATE_WIDTH / 2 + spacing / 2 + i * spacing;
                 return (
-                  <mesh key={i} position={[pos, -0.02, 0]} geometry={fallbackGeos.sinkFin} material={fallbackMaterials.sink} />
+                  <mesh
+                    key={i}
+                    position={[pos, -0.02, 0]}
+                    geometry={fallbackGeos.sinkFin}
+                    material={fallbackMaterials.sink}
+                  />
                 );
               })}
             </group>
           )}
-          <Html position={[0.8, 0, 0]} center>
-            <div style={{ ...annotationStyle, opacity: status.loading ? "0" : "100", transition: "opacity 0.2s" }}>Al</div>
+          <Html position={[0.8, 0, 0]} center zIndexRange={[10, 0]}>
+            <div
+              style={{
+                ...annotationStyle,
+                opacity: areLabelsVisible ? "1" : "0",
+                transition: "opacity 0.2s ease-in-out",
+                pointerEvents: "none",
+              }}
+            >
+              Al
+            </div>
           </Html>
         </group>
 
@@ -574,8 +689,17 @@ const ThermalBox = memo(
               <primitive object={fallbackMaterials.base} />
             )}
           </mesh>
-          <Html position={[0.8, 0, 0]} center>
-            <div style={{ ...annotationStyle, opacity: status.loading ? "0" : "100", transition: "opacity 0.2s" }}>Cu</div>
+          <Html position={[0.8, 0, 0]} center zIndexRange={[10, 0]}>
+            <div
+              style={{
+                ...annotationStyle,
+                opacity: areLabelsVisible ? "1" : "0",
+                transition: "opacity 0.2s ease-in-out",
+                pointerEvents: "none",
+              }}
+            >
+              Cu
+            </div>
           </Html>
         </group>
 
@@ -601,22 +725,46 @@ const ThermalBox = memo(
             </mesh>
           ) : (
             <group>
-              <mesh geometry={fallbackGeos.cpvSubstrate} material={fallbackMaterials.cpvSubstrate} />
-              
-              {/* CPV Cells Logic */}
+              <mesh
+                geometry={fallbackGeos.cpvSubstrate}
+                material={fallbackMaterials.cpvSubstrate}
+              />
+
+              {/* --- UPDATED CPV CELLS GENERATION --- */}
               {(() => {
                 const n = visMatrixSize;
                 const cellSpacing = (PLATE_WIDTH * 0.9) / n;
                 const startOffset = -((n - 1) * cellSpacing) / 2;
-                const cells = [];
-                const cellGeo = new THREE.BoxGeometry(cellSpacing * 0.8, 0.01, cellSpacing * 0.8);
 
+                // 1. Calculate size based on UI Scale Input
+                const cellSize = cellSpacing * visCpvScale;
+
+                // 2. Determine Geometry based on UI Shape Input
+                let cellGeo;
+                if (visUseCircle) {
+                  // Cylinder: radiusTop, radiusBottom, height, segments
+                  cellGeo = new THREE.CylinderGeometry(
+                    cellSize / 2,
+                    cellSize / 2,
+                    0.01,
+                    32
+                  );
+                } else {
+                  // Box: width, height, depth
+                  cellGeo = new THREE.BoxGeometry(cellSize, 0.01, cellSize);
+                }
+
+                const cells = [];
                 for (let x = 0; x < n; x++) {
                   for (let z = 0; z < n; z++) {
                     cells.push(
                       <mesh
                         key={`${x}-${z}`}
-                        position={[startOffset + x * cellSpacing, 0.02, startOffset + z * cellSpacing]}
+                        position={[
+                          startOffset + x * cellSpacing,
+                          0.02,
+                          startOffset + z * cellSpacing,
+                        ]}
                         geometry={cellGeo}
                         material={fallbackMaterials.cpvCell}
                       />
@@ -625,19 +773,29 @@ const ThermalBox = memo(
                 }
                 return cells;
               })()}
+              {/* ------------------------------------ */}
 
               {/* GAUSSIAN PREVIEW - Only shown when in "Setup/Pending" mode and toggle ON */}
               {showGaussian && (
-                <GaussianOverlay 
-                    fwhm={visFwhm} 
-                    matrixSize={visMatrixSize} 
-                    magicArea={visMagicArea} 
+                <GaussianOverlay
+                  fwhm={visFwhm}
+                  matrixSize={visMatrixSize}
+                  magicArea={visMagicArea}
                 />
               )}
             </group>
           )}
-          <Html position={[0.8, 0, 0]} center>
-            <div style={{ ...annotationStyle, opacity: status.loading ? "0" : "100", transition: "opacity 0.2s" }}>Si+Ag</div>
+          <Html position={[0.8, 0, 0]} center zIndexRange={[20, 0]}>
+            <div
+              style={{
+                ...annotationStyle,
+                opacity: areLabelsVisible ? "1" : "0",
+                transition: "opacity 0.2s ease-in-out",
+                pointerEvents: "none",
+              }}
+            >
+              Si+Ag
+            </div>
           </Html>
         </group>
       </group>
@@ -663,11 +821,29 @@ export default function ThermalPage() {
   const [uiMagicArea, setUiMagicArea] = useState(75);
   const [showGaussian, setShowGaussian] = useState(false);
 
-  // SIMULATION STATE (Active params driven by Run button)
+  // --- NEW ADVANCED UI STATE ---
+  const [showAdvanced, setShowAdvanced] = useState(false); // Toggle for UI
+  const [uiLayerThick, setUiLayerThick] = useState(0.03);
+  const [uiPlateDim, setUiPlateDim] = useState(1.5);
+  const [uiCpvScale, setUiCpvScale] = useState(0.7);
+  const [uiNx, setUiNx] = useState(40);
+  const [uiNz, setUiNz] = useState(8);
+  const [uiUseCircle, setUiUseCircle] = useState(false);
+  // -----------------------------
+
+  // SIMULATION STATE
   const [activeParams, setActiveParams] = useState<{
     focusOffset: number;
     matrixSize: number;
     magicArea: number;
+    // --- NEW ACTIVE PARAMS ---
+    layerThick: number;
+    plateDim: number;
+    cpvScale: number;
+    nx: number;
+    nz: number;
+    useCircle: boolean;
+    // -------------------------
   } | null>(null);
 
   const [hasPendingChanges, setHasPendingChanges] = useState(false);
@@ -678,21 +854,25 @@ export default function ThermalPage() {
   }, [uiFocusOffset]);
 
   const handleRunSimulation = () => {
-    // 1. Force loading state immediately in Parent
     setSimStats((prev) => ({
-        ...prev,
-        loading: true,
-        status: "Calculating...",
-        // Reset old results
-        maxTemp: 0,
-        pElectric: 0,
+      ...prev,
+      loading: true,
+      status: "Calculating...",
+      maxTemp: 0,
+      pElectric: 0,
     }));
 
-    // 2. Trigger worker
+    // Pass all parameters to active state
     setActiveParams({
       focusOffset: uiFocusOffset,
       matrixSize: uiMatrixSize,
       magicArea: uiMagicArea,
+      layerThick: uiLayerThick,
+      plateDim: uiPlateDim,
+      cpvScale: uiCpvScale,
+      nx: uiNx,
+      nz: uiNz,
+      useCircle: uiUseCircle,
     });
   };
 
@@ -705,18 +885,36 @@ export default function ThermalPage() {
     setSimStats((prev) => ({ ...prev, ...stats }));
   }, []);
 
-  // Determine if UI differs from Active
+  // Update Pending Changes Logic
   useEffect(() => {
     if (!activeParams) {
-        setHasPendingChanges(false); 
-        return;
+      setHasPendingChanges(false);
+      return;
     }
     setHasPendingChanges(
       uiFocusOffset !== activeParams.focusOffset ||
-      uiMatrixSize !== activeParams.matrixSize ||
-      uiMagicArea !== activeParams.magicArea
+        uiMatrixSize !== activeParams.matrixSize ||
+        uiMagicArea !== activeParams.magicArea ||
+        // Check new params
+        uiLayerThick !== activeParams.layerThick ||
+        uiPlateDim !== activeParams.plateDim ||
+        uiCpvScale !== activeParams.cpvScale ||
+        uiNx !== activeParams.nx ||
+        uiNz !== activeParams.nz ||
+        uiUseCircle !== activeParams.useCircle
     );
-  }, [uiFocusOffset, uiMatrixSize, uiMagicArea, activeParams]);
+  }, [
+    uiFocusOffset,
+    uiMatrixSize,
+    uiMagicArea,
+    activeParams,
+    uiLayerThick,
+    uiPlateDim,
+    uiCpvScale,
+    uiNx,
+    uiNz,
+    uiUseCircle,
+  ]);
 
   return (
     <div className="relative w-full h-full bg-black overflow-hidden rounded-2xl">
@@ -800,7 +998,53 @@ export default function ThermalPage() {
           depth: true,
         }}
       >
-        <color attach="background" args={["#ffffff"]} />
+        {/* === BACKGROUND & ATMOSPHERE: "Technical Starry Sky" === */}
+
+        {/* 1. Base Void Color (Deep Space Blue) */}
+        <color attach="background" args={["#050a14"]} />
+
+        {/* 2. Fog: Blends the floor and distant objects into the void color */}
+        <fog attach="fog" args={["#050a14", 12, 45]} />
+
+        {/* 3. The Technical Grid Floor */}
+        <Grid
+          position={[0, -1.1, 0]} // Sitting slightly below the heat sink
+          args={[10.5, 10.5]} // Large area
+          cellSize={0.5}
+          cellThickness={0.5}
+          cellColor="#1f55a1" // Subtle dark blue-grey for minor lines
+          sectionSize={3}
+          sectionThickness={1}
+          sectionColor="#4fa9c9" // Brighter cyan for major sections, matching UI
+          fadeDistance={25} // Fades out into the fog
+          fadeStrength={1}
+          followCamera={false}
+          infiniteGrid
+        />
+
+        {/* 4. Distant Stars (The "Sky") */}
+        {/* Pushed far back so they don't intersect the model */}
+        <Stars
+          radius={100} // Large radius to keep them distant
+          depth={10}
+          count={2000}
+          factor={5} // Slightly larger stars
+          saturation={0.3} // Desaturated so thermal colors pop
+          fade
+          speed={0.3} // Slow twinkling
+        />
+
+        {/* 5. Floating "Star Dust" Particles (Immediate Atmosphere) */}
+        {/* Subtle floating points adding depth around the model */}
+        <Sparkles
+          count={30}
+          scale={3} // The volume they occupy
+          size={2} // Particle size
+          speed={0.3} // Very slow gentle drift
+          opacity={0.5} // Semi-transparent
+          color="#88ccff" // Light cyan/blue tint
+          noise={0.5}
+        />
         <PerspectiveCamera makeDefault position={[4, 0, 0]} fov={40} />
         <OrbitControls
           makeDefault
@@ -821,19 +1065,29 @@ export default function ThermalPage() {
         />
 
         <ThermalBox
-          // SIMULATION PARAMS (Worker) - Linked to Run button
+          // SIMULATION PARAMS (Worker)
           simMatrixSize={activeParams?.matrixSize ?? null}
           simFocusOffset={activeParams?.focusOffset ?? null}
           simMagicArea={activeParams?.magicArea ?? null}
-          
-          // VISUALIZATION PARAMS (UI) - Linked to Sliders
+          simLayerThick={activeParams?.layerThick ?? null}
+          simPlateDim={activeParams?.plateDim ?? null}
+          simCpvScale={activeParams?.cpvScale ?? null}
+          simNx={activeParams?.nx ?? null}
+          simNz={activeParams?.nz ?? null}
+          simUseCircle={activeParams?.useCircle ?? null}
+          // VISUALIZATION PARAMS (UI)
           visMatrixSize={uiMatrixSize}
           visFocusOffset={uiFocusOffset}
           visMagicArea={uiMagicArea}
-          
+          // --- NEW CONNECTIONS ---
+          visCpvScale={uiCpvScale} // Connects Slider to visual size
+          visUseCircle={uiUseCircle} // Connects Toggle to visual shape
+          // -----------------------
+
           hasPendingChanges={hasPendingChanges}
           status={simStats}
           showGaussian={showGaussian}
+          showAdvanced={showAdvanced}
           onUpdateStats={onUpdateStats}
         />
       </Canvas>
@@ -883,6 +1137,30 @@ export default function ThermalPage() {
           </div>
         )}
 
+        {/* --- ADVANCED SETTINGS TRIGGER BUTTON --- */}
+        <button
+          onClick={() => setShowAdvanced(true)}
+          className="group cursor-pointer w-full flex items-center justify-between px-4 py-3 bg-neutral-900 border border-white/10 rounded-xl transition-all duration-300"
+        >
+          <span className="text-[10px] uppercase tracking-widest font-bold text-cyan-400 transition-colors">
+            Configuració Avançada
+          </span>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+            className="w-4 h-4 text-gray-500 group-hover:text-white transition-colors"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"
+            />
+          </svg>
+        </button>
+
         <button
           onClick={simStats.loading ? undefined : handleRunSimulation}
           disabled={simStats.loading}
@@ -891,7 +1169,7 @@ export default function ThermalPage() {
               ? "cursor-wait bg-neutral-800/80 border-white/10 text-gray-500"
               : hasPendingChanges
               ? "bg-cyan-600/90 border-cyan-400 hover:bg-cyan-500 hover:scale-105 shadow-cyan-900/50 text-white"
-              : "bg-neutral-800/90 border-white/20 text-gray-400 hover:bg-neutral-700 hover:text-white"
+              : "bg-neutral-900 border-white/20 text-gray-300 hover:bg-neutral-700 hover:text-white"
           }`}
         >
           {simStats.loading ? (
@@ -926,6 +1204,99 @@ export default function ThermalPage() {
               : "Sistema Actualitzat"}
           </span>
         </button>
+
+        {/* --- ADVANCED SETTINGS MODAL --- */}
+        {showAdvanced && (
+          <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            {/* Modal Container - Widened to max-w-3xl for grid layout */}
+            <div className="bg-neutral-900 border border-white/10 p-6 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] w-full max-w-3xl relative animate-in zoom-in-95 duration-200 mt-16 md:mt-0">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/5">
+                <h2 className="text-sm font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-purple-200 to-white">
+                  Paràmetres Avançats
+                </h2>
+                <button
+                  onClick={() => setShowAdvanced(false)}
+                  className="cursor-pointer text-gray-500 hover:text-white transition-colors"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                    stroke="currentColor"
+                    className="w-6 h-6"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Modal Content - Grid Layout (2 Columns) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <ControlRow
+                  label="Gruix Placa"
+                  value={uiLayerThick.toFixed(3)}
+                  unit="m"
+                  colorClass="text-purple-400"
+                  onDec={() =>
+                    setUiLayerThick((p) => Math.max(p - 0.005, 0.005))
+                  }
+                  onInc={() => setUiLayerThick((p) => Math.min(p + 0.005, 0.1))}
+                />
+                <ControlRow
+                  label="Mida Placa"
+                  value={uiPlateDim.toFixed(1)}
+                  unit="m"
+                  colorClass="text-purple-400"
+                  onDec={() => setUiPlateDim((p) => Math.max(p - 0.1, 0.5))}
+                  onInc={() => setUiPlateDim((p) => Math.min(p + 0.1, 3.0))}
+                />
+                <ControlRow
+                  label="Escala CPV"
+                  value={(uiCpvScale * 100).toFixed(0)}
+                  unit="%"
+                  colorClass="text-pink-400"
+                  onDec={() => setUiCpvScale((p) => Math.max(p - 0.1, 0.1))}
+                  onInc={() => setUiCpvScale((p) => Math.min(p + 0.1, 1.0))}
+                />
+                <ControlRow
+                  label="Resolució XY"
+                  value={uiNx}
+                  colorClass="text-pink-400"
+                  onDec={() => setUiNx((p) => Math.max(p - 10, 10))}
+                  onInc={() => setUiNx((p) => Math.min(p + 10, 100))}
+                />
+                <ControlRow
+                  label="Resolució Z"
+                  value={uiNz}
+                  colorClass="text-pink-400"
+                  onDec={() => setUiNz((p) => Math.max(p - 1, 3))}
+                  onInc={() => setUiNz((p) => Math.min(p + 1, 20))}
+                />
+                <ToggleRow
+                  label="Forma Circular"
+                  checked={uiUseCircle}
+                  onChange={setUiUseCircle}
+                />
+              </div>
+
+              {/* Modal Footer */}
+              <div className="mt-6 pt-4 border-t border-white/5 flex justify-end">
+                <button
+                  onClick={() => setShowAdvanced(false)}
+                  className="px-6 py-2 cursor-pointer rounded-full bg-white/5 hover:bg-white/10 text-xs font-bold uppercase tracking-widest text-cyan-400 hover:text-cyan-300 transition-all border border-white/10"
+                >
+                  Confirmar Canvis
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* --- RIGHT STATS PANEL --- */}
@@ -952,19 +1323,19 @@ export default function ThermalPage() {
             colorLabel="text-gray-400"
           />
 
+          <StatItem
+            label="FWHM"
+            value={displayFwhm.toFixed(3) + " m"}
+            colorBorder="border-white/10"
+            colorLabel="text-gray-400"
+          />
+
           {activeParams &&
           simStats.maxTemp > 0 &&
           simStats.status !== "Stopped" &&
-          !simStats.loading && !hasPendingChanges ? (
+          !simStats.loading &&
+          !hasPendingChanges ? (
             <>
-              <StatItem
-                label="Temp. Màxima"
-                value={simStats.maxTemp.toFixed(1) + " °C"}
-                colorBg="bg-red-900/20"
-                colorBorder="border-red-500/30"
-                colorLabel="text-red-300"
-                colorValue="text-red-400"
-              />
               <StatItem
                 label="Potència Elec."
                 value={simStats.pElectric.toFixed(1) + " W"}
@@ -973,11 +1344,19 @@ export default function ThermalPage() {
                 colorLabel="text-green-300"
                 colorValue="text-green-400"
               />
+              <StatItem
+                label="Temp. Màxima"
+                value={simStats.maxTemp.toFixed(1) + " °C"}
+                colorBg="bg-red-900/20"
+                colorBorder="border-red-500/30"
+                colorLabel="text-red-300"
+                colorValue="text-red-400"
+              />
               {/* Complex item for hover/FWHM */}
-              <div className="col-span-2 bg-yellow-900/20 rounded-lg p-2.5 border border-yellow-500/30 flex justify-between items-center">
+              <div className="col-span-1 bg-yellow-900/20 rounded-lg p-2.5 border border-yellow-500/30 flex justify-between items-center">
                 <div>
                   <p className="text-[9px] text-yellow-300 uppercase tracking-wider mb-0.5">
-                    Temp. Punter (Mouse)
+                    Temp. Punter
                   </p>
                   <p className="font-mono text-lg font-bold text-yellow-400">
                     {simStats.hoverTemp !== null &&
@@ -986,19 +1365,13 @@ export default function ThermalPage() {
                       : "--.- °C"}
                   </p>
                 </div>
-                <div className="text-right">
-                  <p className="text-[9px] text-yellow-300/70 uppercase tracking-wider mb-0.5">
-                    FWHM (Sim)
-                  </p>
-                  <p className="font-mono text-sm text-yellow-200/80">
-                    {activeParams ? ((Math.abs(activeParams.focusOffset)/2.5 * 0.5) + 0.1).toFixed(3) : "-"} m
-                  </p>
-                </div>
               </div>
             </>
           ) : (
             <div className="col-span-2 py-6 text-center text-xs text-gray-500 italic border border-dashed border-white/10 rounded-lg">
-              {hasPendingChanges ? "Paràmetres modificats. Executeu la simulació." : "Inicieu la simulació per veure resultats tèrmics."}
+              {hasPendingChanges
+                ? "Paràmetres modificats. Executeu la simulació."
+                : "Inicieu la simulació per veure resultats tèrmics."}
             </div>
           )}
         </div>

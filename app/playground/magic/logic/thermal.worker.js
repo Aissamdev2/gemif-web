@@ -1,5 +1,5 @@
 // thermal.worker.js
-import init, { run_thermal_simulation } from "../wasm-embeddings/vc1/solar.js";
+import init, { run_thermal_simulation } from "../wasm-embeddings/vc3/solar.js";
 
 
 const tempColor = { r: 0, g: 0, b: 0 }; 
@@ -26,15 +26,47 @@ function updateHeatColor(t, targetArray, offset) {
 }
 
 self.onmessage = async ({ data }) => {
-  // 1. Destructure wasmUrl from the data
-  const { fwhm, magicArea, matrixSize, wasmUrl } = data;
+  // 1. Destructure all new parameters from data
+  const { 
+    fwhm, 
+    magicArea, 
+    matrixSize, 
+    layerThickness, 
+    plateDim, 
+    cpvScale, 
+    nXy, 
+    nZLayer, 
+    useCircle, 
+    wasmUrl 
+  } = data;
 
   try {
-    // 2. Pass the explicitly resolved URL to init
     console.log("Loading WASM from URL:", wasmUrl);
     await init(wasmUrl);
 
-    const result = run_thermal_simulation(fwhm, magicArea, matrixSize);
+    console.log("Running thermal simulation with parameters:", { 
+      fwhm, 
+      magicArea, 
+      matrixSize, 
+      layerThickness, 
+      plateDim, 
+      cpvScale, 
+      nXy, 
+      nZLayer, 
+      useCircle 
+    });
+    // 2. Pass parameters in the EXACT order defined in Rust
+    const result = run_thermal_simulation(
+        fwhm, 
+        magicArea, 
+        matrixSize, 
+        layerThickness, 
+        plateDim, 
+        cpvScale, 
+        nXy, 
+        nZLayer, 
+        useCircle
+    );
 
     const nx = result.get_nx();
     const ny = result.get_ny();

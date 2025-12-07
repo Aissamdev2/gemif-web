@@ -16,15 +16,15 @@ import {
   Environment,
   Instances,
   Instance,
-  useTexture,
+  // New imports from Drei
+  Sky,
+  Stars,
+  Sparkles,
+  Grid,
+  Cloud,
 } from "@react-three/drei";
 import * as THREE from "three";
 import Link from "next/link";
-
-// --- Constants ---
-const DAY_TEXTURE_URL = "/textures/sky2.jpg";
-const NIGHT_TEXTURE_URL = "/textures/stars.jpg";
-const GROUND_TEXTURE_URL = "/textures/ground.jpg";
 
 const FOCAL_LENGTH = 20;
 const DISH_RADIUS = 10;
@@ -90,6 +90,10 @@ ControlRow.displayName = "ControlRow";
 // SECTION 2: SHARED 3D COMPONENTS
 // ------------------------------------------------------------------
 
+// ------------------------------------------------------------------
+// SECTION 2: SHARED 3D COMPONENTS
+// ------------------------------------------------------------------
+
 function SceneReady({ onReady }: { onReady: () => void }) {
   useEffect(() => {
     onReady();
@@ -97,60 +101,105 @@ function SceneReady({ onReady }: { onReady: () => void }) {
   return null;
 }
 
-export function SkySphere({ isNight }: { isNight: boolean }) {
-  const map = useTexture(isNight ? NIGHT_TEXTURE_URL : DAY_TEXTURE_URL);
-
-  useLayoutEffect(() => {
-    if (isNight) {
-      map.wrapS = THREE.RepeatWrapping;
-      map.wrapT = THREE.RepeatWrapping;
-      map.repeat.set(6, 6);
-    } else {
-      map.wrapS = THREE.RepeatWrapping;
-      map.wrapT = THREE.ClampToEdgeWrapping;
-      map.repeat.set(1, 1);
-    }
-    map.needsUpdate = true;
-  }, [map, isNight]);
-
+// Replaces SkySphere and TexturedGround
+const SceneEnvironment = ({ isNight }: { isNight: boolean }) => {
   return (
-    <mesh scale={[500, 500, 500]}>
-      <sphereGeometry args={[1, 64, 64]} />
-      <meshBasicMaterial
-        map={map}
-        color="white"
-        side={THREE.BackSide}
-        fog={false}
-      />
-    </mesh>
+    <>
+      {/* --- BACKGROUND TRANSITION --- */}
+      {/* Day: Use a slightly darker blue-white for background to blend better with sky */}
+      <color attach="background" args={[isNight ? "#050a14" : "#b1d9fc"]} />
+
+      {
+        !isNight && (
+          <fog
+            attach="fog"
+            args={[
+              isNight ? "#050a14" : "#dbecfb",
+              isNight ? 10 : 50,
+              isNight ? 60 : 600,
+            ]}
+          />
+        )
+      }
+
+      {/* --- GROUND GROUP --- */}
+      <group position={[0, -3, 0]}>
+        {/* 1. The Visual Grid Lines (Rendered on top) */}
+        <Grid
+          args={[100, 100]}
+          cellSize={0.5}
+          cellThickness={0.6}
+          cellColor={isNight ? "#1a2e4a" : "#599905"}
+          sectionSize={2.5}
+          sectionThickness={1.2}
+          sectionColor={isNight ? "#4fa9c9" : "#60a605"}
+          fadeDistance={isNight ? 30 : 150}
+          fadeStrength={1.5}
+          infiniteGrid
+        />
+
+        {/* 2. The Solid Floor (Pushed back to prevent flashing) */}
+        <mesh
+          rotation={[-Math.PI / 2, 0, 0]}
+          position={[0, -0.5, 0]}
+          receiveShadow
+        >
+          <planeGeometry args={[500, 500]} />
+          <meshStandardMaterial
+            color={isNight ? "#040810" : "#7fa848"}
+            roughness={1}
+            metalness={0}
+            // FIX Z-FIGHTING:
+            polygonOffset={true}
+            polygonOffsetFactor={1} // Pushes the material back in depth
+            polygonOffsetUnits={1}
+          />
+        </mesh>
+      </group>
+
+      {/* --- NIGHT ELEMENTS (Intro) --- */}
+      {isNight && (
+        <>
+          <Stars
+            radius={60}
+            depth={10}
+            count={2000}
+            factor={5}
+            saturation={0.3}
+            fade
+            speed={0.5}
+          />
+          <Sparkles
+            count={80}
+            scale={15}
+            size={3}
+            speed={0.3}
+            opacity={0.5}
+            color="#88ccff"
+            noise={0.5}
+            position={[0, 10, 0]}
+          />
+        </>
+      )}
+
+      {/* --- DAY ELEMENTS (Simulation) --- */}
+      {!isNight && (
+        <>
+          <Sky
+            distance={450000}
+            sunPosition={[50, 200, 50]}
+            inclination={0}
+            azimuth={0.25}
+            // Reduced rayleigh slightly for a deeper blue, less hazy sky
+            rayleigh={0.1}
+            turbidity={10}
+            mieCoefficient={0.005}
+          />
+        </>
+      )}
+    </>
   );
-}
-
-export function TexturedGround() {
-  
-  const map = useTexture(GROUND_TEXTURE_URL);
-  
-  useLayoutEffect(() => {
-    map.wrapS = map.wrapT = THREE.RepeatWrapping;
-    map.repeat.set(15, 15);
-  }, [map]);
-  
-  return (
-    <mesh
-      rotation={[-Math.PI / 2, 0, 0]}
-      position={[0, -2.5, 0]}
-      receiveShadow
-    >
-      <planeGeometry args={[1000, 1000]} />
-      <meshStandardMaterial
-        map={map}
-        roughness={0.9}
-      />
-    </mesh>
-  );
-}
-
-
+};
 const TubeInstance = ({
   start,
   end,
@@ -220,11 +269,7 @@ const Structure = ({
       </group>
 
       {Math.abs(focusOffset) > 0.1 && (
-        <mesh
-          position={[0, FOCAL_LENGTH, 0]}
-          geometry={sphereGeo}
-          scale={0.05}
-        >
+        <mesh position={[0, FOCAL_LENGTH, 0]} geometry={sphereGeo} scale={0.05}>
           <meshBasicMaterial color="red" transparent opacity={0.6} />
         </mesh>
       )}
@@ -361,18 +406,18 @@ const MountBase = () => {
 
       <group>
         <mesh
-          position={[-9, 1.8, 0]}
+          position={[-9, 2.8, 0]}
           castShadow
           geometry={boxGeo}
-          scale={[1.5, 12, 3]}
+          scale={[1.5, 10, 3]}
         >
           <meshStandardMaterial color="#666" />
         </mesh>
         <mesh
-          position={[9, 1.8, 0]}
+          position={[9, 2.8, 0]}
           castShadow
           geometry={boxGeo}
-          scale={[1.5, 12, 3]}
+          scale={[1.5, 10, 3]}
         >
           <meshStandardMaterial color="#666" />
         </mesh>
@@ -413,15 +458,9 @@ const AnimatedRay = ({
   const initialPositions = useMemo(
     () =>
       new Float32Array([
-        start.x,
-        start.y,
-        start.z,
-        start.x,
-        start.y,
-        start.z,
-        start.x,
-        start.y,
-        start.z,
+        start.x, start.y, start.z,
+        start.x, start.y, start.z,
+        start.x, start.y, start.z,
       ]),
     [start]
   );
@@ -485,10 +524,12 @@ const AnimatedRay = ({
         new THREE.Line(
           new THREE.BufferGeometry(),
           new THREE.LineBasicMaterial({
-            color: "#ff0000",
-            opacity: 0.6,
+            color: "#ff2a6d", // Neon Red/Pink for high visibility
+            opacity: 1.0,     // Full opacity
             transparent: true,
-            linewidth: 1,
+            linewidth: 2,     // Tries to make it thicker (browser dependent)
+            blending: THREE.AdditiveBlending, // Makes overlapping lines glow
+            depthWrite: false, // Prevents z-fighting
           })
         )
       }
@@ -501,12 +542,6 @@ const AnimatedRay = ({
           count={3}
         />
       </bufferGeometry>
-      <lineBasicMaterial
-        color="#ff0000"
-        opacity={0.6}
-        transparent
-        linewidth={1}
-      />
     </primitive>
   );
 };
@@ -900,7 +935,7 @@ export default function TelescopePage() {
         {/* OPTIMIZATION: dpr=1, powerPreference, no stencil/antialias */}
         <Canvas
           shadows
-          dpr={[1,2]}
+          dpr={[1, 2]}
           gl={{
             alpha: false,
             antialias: false, // OFF for perf
@@ -924,27 +959,24 @@ export default function TelescopePage() {
           <Suspense fallback={null}>
             <SceneReady onReady={() => setLoaded(true)} />
 
-            <ambientLight intensity={isNight ? 0.2 : 1.0} />
-            {/* OPTIMIZATION: Lower shadow map resolution + bias */}
+            <ambientLight intensity={isNight ? 0.2 : 0.8} />
             <directionalLight
               position={[100, 200, 50]}
-              intensity={isNight ? 0.5 : 4.0}
+              intensity={isNight ? 0.5 : 2.5}
               castShadow
-              shadow-mapSize={[512, 512]}
+              shadow-mapSize={[1024, 1024]} // Increased slightly for day quality
               shadow-bias={-0.0001}
-              color={isNight ? "#b0c4de" : "#fffaed"}
+              color={isNight ? "#b0c4de" : "#fffbf0"}
             />
+
+            {/* Environment HDRI for Reflections */}
             <Environment
               files={"/hdri/rooitou_park_1k.hdr"}
               background={false}
             />
 
-            <SkySphere isNight={isNight} />
-            {
-              !isNight && (
-                <TexturedGround />
-              )
-            }
+            {/* --- NEW ENVIRONMENT COMPONENT --- */}
+            <SceneEnvironment isNight={isNight} />
 
             <MountBase />
             <group position={[0, 8, 0]} rotation={[Math.PI / 4, 0, 0]}>
@@ -952,10 +984,7 @@ export default function TelescopePage() {
               <MirrorDish focusOffset={focusOffset} />
               <Structure focusOffset={focusOffset} matrixSize={matrixSize} />
               {showRays && (
-                <RayTracer
-                  focusOffset={focusOffset}
-                  matrixSize={matrixSize}
-                />
+                <RayTracer focusOffset={focusOffset} matrixSize={matrixSize} />
               )}
             </group>
           </Suspense>
