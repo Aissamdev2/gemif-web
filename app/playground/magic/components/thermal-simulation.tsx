@@ -21,7 +21,7 @@ const PLATE_DEPTH = 1.5;
 const FOCUS_OFFSET_MIN = -3.5;
 const FOCUS_OFFSET_MAX = 0;
 const MATRIX_SIZE_MIN = 1;
-const MATRIX_SIZE_MAX = 5;
+const MATRIX_SIZE_MAX = 7;
 
 // --- TYPES ---
 type LayerTextures = [
@@ -355,14 +355,14 @@ const ThermalBox = memo(
 
     // Derived States for Math
     const simFwhm = useMemo(() => {
-      if (simFocusOffset === null) return 0.1;
+      if (simFocusOffset === null) return 0.17;
       const ratio = Math.abs(simFocusOffset) / 2.5;
-      return 0.1 + ratio * 0.5;
+      return 0.17 + ratio * 0.5;
     }, [simFocusOffset]);
 
     const visFwhm = useMemo(() => {
       const ratio = Math.abs(visFocusOffset) / 2.5;
-      return 0.1 + ratio * 0.5;
+      return 0.17 + ratio * 0.5;
     }, [visFocusOffset]);
 
     // Force texture cleanup when loading starts
@@ -850,7 +850,7 @@ export default function ThermalPage() {
 
   const displayFwhm = useMemo(() => {
     const ratio = Math.abs(uiFocusOffset) / 2.5;
-    return 0.1 + ratio * 0.5;
+    return 0.17 + ratio * 0.5;
   }, [uiFocusOffset]);
 
   const handleRunSimulation = () => {
@@ -1123,7 +1123,7 @@ export default function ThermalPage() {
           value={uiMagicArea}
           colorClass="text-green-400"
           onDec={() => setUiMagicArea((p) => Math.max(p - 5, 10))}
-          onInc={() => setUiMagicArea((p) => Math.min(p + 5, 240))}
+          onInc={() => setUiMagicArea((p) => Math.min(p + 5, 236))}
         />
 
         {/* TOGGLE LOGIC: Show if Stopped OR if Running but has pending changes */}
