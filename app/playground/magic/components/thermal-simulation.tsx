@@ -23,7 +23,7 @@ import Link from "next/link";
 // --- CONSTANTS & MATERIALS ---
 const PLATE_WIDTH = 1.5;
 const PLATE_DEPTH = 1.5;
-const FOCUS_OFFSET_MIN = -3.5;
+const FOCUS_OFFSET_MIN = -1;
 const FOCUS_OFFSET_MAX = 0;
 const MATRIX_SIZE_MIN = 1;
 const MATRIX_SIZE_MAX = 7;
@@ -39,14 +39,18 @@ type MaterialDef = {
 };
 
 // --- MATERIALS DATABASE ---
-// Added 'cost' in €/kg (Approximate raw + processing estimates)
-const MATERIALS: Record<string, MaterialDef & { cost: number }> = {
+// Added 'machiningFactor': Multiplier for manufacturing difficulty (1.0 = Standard Al)
+const MATERIALS: Record<
+  string,
+  MaterialDef & { cost: number; machiningFactor: number }
+> = {
   "Al-1050A (Anodized)": {
     name: "Al-1050A (High Cond.)",
     kt: 220.0,
     emi: 0.85,
     rho: 2705,
-    cost: 4.5, // Cheap, widely available
+    cost: 4.5,
+    machiningFactor: 1.0, // Standard reference
     color: "#4a4a4a",
     metalness: 0.5,
     roughness: 0.7,
@@ -56,7 +60,8 @@ const MATERIALS: Record<string, MaterialDef & { cost: number }> = {
     kt: 167.0,
     emi: 0.85,
     rho: 2700,
-    cost: 5.0, // Standard structural alloy
+    cost: 5.0,
+    machiningFactor: 1.1, // Slightly harder than pure Al
     color: "#5c5c5c",
     metalness: 0.5,
     roughness: 0.7,
@@ -64,9 +69,10 @@ const MATERIALS: Record<string, MaterialDef & { cost: number }> = {
   "Mg-AZ31B (Coated)": {
     name: "Magnesium AZ31B",
     kt: 96.0,
-    emi: 0.80,
+    emi: 0.8,
     rho: 1770,
-    cost: 12.0, // More expensive, difficult to machine
+    cost: 12.0,
+    machiningFactor: 1.8, // Flammable chips, specialized cooling needed
     color: "#e0e0e0",
     metalness: 0.3,
     roughness: 0.5,
@@ -76,7 +82,8 @@ const MATERIALS: Record<string, MaterialDef & { cost: number }> = {
     kt: 700.0,
     emi: 0.95,
     rho: 2100,
-    cost: 150.0, // Engineered material, very expensive per volume
+    cost: 150.0,
+    machiningFactor: 0.5, // It's cut/stamped, not CNC machined (cheaper process)
     color: "#252525",
     metalness: 0.2,
     roughness: 0.9,
@@ -86,7 +93,8 @@ const MATERIALS: Record<string, MaterialDef & { cost: number }> = {
     kt: 390.0,
     emi: 0.65,
     rho: 8960,
-    cost: 10.0, // Commodity price fluctuation
+    cost: 10.0,
+    machiningFactor: 2.5, // Hard on tools, slow feed rates, heavy
     color: "#ff8c42",
     metalness: 0.4,
     roughness: 0.4,
@@ -97,13 +105,13 @@ const MATERIALS: Record<string, MaterialDef & { cost: number }> = {
 const LAYER_COSTS = {
   // CPV Cells (Silicon/III-V multijunction)
   // Priced per Area (m2) because thickness is negligible for volume pricing
-  CPV_PRICE_PER_M2: 800, 
-  
+  CPV_PRICE_PER_M2: 800,
+
   // Silver Sintering / Paste (Ag)
   // Very thin layer, but Silver is expensive (~€800/kg)
   AG_THICKNESS: 0.00005, // 50 microns
-  AG_DENSITY: 10490,     // kg/m3
-  AG_COST_PER_KG: 850,   // €/kg
+  AG_DENSITY: 10490, // kg/m3
+  AG_COST_PER_KG: 850, // €/kg
 };
 
 // --- TYPES ---
@@ -318,7 +326,6 @@ const StatItem = memo(
     colorBorder,
     colorLabel,
     colorValue,
-    colSpan = 1,
   }: {
     label: string;
     value: string | number;
@@ -326,19 +333,22 @@ const StatItem = memo(
     colorBorder: string;
     colorLabel: string;
     colorValue?: string;
-    colSpan?: number;
   }) => (
     <div
       className={`${
         colorBg || "bg-white/5"
-      } rounded-lg p-2.5 border ${colorBorder} ${
-        colSpan > 1 ? "col-span-" + colSpan : ""
-      }`}
+      } rounded-md py-1 px-3 border ${colorBorder} flex flex-col justify-center min-w-[100px] h-full`}
     >
-      <p className={`text-[9px] uppercase tracking-wider mb-0.5 ${colorLabel}`}>
+      <p
+        className={`text-[8px] uppercase tracking-wider leading-none mb-1 ${colorLabel}`}
+      >
         {label}
       </p>
-      <p className={`font-mono font-bold ${colorValue || "text-white"}`}>
+      <p
+        className={`font-mono text-sm font-bold leading-none ${
+          colorValue || "text-white"
+        }`}
+      >
         {value}
       </p>
     </div>
@@ -446,6 +456,8 @@ const ThermalBox = memo(
     visMagicArea,
     visCpvScale,
     visUseCircle,
+    visLayerThick, // NEW
+    visSinkThick, // NEW
     visBaseMatKey, // NEW
     visSinkMatKey, // NEW
     status,
@@ -471,6 +483,8 @@ const ThermalBox = memo(
     visMagicArea: number;
     visCpvScale: number;
     visUseCircle: boolean;
+    visLayerThick: number;
+    visSinkThick: number;
     visBaseMatKey: string;
     visSinkMatKey: string;
     status: SimStats;
@@ -493,13 +507,11 @@ const ThermalBox = memo(
     // Derived States
     const simFwhm = useMemo(() => {
       if (simFocusOffset === null) return 0.17;
-      const ratio = Math.abs(simFocusOffset) / 2.5;
-      return 0.17 + ratio * 0.5;
+      return Math.sqrt(Math.pow(0.17, 2) + Math.pow(simFocusOffset, 2));
     }, [simFocusOffset]);
 
     const visFwhm = useMemo(() => {
-      const ratio = Math.abs(visFocusOffset) / 2.5;
-      return 0.17 + ratio * 0.5;
+      return Math.sqrt(Math.pow(0.17, 2) + Math.pow(visFocusOffset, 2));
     }, [visFocusOffset]);
 
     // Cleanup Textures
@@ -625,10 +637,11 @@ const ThermalBox = memo(
       onUpdateStats,
     ]);
 
-    // --- ANIMATION ---
-    const SINK_TARGET_Y = -0.6;
+    const SINK_INIT_Y = -(visSinkThick + visLayerThick + 0.08) / 2;
+    const SINK_TARGET_Y = SINK_INIT_Y - 0.5;
     const BASE_TARGET_Y = 0;
-    const CPV_TARGET_Y = 0.4;
+    const CPV_TARGET_Y = visLayerThick / 2 + 0.5;
+    const SPEED = 1.5;
 
     useFrame((_, delta) => {
       const isVisualizing =
@@ -638,19 +651,23 @@ const ThermalBox = memo(
         currentExpansion.current,
         targetExpansion,
         3.0,
-        delta
+        delta * SPEED
       );
       const t = currentExpansion.current;
       if (sinkRef.current)
         sinkRef.current.position.y = THREE.MathUtils.lerp(
-          -0.24,
+          SINK_INIT_Y,
           SINK_TARGET_Y,
           t
         );
       if (baseRef.current)
         baseRef.current.position.y = THREE.MathUtils.lerp(0, BASE_TARGET_Y, t);
       if (cpvRef.current)
-        cpvRef.current.position.y = THREE.MathUtils.lerp(0.16, CPV_TARGET_Y, t);
+        cpvRef.current.position.y = THREE.MathUtils.lerp(
+          visLayerThick / 2 + 0.01,
+          CPV_TARGET_Y,
+          t
+        );
     });
 
     // --- HOVER ---
@@ -722,16 +739,14 @@ const ThermalBox = memo(
       };
     }, [visBaseMatKey, visSinkMatKey]);
 
-    
-
     const geometries = useMemo(() => {
       return {
-        sinkMain: new THREE.BoxGeometry(PLATE_WIDTH, 0.1, PLATE_DEPTH),
+        sinkMain: new THREE.BoxGeometry(PLATE_WIDTH, visSinkThick, PLATE_DEPTH),
         sinkFin: new THREE.BoxGeometry(0.02, 0.1, PLATE_DEPTH),
-        base: new THREE.BoxGeometry(PLATE_WIDTH, 0.3, PLATE_DEPTH),
+        base: new THREE.BoxGeometry(PLATE_WIDTH, visLayerThick, PLATE_DEPTH),
         cpvSubstrate: new THREE.BoxGeometry(PLATE_WIDTH, 0.02, PLATE_DEPTH),
       };
-    }, []);
+    }, [visLayerThick, visSinkThick]);
 
     const annotationStyle = {
       color: "white",
@@ -784,7 +799,7 @@ const ThermalBox = memo(
                 return (
                   <mesh
                     key={i}
-                    position={[pos, -0.02, 0]}
+                    position={[pos, -visSinkThick / 2, 0]}
                     geometry={geometries.sinkFin}
                     material={visualMaterials.sink}
                   />
@@ -932,6 +947,54 @@ const ThermalBox = memo(
 );
 ThermalBox.displayName = "ThermalBox";
 
+// --- COST CONSTANTS (SCIENTIFIC / AEROSPACE GRADE) ---
+const PROJECT_COSTS = {
+  // Materials (Raw + Certifications)
+  CPV_PRICE_PER_M2: 2500, // High-efficiency triple-junction cells + optics (Space grade)
+  AG_THICKNESS: 0.00005,
+  AG_DENSITY: 10490,
+  AG_COST_PER_KG: 1200, // High purity (99.99%) silver paste for sintering
+
+  // Manufacturing (Precision CNC + Surface Treatments)
+  // Standard CNC is ~800, Precision is 3x-4x higher.
+  CNC_BASE_RATE_M2: 3500,
+  SURFACE_TREAT_M2: 500, // Alodine/Anodizing/Gold plating for conductivity/corrosion
+
+  // Assembly (Cleanroom ISO 7/8)
+  // Sintering in vacuum, wire bonding, precision alignment (microns)
+  ASSEMBLY_HOURLY_RATE: 150,
+  HOURS_PER_M2: 40,
+
+  // Electronics (Rad-Hard / Low Noise)
+  // Scientific grade sensors, low-noise cabling, shielding
+  ELEC_COST_PER_WATT: 2.5,
+
+  // --- FIXED PROJECT COSTS (The "Hidden" Costs) ---
+
+  // NRE: Design, Thermal FEA Analysis, Custom Tooling/Jigs
+  NRE_FLAT_FEE: 15000,
+
+  // QUALIFICATION: Thermal Vacuum (TVAC) testing, Vibration, QC Documentation
+  QUALIFICATION_FEE: 8000,
+
+  // LOGISTICS: Specialized transport, Cranes inside dome, Insurance
+  INSTALL_BASE_FEE: 5000,
+  INSTALL_WEIGHT_PENALTY: 120, // €/kg (Heavy parts = complex rigging near optics)
+
+  // CONTINGENCY: Standard for scientific R&D
+  CONTINGENCY_PCT: 0.2,
+};
+
+// --- ROI CONSTANTS (La Palma, Canary Islands) ---
+const ROI_CONSTANTS = {
+  // Annual Equivalent Sun Hours for a 2-axis tracker in La Palma
+  // Roque de los Muchachos offers approx 2800-3000 usable DNI hours/year.
+  SUN_HOURS_YEAR: 2800,
+
+  // Electricity Cost in €/kWh (Average Commercial/Scientific Grid Rate)
+  ELEC_PRICE_EUR_KWH: 0.22,
+};
+
 // --- MAIN PAGE COMPONENT ---
 export default function ThermalPage() {
   const [simStats, setSimStats] = useState<SimStats>({
@@ -944,7 +1007,7 @@ export default function ThermalPage() {
   });
 
   // UI STATE
-  const [uiFocusOffset, setUiFocusOffset] = useState(-1.5);
+  const [uiFocusOffset, setUiFocusOffset] = useState(0);
   const [uiMatrixSize, setUiMatrixSize] = useState(5);
   const [uiMagicArea, setUiMagicArea] = useState(75);
   const [showGaussian, setShowGaussian] = useState(false);
@@ -952,7 +1015,7 @@ export default function ThermalPage() {
   // ADVANCED UI STATE
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [uiLayerThick, setUiLayerThick] = useState(0.03);
-  const [uiSinkThick, setUiSinkThick] = useState(0.02); // NEW
+  const [uiSinkThick, setUiSinkThick] = useState(0.01); // NEW
   const [uiPlateDim, setUiPlateDim] = useState(1.5);
   const [uiCpvScale, setUiCpvScale] = useState(0.7);
   const [uiNx, setUiNx] = useState(40);
@@ -981,8 +1044,7 @@ export default function ThermalPage() {
   const [hasPendingChanges, setHasPendingChanges] = useState(false);
 
   const displayFwhm = useMemo(() => {
-    const ratio = Math.abs(uiFocusOffset) / 2.5;
-    return 0.17 + ratio * 0.5;
+    return Math.sqrt(Math.pow(0.17, 2) + Math.pow(uiFocusOffset, 2));
   }, [uiFocusOffset]);
 
   const handleRunSimulation = () => {
@@ -1060,35 +1122,103 @@ export default function ThermalPage() {
     const sinkRho = MATERIALS[uiSinkMatKey].rho;
     const volBase = Math.pow(uiPlateDim, 2) * uiLayerThick;
     // Approximating sink volume (fins usually add significant volume, approximated here as 50% solid block for calc)
-    const volSink = Math.pow(uiPlateDim, 2) * uiSinkThick * 0.5;
+    const volSink = Math.pow(uiPlateDim, 2) * uiSinkThick;
     return volBase * baseRho + volSink * sinkRho;
   }, [uiPlateDim, uiLayerThick, uiSinkThick, uiBaseMatKey, uiSinkMatKey]);
 
-
-  // 1. Calculate Cost based on Volume & Area
-  const structureCost = useMemo(() => {
+  // 1. Calculate Scientific Project Cost
+  const projectCost = useMemo(() => {
     const area = Math.pow(uiPlateDim, 2);
-    
-    // Base Plate Cost
     const baseMat = MATERIALS[uiBaseMatKey];
-    const volBase = area * uiLayerThick;
-    const costBase = volBase * baseMat.rho * baseMat.cost;
-
-    // Sink Cost (Approximated as 50% solid volume for fins)
     const sinkMat = MATERIALS[uiSinkMatKey];
-    const volSink = area * uiSinkThick * 0.5; 
-    const costSink = volSink * sinkMat.rho * sinkMat.cost;
 
-    // Fixed Layers Cost
-    // 1. CPV Cells Area Cost
-    const costCPV = area * LAYER_COSTS.CPV_PRICE_PER_M2;
-    
-    // 2. Silver (Ag) Layer Cost
-    const volAg = area * LAYER_COSTS.AG_THICKNESS;
-    const costAg = volAg * LAYER_COSTS.AG_DENSITY * LAYER_COSTS.AG_COST_PER_KG;
+    // --- A. VARIABLE COSTS (Depend on Size/Weight) ---
 
-    return costBase + costSink + costCPV + costAg;
+    // Materials
+    const volBase = area * uiLayerThick;
+    const volSink = area * uiSinkThick * 0.5; // 50% void
+    const volAg = area * PROJECT_COSTS.AG_THICKNESS;
+
+    // Add 20% material waste factor for machining
+    const costMatBase = volBase * baseMat.rho * baseMat.cost * 1.2;
+    const costMatSink = volSink * sinkMat.rho * sinkMat.cost * 1.2;
+    const costMatAg =
+      volAg * PROJECT_COSTS.AG_DENSITY * PROJECT_COSTS.AG_COST_PER_KG;
+    const costMatCPV = area * PROJECT_COSTS.CPV_PRICE_PER_M2;
+    const totalMaterials = costMatBase + costMatSink + costMatAg + costMatCPV;
+
+    // Manufacturing (Precision Machining + Surface Treatment)
+    // Harder materials multiply the machining time/wear
+    const machiningCost =
+      area * PROJECT_COSTS.CNC_BASE_RATE_M2 * sinkMat.machiningFactor +
+      area * PROJECT_COSTS.SURFACE_TREAT_M2;
+
+    // Assembly (Cleanroom Labor)
+    const assemblyCost =
+      area * PROJECT_COSTS.HOURS_PER_M2 * PROJECT_COSTS.ASSEMBLY_HOURLY_RATE;
+
+    // Electronics (Scientific Grade)
+    const estimatedWatts = area * 1000 * 0.4; // 40% efficiency for modern CPV
+    const electronicsCost = estimatedWatts * PROJECT_COSTS.ELEC_COST_PER_WATT;
+
+    // Installation (Rigging & Access)
+    const totalWeight = volBase * baseMat.rho + volSink * sinkMat.rho;
+    const installationCost =
+      PROJECT_COSTS.INSTALL_BASE_FEE +
+      totalWeight * PROJECT_COSTS.INSTALL_WEIGHT_PENALTY;
+
+    const totalVariable =
+      totalMaterials +
+      machiningCost +
+      assemblyCost +
+      electronicsCost +
+      installationCost;
+
+    // --- B. FIXED COSTS (Engineering & Qual) ---
+    const fixedCosts =
+      PROJECT_COSTS.NRE_FLAT_FEE + PROJECT_COSTS.QUALIFICATION_FEE;
+
+    // --- C. TOTAL with Contingency ---
+    const subTotal = totalVariable + fixedCosts;
+    const contingency = subTotal * PROJECT_COSTS.CONTINGENCY_PCT;
+    const total = subTotal + contingency;
+
+    return {
+      total: total,
+      breakdown: {
+        materials: totalMaterials,
+        manufacturing: machiningCost,
+        assembly: assemblyCost,
+        engineering: fixedCosts, // NRE + Qual
+        logistics: installationCost + contingency, // Install + Risk
+      },
+    };
   }, [uiPlateDim, uiLayerThick, uiSinkThick, uiBaseMatKey, uiSinkMatKey]);
+
+  // ... inside ThermalPage component ...
+
+  // 2. Calculate ROI / Payback Period
+  const paybackPeriod = useMemo(() => {
+    // If we aren't generating power yet, return null
+    if (simStats.pElectric <= 0) return null;
+
+    // 1. Annual Energy Production (kWh/year)
+    // pElectric is in Watts. Convert to kW, then multiply by annual sun hours.
+    const annualEnergyKwh =
+      (simStats.pElectric / 1000) * ROI_CONSTANTS.SUN_HOURS_YEAR;
+
+    // 2. Annual Value of Energy (€/year)
+    const annualSavings = annualEnergyKwh * ROI_CONSTANTS.ELEC_PRICE_EUR_KWH;
+
+    // 3. Years to Payoff = Total CAPEX / Annual Savings
+    const years = projectCost.total / annualSavings;
+
+    return {
+      years: years,
+      annualSavings: annualSavings,
+      isViable: years < 15, // Arbitrary lifecycle limit for "viable"
+    };
+  }, [simStats.pElectric, projectCost.total]);
 
   return (
     <div className="relative w-full h-full bg-black overflow-hidden rounded-2xl">
@@ -1248,6 +1378,8 @@ export default function ThermalPage() {
           visMagicArea={uiMagicArea}
           visCpvScale={uiCpvScale}
           visUseCircle={uiUseCircle}
+          visLayerThick={uiLayerThick * 10}
+          visSinkThick={uiSinkThick * 10}
           visBaseMatKey={uiBaseMatKey}
           visSinkMatKey={uiSinkMatKey}
           hasPendingChanges={hasPendingChanges}
@@ -1261,7 +1393,7 @@ export default function ThermalPage() {
       {/* LEFT CONTROL PANEL */}
       <div className="absolute z-30 top-28 left-8 flex flex-col items-start gap-4 pointer-events-auto">
         <ControlRow
-          label="Desplaçament"
+          label="Despl. (m)"
           value={
             uiFocusOffset > 0
               ? "+" + uiFocusOffset.toFixed(1)
@@ -1269,10 +1401,10 @@ export default function ThermalPage() {
           }
           colorClass="text-cyan-400"
           onDec={() =>
-            setUiFocusOffset((p) => Math.max(p - 0.5, FOCUS_OFFSET_MIN))
+            setUiFocusOffset((p) => Math.max(p - 0.1, FOCUS_OFFSET_MIN))
           }
           onInc={() =>
-            setUiFocusOffset((p) => Math.min(p + 0.5, FOCUS_OFFSET_MAX))
+            setUiFocusOffset((p) => Math.min(p + 0.1, FOCUS_OFFSET_MAX))
           }
         />
 
@@ -1327,7 +1459,9 @@ export default function ThermalPage() {
 
         <button
           onClick={simStats.loading ? undefined : handleRunSimulation}
-          disabled={simStats.loading || (!hasPendingChanges && activeParams !== null)}
+          disabled={
+            simStats.loading || (!hasPendingChanges && activeParams !== null)
+          }
           className={`w-full cursor-pointer group flex items-center justify-center gap-3 px-6 py-4 rounded-xl shadow-xl transition-all duration-300 border ${
             simStats.loading
               ? "cursor-wait bg-neutral-800/80 border-white/10 text-gray-500"
@@ -1371,10 +1505,9 @@ export default function ThermalPage() {
 
         {/* ADVANCED SETTINGS MODAL */}
         {showAdvanced && (
-          <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 p-4 animate-in fade-in duration-200">
             {/* Added max-h-[85vh] and flex-col to keep header/footer fixed while content scrolls */}
             <div className="bg-neutral-900 border border-white/10 p-6 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] w-full max-w-4xl max-h-[65vh] flex flex-col relative animate-in zoom-in-95 duration-200 mt-12 md:mt-0">
-              
               {/* Header (Fixed) */}
               <div className="flex-none flex items-center justify-between mb-6 pb-4 border-b border-white/5">
                 <h2 className="text-sm font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-purple-200 to-white">
@@ -1404,7 +1537,6 @@ export default function ThermalPage() {
               {/* Content (Scrollable) */}
               <div className="flex-1 overflow-y-auto min-h-0 pr-2">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-2">
-                  
                   {/* --- Geometry Group --- */}
                   <ControlRow
                     label="Gruix Conductor"
@@ -1414,7 +1546,9 @@ export default function ThermalPage() {
                     onDec={() =>
                       setUiLayerThick((p) => Math.max(p - 0.005, 0.005))
                     }
-                    onInc={() => setUiLayerThick((p) => Math.min(p + 0.005, 0.1))}
+                    onInc={() =>
+                      setUiLayerThick((p) => Math.min(p + 0.005, 0.1))
+                    }
                   />
                   <ControlRow
                     label="Gruix Dissipador"
@@ -1424,7 +1558,9 @@ export default function ThermalPage() {
                     onDec={() =>
                       setUiSinkThick((p) => Math.max(p - 0.005, 0.005))
                     }
-                    onInc={() => setUiSinkThick((p) => Math.min(p + 0.005, 0.1))}
+                    onInc={() =>
+                      setUiSinkThick((p) => Math.min(p + 0.005, 0.1))
+                    }
                   />
                   <ControlRow
                     label="Mida Placa"
@@ -1462,12 +1598,12 @@ export default function ThermalPage() {
                   {/* --- Materials & Shape Group --- */}
                   <div className="lg:col-span-1 flex items-center justify-start">
                     <ToggleRow
-                        label="Forma Circular"
-                        checked={uiUseCircle}
-                        onChange={setUiUseCircle}
+                      label="Forma Circular"
+                      checked={uiUseCircle}
+                      onChange={setUiUseCircle}
                     />
                   </div>
-                  
+
                   {/* Materials span 2 cols implicitly due to component definition, fills row in 3-col layout */}
                   <MaterialSelector
                     label="Material Conductor"
@@ -1502,86 +1638,273 @@ export default function ThermalPage() {
       <div className="absolute top-28 right-8 w-[320px] pointer-events-auto bg-neutral-900 p-5 rounded-2xl border border-white/20 shadow-2xl transition-all duration-300 hover:border-cyan-500/30">
         <div className="flex items-center justify-between mb-4 border-b border-white/10 pb-2">
           <h3 className="text-xs font-extrabold uppercase tracking-widest text-cyan-400">
-            Resultats en Temps Real
+            Dades de viabilitat
           </h3>
         </div>
 
         <div className="grid grid-cols-2 gap-3 text-white">
-          <StatItem
-            label="FWHM"
-            value={displayFwhm.toFixed(3) + " m"}
-            colorBorder="border-white/10"
-            colorLabel="text-gray-400"
-          />
-          <StatItem
-            label="Pes Estructural"
-            value={structureWeight.toFixed(1) + " kg"}
-            colorBorder="border-white/10"
-            colorLabel="text-gray-400"
-          />
-          {/* NEW: Cost Stat Item */}
-          <StatItem
-            label="Cost Material"
-            value={structureCost.toLocaleString('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
-            colorBorder="border-yellow-500/30"
-            colorLabel="text-yellow-200/70"
-            colorValue="text-yellow-400"
-            colorBg="bg-yellow-900/10"
-          />
+          {/* COST BLOCK - Spans 2 columns */}
+          <div className="col-span-2 bg-neutral-800/80 rounded-lg p-3 border border-yellow-500/40 shadow-[0_0_15px_rgba(234,179,8,0.1)]">
+            {/* Header: Total Cost */}
+            <div className="flex justify-between items-center mb-2">
+              <div>
+                <p className="text-[11px] uppercase tracking-wider text-yellow-300">
+                  Cost Total Aprox.
+                </p>
+                <p className="text-[9px] text-white italic leading-none">
+                  Càlcul multifactor
+                </p>
+              </div>
+              <p className="font-mono font-bold text-xl text-yellow-400 leading-none">
+                {projectCost.total.toLocaleString("es-ES", {
+                  style: "currency",
+                  currency: "EUR",
+                  maximumFractionDigits: 0,
+                })}
+              </p>
+            </div>
 
-          {activeParams &&
-          simStats.maxTemp > 0 &&
-          simStats.status !== "Stopped" &&
-          !simStats.loading &&
-          !hasPendingChanges ? (
-            <>
+            {/* Detailed Breakdown Grid */}
+            <div className="grid grid-cols-4 gap-1 mt-2 pt-2 border-t border-white/10">
+              <div className="text-center">
+                <p className="text-[9px] text-white uppercase tracking-tight">
+                  Mat & Fab
+                </p>
+                <p className="text-[10px] font-mono font-extrabold text-cyan-400">
+                  {(
+                    projectCost.breakdown.materials +
+                    projectCost.breakdown.manufacturing
+                  ).toLocaleString("es-ES", {
+                    style: "currency",
+                    currency: "EUR",
+                    notation: "compact",
+                  })}
+                </p>
+              </div>
+              <div className="text-center border-l border-white/10">
+                <p className="text-[9px] text-white uppercase tracking-tight">
+                  Muntatge
+                </p>
+                <p className="text-[10px] font-mono font-extrabold text-cyan-400">
+                  {projectCost.breakdown.assembly.toLocaleString("es-ES", {
+                    style: "currency",
+                    currency: "EUR",
+                    notation: "compact",
+                  })}
+                </p>
+              </div>
+              <div className="text-center border-l border-white/10">
+                <p className="text-[9px] text-white uppercase tracking-tight">
+                  Enginyeria
+                </p>
+                <p className="text-[10px] font-mono font-extrabold text-cyan-400">
+                  {projectCost.breakdown.engineering.toLocaleString("es-ES", {
+                    style: "currency",
+                    currency: "EUR",
+                    notation: "compact",
+                  })}
+                </p>
+              </div>
+              <div className="text-center border-l border-white/10">
+                <p className="text-[9px] text-white uppercase tracking-tight">
+                  Log/Risc
+                </p>
+                <p className="text-[10px] font-mono font-extrabold text-cyan-400">
+                  {projectCost.breakdown.logistics.toLocaleString("es-ES", {
+                    style: "currency",
+                    currency: "EUR",
+                    notation: "compact",
+                  })}
+                </p>
+              </div>
+            </div>
+
+            {/* NEW: Structural Weight Footer */}
+            <div className="mt-2 pt-1.5 border-t border-dashed border-white/10 flex justify-between items-center">
+              <p className={`text-[11px] uppercase tracking-wider ${structureWeight > 200 ? "text-red-400" : "text-yellow-300"}`}>
+                Pes Estructural
+              </p>
+              <p className={`font-mono font-bold text-xl ${structureWeight > 200 ? "text-red-500" : "text-yellow-400"} leading-none`}>
+                {structureWeight.toFixed(1)} kg
+              </p>
+            </div>
+          </div>
+          {/* PAYBACK STAT ITEM */}
+          <div
+            className={`col-span-2 rounded-lg p-2.5 border flex justify-between items-center ${
+              paybackPeriod
+                ? paybackPeriod.isViable
+                  ? "bg-green-900/10 border-green-500/30"
+                  : "bg-red-900/10 border-red-300/30"
+                : "bg-white/5 border-white/10 opacity-50"
+            }`}
+          >
+            <div>
+              <p
+                className={`text-[9px] uppercase tracking-wider mb-0.5 ${
+                  paybackPeriod
+                    ? paybackPeriod.isViable
+                      ? "text-green-500"
+                      : "text-red-400"
+                    : "text-gray-400"
+                }`}
+              >
+                Retorn de la Inversió
+              </p>
+              <div className="flex items-baseline gap-2">
+                <p
+                  className={`font-mono font-bold text-lg ${
+                    paybackPeriod ? "text-white" : "text-gray-500"
+                  }`}
+                >
+                  {paybackPeriod
+                    ? (() => {
+                        const y = Math.floor(paybackPeriod.years);
+                        const m = Math.round((paybackPeriod.years - y) * 12);
+                        if (y > 100) return "> 100 Anys";
+                        return `${y}a ${m}m`;
+                      })()
+                    : "--"}
+                </p>
+                {paybackPeriod && (
+                  <span className="text-[10px] text-gray-400 font-mono">
+                    (~
+                    {paybackPeriod.annualSavings.toLocaleString("es-ES", {
+                      style: "currency",
+                      currency: "EUR",
+                      maximumFractionDigits: 0,
+                    })}
+                    /any)
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Viability Indicator Icon */}
+            {paybackPeriod && (
+              <div
+                className={`rounded-full p-1.5 ${
+                  paybackPeriod.isViable
+                    ? "bg-green-500/20 text-green-400"
+                    : "bg-red-500/20 text-red-400"
+                }`}
+              >
+                {paybackPeriod.isViable ? (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    className="w-4 h-4"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    className="w-4 h-4"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* BOTTOM HUD BAR */}
+      {activeParams &&
+      simStats.maxTemp > 0 &&
+      simStats.status !== "Stopped" &&
+      !simStats.loading &&
+      !hasPendingChanges ? (
+        <div className="fixed bottom-0 left-0 z-50 w-full bg-neutral-900 border-t border-white/20 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+          {/* Flex Container: Single Horizontal Line */}
+          <div className="flex items-center justify-between px-4 py-2 gap-6 overflow-x-auto no-scrollbar h-16">
+            {/* LEFT: Title & Status */}
+            <div className="flex items-center gap-4 shrink-0 border-r border-white/10 pr-6 h-full">
+              <h3 className="text-xs font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-white leading-tight">
+                Resultats
+                <br />
+                Simulació
+              </h3>
+              {/* Pulsing Dot */}
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </span>
+                <span className="text-[9px] font-mono text-green-400 uppercase">
+                  Visualitzant
+                </span>
+              </div>
+            </div>
+
+            {/* CENTER: Stats Row */}
+            <div className="flex items-center gap-3 shrink-0">
               <StatItem
-                label="Potència Elec."
+                label="Potència"
                 value={simStats.pElectric.toFixed(1) + " W"}
-                colorBg="bg-green-900/20"
+                colorBg="bg-green-900/10"
                 colorBorder="border-green-500/30"
                 colorLabel="text-green-300"
                 colorValue="text-green-400"
               />
-              <StatItem
-                label="Temp. Màxima"
-                value={simStats.maxTemp.toFixed(1) + " °C"}
-                colorBg="bg-red-900/20"
-                colorBorder="border-red-500/30"
-                colorLabel="text-red-300"
-                colorValue="text-red-400"
-              />
-              <div className="col-span-1 bg-yellow-900/20 rounded-lg p-2.5 border border-yellow-500/30 flex justify-between items-center">
-                <div>
-                  <p className="text-[9px] text-yellow-300 uppercase tracking-wider mb-0.5">
-                    Temp. Punter
-                  </p>
-                  <p className="font-mono text-lg font-bold text-yellow-400">
-                    {simStats.hoverTemp !== null &&
-                    simStats.hoverTemp !== undefined
-                      ? `${simStats.hoverTemp.toFixed(1)} °C`
-                      : "--.- °C"}
-                  </p>
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="col-span-2 py-6 text-center text-xs text-gray-500 italic border border-dashed border-white/10 rounded-lg">
-              {hasPendingChanges
-                ? "Paràmetres modificats. Executeu la simulació."
-                : "Inicieu la simulació per veure resultats tèrmics."}
-            </div>
-          )}
-        </div>
 
-        <div className="mt-4 pt-3 border-t border-white/10">
-          <p className="text-[10px] text-gray-400 leading-tight">
-            <span className="text-cyan-400 font-bold">NOTA:</span> Simulació
-            Simplificada en Web. Per a precisió científica, utilitzeu
-            l&apos;entorn MATLAB.
-          </p>
+              <StatItem
+                label="Temp. Màx"
+                value={simStats.maxTemp.toFixed(1) + " °C"}
+                colorBg={simStats.maxTemp < 85 ? "bg-green-900/10" : "bg-red-900/10"}
+                colorBorder={simStats.maxTemp < 85 ? "border-green-500/30" : "border-red-500/30"}
+                colorLabel={simStats.maxTemp < 85 ? "text-green-300" : "text-red-300"}
+                colorValue={simStats.maxTemp < 85 ? "text-green-400" : "text-red-400"}
+              />
+
+              {/* Hover Temp Special Item */}
+              <div className="rounded-md py-1 px-3 border border-yellow-500/30 bg-yellow-900/10 flex flex-col justify-center min-w-[100px] h-full">
+                <p className="text-[8px] text-yellow-300 uppercase tracking-wider leading-none mb-1">
+                  Temp. Punter
+                </p>
+                <p className="font-mono text-sm font-bold leading-none text-yellow-400">
+                  {simStats.hoverTemp !== null &&
+                  simStats.hoverTemp !== undefined
+                    ? `${simStats.hoverTemp.toFixed(1)} °C`
+                    : "--.- °C"}
+                </p>
+              </div>
+            </div>
+
+            {/* RIGHT: Note / Footer */}
+            <div className="shrink-0 text-[9px] text-gray-500 leading-tight text-right border-l border-white/10 pl-6 h-full flex items-center">
+              <span>
+                <span className="text-cyan-400 font-bold">NOTA:</span> Model
+                simplificat web.
+                <br />
+                Usar MATLAB per precisió.
+              </span>
+            </div>
+          </div>
         </div>
-      </div>
+      ) : (
+        // Placeholder Bar when not running
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
+          <div className="px-6 py-2 bg-neutral-900/80 backdrop-blur border border-white/10 rounded-full shadow-2xl text-xs text-gray-400 italic">
+            {hasPendingChanges
+              ? "⚠️ Paràmetres modificats. Executeu la simulació."
+              : "ℹ️ Inicieu la simulació per veure dades."}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

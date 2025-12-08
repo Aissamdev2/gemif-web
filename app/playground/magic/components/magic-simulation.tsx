@@ -34,7 +34,7 @@ const TUBE_THICKNESS = 0.2;
 const RAY_SPEED = 0.8;
 const PLATE_WIDTH = 1.5;
 const PLATE_DEPTH = 1.5;
-const FOCUS_OFFSET_MIN = -3.5;
+const FOCUS_OFFSET_MIN = -1;
 const FOCUS_OFFSET_MAX = 0;
 const MATRIX_SIZE_MIN = 1;
 const MATRIX_SIZE_MAX = 7;
@@ -146,8 +146,7 @@ const MetricsPanel = ({
   focusOffset: number;
   magicArea: number;
 }) => {
-  const ratio = Math.abs(focusOffset) / 2.5;
-  const fwhm = 0.17 + ratio * 0.5;
+  const fwhm = Math.sqrt(Math.pow(0.17, 2) + Math.pow(focusOffset, 2));
   const sigma = fwhm / 2.355;
   const pIn = magicArea * 0.9;
   const peakSuns = pIn / (2 * Math.pow(Math.PI, 2) * Math.pow(sigma, 2) * Math.pow(matrixSize, 2));
@@ -1045,7 +1044,7 @@ export default function TelescopePage() {
           }`}
         >
           <ControlRow
-            label="Desplaçament"
+            label="Despl. (m)"
             value={
               focusOffset > 0
                 ? "+" + focusOffset.toFixed(1)
@@ -1053,10 +1052,10 @@ export default function TelescopePage() {
             }
             colorClass="text-cyan-400"
             onDec={() =>
-              setFocusOffset((p) => Math.max(p - 0.5, FOCUS_OFFSET_MIN))
+              setFocusOffset((p) => Math.max(p - 0.1, FOCUS_OFFSET_MIN))
             }
             onInc={() =>
-              setFocusOffset((p) => Math.min(p + 0.5, FOCUS_OFFSET_MAX))
+              setFocusOffset((p) => Math.min(p + 0.1, FOCUS_OFFSET_MAX))
             }
           />
 
