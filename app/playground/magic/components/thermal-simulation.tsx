@@ -23,8 +23,8 @@ import Link from "next/link";
 // --- CONSTANTS & MATERIALS ---
 const PLATE_WIDTH = 1.5;
 const PLATE_DEPTH = 1.5;
-const FOCUS_OFFSET_MIN = -1;
-const FOCUS_OFFSET_MAX = 0;
+const FWHM_MIN = 0.17;
+const FWHM_MAX = 0.8;
 const MATRIX_SIZE_MIN = 1;
 const MATRIX_SIZE_MAX = 7;
 
@@ -45,7 +45,7 @@ const MATERIALS: Record<
   MaterialDef & { cost: number; machiningFactor: number }
 > = {
   "Al-1050A (Anodized)": {
-    name: "Al-1050A (High Cond.)",
+    name: "Al-1050A",
     kt: 220.0,
     emi: 0.85,
     rho: 2705,
@@ -56,7 +56,7 @@ const MATERIALS: Record<
     roughness: 0.7,
   },
   "Al-6061 (Anodized)": {
-    name: "Al-6061 (Structural)",
+    name: "Al-6061",
     kt: 167.0,
     emi: 0.85,
     rho: 2700,
@@ -67,7 +67,7 @@ const MATERIALS: Record<
     roughness: 0.7,
   },
   "Mg-AZ31B (Coated)": {
-    name: "Magnesium AZ31B",
+    name: "Magnesi AZ31B",
     kt: 96.0,
     emi: 0.8,
     rho: 1770,
@@ -78,7 +78,7 @@ const MATERIALS: Record<
     roughness: 0.5,
   },
   "Graphite (PGS)": {
-    name: "Graphite PGS",
+    name: "Grafit PGS",
     kt: 700.0,
     emi: 0.95,
     rho: 2100,
@@ -89,7 +89,7 @@ const MATERIALS: Record<
     roughness: 0.9,
   },
   "Copper (Oxidized)": {
-    name: "Copper (Heavy Ref.)",
+    name: "Coure",
     kt: 390.0,
     emi: 0.65,
     rho: 8960,
@@ -172,6 +172,11 @@ const ControlRow = memo(
     onInc,
     disableDec,
     disableInc,
+    // --- NEW PROPS ---
+    onMin,
+    onMax,
+    showMin = false,
+    showMax = false,
   }: {
     label: string;
     value: string | number;
@@ -181,33 +186,74 @@ const ControlRow = memo(
     onInc: () => void;
     disableDec?: boolean;
     disableInc?: boolean;
+    onMin?: () => void;
+    onMax?: () => void;
+    showMin?: boolean;
+    showMax?: boolean;
   }) => (
-    <div className="flex items-center justify-center gap-4 bg-neutral-900 p-2 pr-5 rounded-xl text-white shadow-xl border border-white/10">
-      <button
-        onClick={onDec}
-        disabled={disableDec}
-        className="cursor-pointer w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 hover:text-white border border-white/5 transition duration-75 active:scale-95 text-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        -
-      </button>
-      <div className="flex flex-col items-center min-w-[100px]">
-        <span
-          className={`text-[10px] uppercase tracking-widest font-bold mb-1 ${colorClass}`}
+    <div className="flex flex-col gap-1 items-center bg-neutral-900 p-2 rounded-xl text-white shadow-xl border border-white/10">
+      {showMax && onMax && (
+        <button
+          onClick={onMax}
+          disabled={disableInc}
+          className="cursor-pointer w-full h-4 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 hover:text-pink-300 border border-white/5 transition duration-75 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed group"
+          title="Set Maximum"
         >
-          {label}
-        </span>
-        <span className="font-mono text-xl font-bold text-white">
-          {value}
-          {unit}
-        </span>
+          <span className="text-[9px] font-black tracking-tighter opacity-70 group-hover:opacity-100">
+            MAX
+          </span>
+        </button>
+      )}
+      <div className="flex items-center justify-center gap-2">
+        {/* MIN BUTTON (Optional) */}
+
+        {/* Decrement */}
+        <button
+          onClick={onDec}
+          disabled={disableDec}
+          className="cursor-pointer w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 hover:text-white border border-white/5 transition duration-75 active:scale-95 text-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          -
+        </button>
+
+        {/* Label & Value */}
+        <div className="flex flex-col items-center min-w-[90px]">
+          <span
+            className={`text-[9px] uppercase tracking-widest font-bold mb-0.5 ${colorClass}`}
+          >
+            {label}
+          </span>
+          <span className="font-mono text-lg font-bold text-white leading-none">
+            {value}
+            <span className="text-xs ml-0.5 font-normal text-gray-400">
+              {unit}
+            </span>
+          </span>
+        </div>
+
+        {/* Increment */}
+        <button
+          onClick={onInc}
+          disabled={disableInc}
+          className="cursor-pointer w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 hover:text-white border border-white/5 transition duration-75 active:scale-95 text-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          +
+        </button>
       </div>
-      <button
-        onClick={onInc}
-        disabled={disableInc}
-        className="cursor-pointer w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 hover:text-white border border-white/5 transition duration-75 active:scale-95 text-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        +
-      </button>
+
+      {/* MAX BUTTON (Optional) */}
+      {showMin && onMin && (
+        <button
+          onClick={onMin}
+          disabled={disableDec}
+          className="cursor-pointer w-full h-4 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 hover:text-cyan-300 border border-white/5 transition duration-75 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed group"
+          title="Set Minimum"
+        >
+          <span className="text-[9px] font-black tracking-tighter opacity-70 group-hover:opacity-100">
+            MIN
+          </span>
+        </button>
+      )}
     </div>
   )
 );
@@ -440,7 +486,7 @@ GaussianOverlay.displayName = "GaussianOverlay";
 const ThermalBox = memo(
   ({
     simMatrixSize,
-    simFocusOffset,
+    simFwhm,
     simMagicArea,
     simLayerThick,
     simSinkThick, // NEW
@@ -452,7 +498,7 @@ const ThermalBox = memo(
     simBaseMatKey, // NEW
     simSinkMatKey, // NEW
     visMatrixSize,
-    visFocusOffset,
+    visFwhm,
     visMagicArea,
     visCpvScale,
     visUseCircle,
@@ -467,7 +513,7 @@ const ThermalBox = memo(
     onUpdateStats,
   }: {
     simMatrixSize: number | null;
-    simFocusOffset: number | null;
+    simFwhm: number | null;
     simMagicArea: number | null;
     simLayerThick: number | null;
     simSinkThick: number | null;
@@ -479,7 +525,7 @@ const ThermalBox = memo(
     simBaseMatKey: string | null;
     simSinkMatKey: string | null;
     visMatrixSize: number;
-    visFocusOffset: number;
+    visFwhm: number;
     visMagicArea: number;
     visCpvScale: number;
     visUseCircle: boolean;
@@ -504,16 +550,6 @@ const ThermalBox = memo(
     const currentExpansion = useRef(0);
     const workerRef = useRef<Worker | null>(null);
 
-    // Derived States
-    const simFwhm = useMemo(() => {
-      if (simFocusOffset === null) return 0.17;
-      return Math.sqrt(Math.pow(0.17, 2) + Math.pow(simFocusOffset, 2));
-    }, [simFocusOffset]);
-
-    const visFwhm = useMemo(() => {
-      return Math.sqrt(Math.pow(0.17, 2) + Math.pow(visFocusOffset, 2));
-    }, [visFocusOffset]);
-
     // Cleanup Textures
     useEffect(() => {
       if (status.loading) {
@@ -536,7 +572,7 @@ const ThermalBox = memo(
       if (
         simMatrixSize === null ||
         simMagicArea === null ||
-        simFocusOffset === null ||
+        simFwhm === null ||
         !simBaseMatKey ||
         !simSinkMatKey
       ) {
@@ -586,7 +622,7 @@ const ThermalBox = memo(
       };
 
       const relativePath = new URL(
-        "../wasm-embeddings/vc4/solar_bg.wasm",
+        "../wasm-embeddings/vc5/solar_bg.wasm",
         import.meta.url
       ).toString();
       const wasmUrl = new URL(relativePath, window.location.origin).href;
@@ -595,6 +631,24 @@ const ThermalBox = memo(
       const baseMat = MATERIALS[simBaseMatKey];
       const sinkMat = MATERIALS[simSinkMatKey];
 
+      console.log("Starting worker with params:", {
+        fwhm: simFwhm,
+        magicArea: simMagicArea,
+        matrixSize: simMatrixSize,
+        layerThickness: simLayerThick,
+        sinkThickness: simSinkThick, // Pass to worker
+        plateDim: simPlateDim,
+        cpvScale: simCpvScale,
+        nXy: simNx,
+        nZLayer: simNz,
+        useCircle: simUseCircle,
+        // Material props
+        baseKt: baseMat.kt,
+        baseEmi: baseMat.emi,
+        sinkKt: sinkMat.kt,
+        sinkEmi: sinkMat.emi,
+        wasmUrl,
+      });
       workerRef.current.postMessage({
         fwhm: simFwhm,
         magicArea: simMagicArea,
@@ -623,7 +677,6 @@ const ThermalBox = memo(
     }, [
       simMatrixSize,
       simMagicArea,
-      simFocusOffset,
       simFwhm,
       simLayerThick,
       simSinkThick,
@@ -947,42 +1000,36 @@ const ThermalBox = memo(
 );
 ThermalBox.displayName = "ThermalBox";
 
-// --- COST CONSTANTS (SCIENTIFIC / AEROSPACE GRADE) ---
+// --- COST CONSTANTS (AJUSTADOS PARA NO-GRUA, INSTRUMENTO CIENTIFICO) ---
 const PROJECT_COSTS = {
-  // Materials (Raw + Certifications)
-  CPV_PRICE_PER_M2: 2500, // High-efficiency triple-junction cells + optics (Space grade)
+  CPV_PRICE_PER_M2: 2500,
   AG_THICKNESS: 0.00005,
   AG_DENSITY: 10490,
-  AG_COST_PER_KG: 1200, // High purity (99.99%) silver paste for sintering
+  AG_COST_PER_KG: 1200,
 
-  // Manufacturing (Precision CNC + Surface Treatments)
-  // Standard CNC is ~800, Precision is 3x-4x higher.
   CNC_BASE_RATE_M2: 3500,
-  SURFACE_TREAT_M2: 500, // Alodine/Anodizing/Gold plating for conductivity/corrosion
+  SURFACE_TREAT_M2: 300, // ajustado (no dorado espacial por defecto)
 
-  // Assembly (Cleanroom ISO 7/8)
-  // Sintering in vacuum, wire bonding, precision alignment (microns)
-  ASSEMBLY_HOURLY_RATE: 150,
-  HOURS_PER_M2: 40,
+  ASSEMBLY_HOURLY_RATE: 120, // €/h para técnico especializado
+  HOURS_PER_M2: 12, // h/m2 (ajustable: 8-20 realista)
 
-  // Electronics (Rad-Hard / Low Noise)
-  // Scientific grade sensors, low-noise cabling, shielding
   ELEC_COST_PER_WATT: 2.5,
 
-  // --- FIXED PROJECT COSTS (The "Hidden" Costs) ---
-
-  // NRE: Design, Thermal FEA Analysis, Custom Tooling/Jigs
   NRE_FLAT_FEE: 15000,
-
-  // QUALIFICATION: Thermal Vacuum (TVAC) testing, Vibration, QC Documentation
   QUALIFICATION_FEE: 8000,
 
-  // LOGISTICS: Specialized transport, Cranes inside dome, Insurance
-  INSTALL_BASE_FEE: 5000,
-  INSTALL_WEIGHT_PENALTY: 120, // €/kg (Heavy parts = complex rigging near optics)
+  // LOGISTICA REVISADA (no-grúa por defecto)
+  INSTALL_BASE_FEE: 5000, // coordinación observatorio + supervisión
+  TRANSPORT_COST_PER_KG: 8, // €/kg (transporte a La Palma + embalaje)
+  INSTALL_COST_PER_KG: 10, // €/kg por manipulación especializada (solo > threshold)
+  WEIGHT_FREE_THRESHOLD_KG: 25, // kg no penalizados (pequeñas piezas)
+  NEEDS_CRANE: false, // sin grúa externa por defecto
+  CRANE_DAY_RATE: 0, // 0 si NEEDS_CRANE == false
+  CRANE_DAYS: 0,
 
-  // CONTINGENCY: Standard for scientific R&D
-  CONTINGENCY_PCT: 0.2,
+  INSURANCE_PCT: 0.01, // 1% de coste físico (material+manufactura)
+
+  CONTINGENCY_PCT: 0.25, // 25% para prototipo científico
 };
 
 // --- ROI CONSTANTS (La Palma, Canary Islands) ---
@@ -1007,7 +1054,7 @@ export default function ThermalPage() {
   });
 
   // UI STATE
-  const [uiFocusOffset, setUiFocusOffset] = useState(0);
+  const [uiFwhm, setUiFwhm] = useState(0.17);
   const [uiMatrixSize, setUiMatrixSize] = useState(5);
   const [uiMagicArea, setUiMagicArea] = useState(75);
   const [showGaussian, setShowGaussian] = useState(false);
@@ -1043,10 +1090,6 @@ export default function ThermalPage() {
 
   const [hasPendingChanges, setHasPendingChanges] = useState(false);
 
-  const displayFwhm = useMemo(() => {
-    return Math.sqrt(Math.pow(0.17, 2) + Math.pow(uiFocusOffset, 2));
-  }, [uiFocusOffset]);
-
   const handleRunSimulation = () => {
     setSimStats((prev) => ({
       ...prev,
@@ -1057,7 +1100,7 @@ export default function ThermalPage() {
     }));
 
     setActiveParams({
-      focusOffset: uiFocusOffset,
+      focusOffset: uiFwhm,
       matrixSize: uiMatrixSize,
       magicArea: uiMagicArea,
       layerThick: uiLayerThick,
@@ -1087,7 +1130,7 @@ export default function ThermalPage() {
       return;
     }
     setHasPendingChanges(
-      uiFocusOffset !== activeParams.focusOffset ||
+      uiFwhm !== activeParams.focusOffset ||
         uiMatrixSize !== activeParams.matrixSize ||
         uiMagicArea !== activeParams.magicArea ||
         uiLayerThick !== activeParams.layerThick ||
@@ -1101,7 +1144,7 @@ export default function ThermalPage() {
         uiSinkMatKey !== activeParams.sinkMatKey
     );
   }, [
-    uiFocusOffset,
+    uiFwhm,
     uiMatrixSize,
     uiMagicArea,
     activeParams,
@@ -1163,9 +1206,21 @@ export default function ThermalPage() {
 
     // Installation (Rigging & Access)
     const totalWeight = volBase * baseMat.rho + volSink * sinkMat.rho;
+
+    // Logistics / installation: transport + handling (tiered) + optional crane (disabled by default)
+    const transportCost = PROJECT_COSTS.TRANSPORT_COST_PER_KG * totalWeight;
+    const weightPenalty =
+      Math.max(0, totalWeight - PROJECT_COSTS.WEIGHT_FREE_THRESHOLD_KG) *
+      PROJECT_COSTS.INSTALL_COST_PER_KG;
+    const craneCost = PROJECT_COSTS.NEEDS_CRANE
+      ? PROJECT_COSTS.CRANE_DAY_RATE * PROJECT_COSTS.CRANE_DAYS
+      : 0;
+
     const installationCost =
       PROJECT_COSTS.INSTALL_BASE_FEE +
-      totalWeight * PROJECT_COSTS.INSTALL_WEIGHT_PENALTY;
+      transportCost +
+      weightPenalty +
+      craneCost;
 
     const totalVariable =
       totalMaterials +
@@ -1362,7 +1417,7 @@ export default function ThermalPage() {
         />
         <ThermalBox
           simMatrixSize={activeParams?.matrixSize ?? null}
-          simFocusOffset={activeParams?.focusOffset ?? null}
+          simFwhm={activeParams?.focusOffset ?? null}
           simMagicArea={activeParams?.magicArea ?? null}
           simLayerThick={activeParams?.layerThick ?? null}
           simSinkThick={activeParams?.sinkThick ?? null}
@@ -1374,7 +1429,7 @@ export default function ThermalPage() {
           simBaseMatKey={activeParams?.baseMatKey ?? null}
           simSinkMatKey={activeParams?.sinkMatKey ?? null}
           visMatrixSize={uiMatrixSize}
-          visFocusOffset={uiFocusOffset}
+          visFwhm={uiFwhm}
           visMagicArea={uiMagicArea}
           visCpvScale={uiCpvScale}
           visUseCircle={uiUseCircle}
@@ -1393,19 +1448,11 @@ export default function ThermalPage() {
       {/* LEFT CONTROL PANEL */}
       <div className="absolute z-30 top-28 left-8 flex flex-col items-start gap-4 pointer-events-auto">
         <ControlRow
-          label="Despl. (m)"
-          value={
-            uiFocusOffset > 0
-              ? "+" + uiFocusOffset.toFixed(1)
-              : uiFocusOffset.toFixed(1)
-          }
+          label="FWHM (m)"
+          value={uiFwhm > 0 ? uiFwhm.toFixed(2) : uiFwhm.toFixed(2)}
           colorClass="text-cyan-400"
-          onDec={() =>
-            setUiFocusOffset((p) => Math.max(p - 0.1, FOCUS_OFFSET_MIN))
-          }
-          onInc={() =>
-            setUiFocusOffset((p) => Math.min(p + 0.1, FOCUS_OFFSET_MAX))
-          }
+          onDec={() => setUiFwhm((p) => Math.max(p - 0.01, FWHM_MIN))}
+          onInc={() => setUiFwhm((p) => Math.min(p + 0.01, FWHM_MAX))}
         />
 
         <ControlRow
@@ -1420,8 +1467,12 @@ export default function ThermalPage() {
           label="Àrea (m²)"
           value={uiMagicArea}
           colorClass="text-green-400"
-          onDec={() => setUiMagicArea((p) => Math.max(p - 5, 10))}
-          onInc={() => setUiMagicArea((p) => Math.min(p + 5, 236))}
+          onDec={() => setUiMagicArea((p) => Math.max(p - 1, 10))}
+          onInc={() => setUiMagicArea((p) => Math.min(p + 1, 236))}
+          onMax={() => setUiMagicArea(236)}
+          onMin={() => setUiMagicArea(Math.pow(uiMatrixSize, 2))}
+          showMax
+          showMin
         />
 
         {!simStats.loading && (!activeParams || hasPendingChanges) && (
@@ -1591,8 +1642,8 @@ export default function ThermalPage() {
                     value={(uiCpvScale * 100).toFixed(0)}
                     unit="%"
                     colorClass="text-pink-400"
-                    onDec={() => setUiCpvScale((p) => Math.max(p - 0.1, 0.1))}
-                    onInc={() => setUiCpvScale((p) => Math.min(p + 0.1, 1.0))}
+                    onDec={() => setUiCpvScale((p) => Math.max(p - 0.01, 0.1))}
+                    onInc={() => setUiCpvScale((p) => Math.min(p + 0.01, 1.0))}
                   />
 
                   {/* --- Materials & Shape Group --- */}
@@ -1659,7 +1710,7 @@ export default function ThermalPage() {
                 {projectCost.total.toLocaleString("es-ES", {
                   style: "currency",
                   currency: "EUR",
-                  maximumFractionDigits: 0,
+                  notation: "compact",
                 })}
               </p>
             </div>
@@ -1721,17 +1772,25 @@ export default function ThermalPage() {
 
             {/* NEW: Structural Weight Footer */}
             <div className="mt-2 pt-1.5 border-t border-dashed border-white/10 flex justify-between items-center">
-              <p className={`text-[11px] uppercase tracking-wider ${structureWeight > 200 ? "text-red-400" : "text-yellow-300"}`}>
+              <p
+                className={`text-[11px] uppercase tracking-wider ${
+                  structureWeight > 200 ? "text-red-400" : "text-yellow-300"
+                }`}
+              >
                 Pes Estructural
               </p>
-              <p className={`font-mono font-bold text-xl ${structureWeight > 200 ? "text-red-500" : "text-yellow-400"} leading-none`}>
+              <p
+                className={`font-mono font-bold text-xl ${
+                  structureWeight > 200 ? "text-red-500" : "text-yellow-400"
+                } leading-none`}
+              >
                 {structureWeight.toFixed(1)} kg
               </p>
             </div>
           </div>
           {/* PAYBACK STAT ITEM */}
           <div
-            className={`col-span-2 rounded-lg p-2.5 border flex justify-between items-center ${
+            className={`col-span-2 rounded-lg p-2.5 border flex flex-col justify-between items-start ${
               paybackPeriod
                 ? paybackPeriod.isViable
                   ? "bg-green-900/10 border-green-500/30"
@@ -1739,83 +1798,111 @@ export default function ThermalPage() {
                 : "bg-white/5 border-white/10 opacity-50"
             }`}
           >
-            <div>
-              <p
-                className={`text-[9px] uppercase tracking-wider mb-0.5 ${
-                  paybackPeriod
-                    ? paybackPeriod.isViable
-                      ? "text-green-500"
-                      : "text-red-400"
-                    : "text-gray-400"
-                }`}
-              >
-                Retorn de la Inversió
-              </p>
-              <div className="flex items-baseline gap-2">
+            <div className={`flex justify-between w-full items-center `}>
+              <div className="flex flex-col justify-center">
                 <p
-                  className={`font-mono font-bold text-lg ${
-                    paybackPeriod ? "text-white" : "text-gray-500"
+                  className={`text-[9px] uppercase tracking-wider mb-0.5 ${
+                    paybackPeriod
+                      ? paybackPeriod.isViable
+                        ? "text-green-500"
+                        : "text-red-400"
+                      : "text-gray-400"
                   }`}
                 >
-                  {paybackPeriod
-                    ? (() => {
-                        const y = Math.floor(paybackPeriod.years);
-                        const m = Math.round((paybackPeriod.years - y) * 12);
-                        if (y > 100) return "> 100 Anys";
-                        return `${y}a ${m}m`;
-                      })()
-                    : "--"}
+                  Retorn de la Inversió
                 </p>
-                {paybackPeriod && (
-                  <span className="text-[10px] text-gray-400 font-mono">
-                    (~
-                    {paybackPeriod.annualSavings.toLocaleString("es-ES", {
-                      style: "currency",
-                      currency: "EUR",
-                      maximumFractionDigits: 0,
-                    })}
-                    /any)
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  <p
+                    className={`font-mono font-bold text-lg ${
+                      paybackPeriod ? "text-white" : "text-gray-500"
+                    }`}
+                  >
+                    {paybackPeriod
+                      ? (() => {
+                          const y = Math.floor(paybackPeriod.years);
+                          const m = Math.round((paybackPeriod.years - y) * 12);
+                          if (y > 100) return "> 100 Anys";
+                          return `${y}a ${m}m`;
+                        })()
+                      : "--"}
+                  </p>
+                  {paybackPeriod && (
+                    <span className="text-[10px] text-gray-400 font-mono">
+                      (~
+                      {paybackPeriod.annualSavings.toLocaleString("es-ES", {
+                        style: "currency",
+                        currency: "EUR",
+                        notation: "compact",
+                      })}
+                      /any)
+                    </span>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Viability Indicator Icon */}
+              {/* Viability Indicator Icon */}
+              {paybackPeriod && (
+                <div
+                  className={`rounded-full p-1.5 ${
+                    paybackPeriod.isViable
+                      ? "bg-green-500/20 text-green-400"
+                      : "bg-red-500/20 text-red-400"
+                  }`}
+                >
+                  {paybackPeriod.isViable ? (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      className="w-4 h-4"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  ) : (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      className="w-4 h-4"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  )}
+                </div>
+              )}
+            </div>
             {paybackPeriod && (
-              <div
-                className={`rounded-full p-1.5 ${
-                  paybackPeriod.isViable
-                    ? "bg-green-500/20 text-green-400"
-                    : "bg-red-500/20 text-red-400"
-                }`}
-              >
-                {paybackPeriod.isViable ? (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    className="w-4 h-4"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                ) : (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    className="w-4 h-4"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                )}
+              <div className="mt-2 pt-1.5 border-t border-dashed border-white/10 w-full flex justify-between items-center">
+                <p
+                  className={`text-[11px] uppercase tracking-wider ${
+                    !paybackPeriod.isViable ? "text-red-400" : "text-green-400"
+                  }`}
+                >
+                  Benefici Net
+                </p>
+                <p
+                  className={`font-mono font-bold text-xl ${
+                    !paybackPeriod.isViable ? "text-red-500" : "text-green-500"
+                  } leading-none`}
+                >
+                  {(
+                    (15 - paybackPeriod.years) *
+                    paybackPeriod.annualSavings
+                  ).toLocaleString("es-ES", {
+                    style: "currency",
+                    currency: "EUR",
+                    maximumFractionDigits: 0,
+                    signDisplay: "exceptZero",
+                  })}
+                </p>
               </div>
             )}
           </div>
@@ -1864,10 +1951,20 @@ export default function ThermalPage() {
               <StatItem
                 label="Temp. Màx"
                 value={simStats.maxTemp.toFixed(1) + " °C"}
-                colorBg={simStats.maxTemp < 85 ? "bg-green-900/10" : "bg-red-900/10"}
-                colorBorder={simStats.maxTemp < 85 ? "border-green-500/30" : "border-red-500/30"}
-                colorLabel={simStats.maxTemp < 85 ? "text-green-300" : "text-red-300"}
-                colorValue={simStats.maxTemp < 85 ? "text-green-400" : "text-red-400"}
+                colorBg={
+                  simStats.maxTemp < 85 ? "bg-green-900/10" : "bg-red-900/10"
+                }
+                colorBorder={
+                  simStats.maxTemp < 85
+                    ? "border-green-500/30"
+                    : "border-red-500/30"
+                }
+                colorLabel={
+                  simStats.maxTemp < 85 ? "text-green-300" : "text-red-300"
+                }
+                colorValue={
+                  simStats.maxTemp < 85 ? "text-green-400" : "text-red-400"
+                }
               />
 
               {/* Hover Temp Special Item */}
@@ -1896,14 +1993,16 @@ export default function ThermalPage() {
           </div>
         </div>
       ) : (
-        // Placeholder Bar when not running
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
-          <div className="px-6 py-2 bg-neutral-900/80 backdrop-blur border border-white/10 rounded-full shadow-2xl text-xs text-gray-400 italic">
-            {hasPendingChanges
-              ? "⚠️ Paràmetres modificats. Executeu la simulació."
-              : "ℹ️ Inicieu la simulació per veure dades."}
+        !simStats.loading && (
+          // Placeholder Bar when not running
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
+            <div className="px-6 py-2 bg-neutral-900/80 backdrop-blur border border-white/10 rounded-full shadow-2xl text-xs text-gray-400 italic">
+              {hasPendingChanges
+                ? "⚠️ Paràmetres modificats. Executeu la simulació."
+                : "ℹ️ Inicieu la simulació per veure dades."}
+            </div>
           </div>
-        </div>
+        )
       )}
     </div>
   );
