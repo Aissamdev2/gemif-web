@@ -1,5 +1,5 @@
 // thermal.worker.js
-import init, { run_thermal_simulation } from "../wasm-embeddings/vc5/solar.js";
+import init, { run_thermal_simulation } from "../wasm-embeddings/vc6/solar.js";
 
 const tempColor = { r: 0, g: 0, b: 0 };
 
@@ -29,23 +29,25 @@ self.onmessage = async ({ data }) => {
     fwhm,
     magicArea,
     matrixSize,
-    layerThickness,     // Base Thickness
-    sinkThickness,      // NEW: Sink Thickness
+    layerThickness,
+    sinkThickness,
     plateDim,
     cpvScale,
     nXy,
     nZLayer,
     useCircle,
-    // NEW: Material Properties
+    // Material Properties
     baseKt,
     baseEmi,
     sinkKt,
     sinkEmi,
+    // NEW: Logic Toggles
+    useFins,
+    useReflector,
     wasmUrl
   } = data;
 
   try {
-    console.log("Loading WASM from URL:", wasmUrl);
     await init(wasmUrl);
 
     // Call the Rust function with the new signature
@@ -54,17 +56,19 @@ self.onmessage = async ({ data }) => {
         magicArea,
         matrixSize,
         layerThickness,
-        sinkThickness, // Pass new param
+        sinkThickness,
         plateDim,
         cpvScale,
         nXy,
         nZLayer,
         useCircle,
-        // Pass Material Props
         baseKt,
         baseEmi,
         sinkKt,
-        sinkEmi
+        sinkEmi,
+        // NEW: Pass booleans
+        useFins,
+        useReflector
     );
 
     const nx = result.get_nx();
@@ -90,11 +94,19 @@ self.onmessage = async ({ data }) => {
 
     const range = Math.max(gMax - gMin, 0.1);
 
+    // --- UPDATED TEXTURE GENERATION ---
+
     const generateXYData = (zIndex) => {
       const fullNx = nx * 2;
       const fullNy = ny * 2;
       const dataSize = fullNx * fullNy * 4;
       const textureData = new Uint8Array(dataSize);
+      
+      // Safety Check: Return empty transparent texture if index is out of bounds
+      if (zIndex < 0 || zIndex >= nz) {
+        return { data: textureData, width: fullNx, height: fullNy };
+      }
+
       const zOffset = zIndex * nx * ny;
 
       for (let j = 0; j < ny; j++) {
@@ -115,6 +127,11 @@ self.onmessage = async ({ data }) => {
     };
 
     const generateSideData = (zStart, zEnd, isXFace) => {
+      // Safety Check: Return 1x1 dummy if range is invalid
+      if (zStart > zEnd || zStart < 0 || zEnd >= nz) {
+        return { data: new Uint8Array(4), width: 1, height: 1 };
+      }
+
       const depth = zEnd - zStart + 1;
       const width = isXFace ? nx * 2 : ny * 2;
       const dataSize = width * depth * 4;
@@ -142,6 +159,12 @@ self.onmessage = async ({ data }) => {
     };
 
     const buildLayerData = (zStart, zEnd) => {
+      // If range is invalid (e.g. no sink), generate dummy textures
+      if (zEnd < zStart) {
+        const dummy = { data: new Uint8Array(4), width: 1, height: 1 };
+        return [dummy, dummy, dummy, dummy, dummy, dummy];
+      }
+      
       const top = generateXYData(zEnd);
       const bottom = generateXYData(zStart);
       const frontBack = generateSideData(zStart, zEnd, true);
@@ -149,11 +172,34 @@ self.onmessage = async ({ data }) => {
       return [rightLeft, rightLeft, top, bottom, frontBack, frontBack];
     };
 
-    // The sink layers are fixed to 0-4 in Rust for simplicity in this version, 
-    // but physically they now represent the new sink thickness.
-    const sinkData = buildLayerData(0, 4);
-    const baseData = buildLayerData(5, 12);
-    const cpvData = buildLayerData(13, nz - 1);
+    // --- Dynamic Layer Calculation ---
+    // The Rust code always adds 5 'skin' layers at the top for the CPV/interface
+    const skinLayers = 5;
+    
+    // Calculate boundaries
+    let sinkStart = 0;
+    let sinkEnd = -1; // Default to invalid
+    let baseStart = 0;
+
+    // Rust logic: if sink_thickness > 1e-9, it adds 5 sink layers (indices 0-4)
+    if (sinkThickness > 1e-6) {
+        sinkStart = 0;
+        sinkEnd = 4;
+        baseStart = 5;
+    } else {
+        // No sink layers generated
+        sinkStart = 0;
+        sinkEnd = -1; // Triggers dummy generation
+        baseStart = 0;
+    }
+
+    const cpvStart = nz - skinLayers; // Top 5 layers are CPV
+    const cpvEnd = nz - 1;
+    const baseEnd = cpvStart - 1;     // Base fills space between Sink and CPV
+
+    const sinkData = buildLayerData(sinkStart, sinkEnd);
+    const baseData = buildLayerData(baseStart, baseEnd);
+    const cpvData = buildLayerData(cpvStart, cpvEnd);
 
     result.free();
 

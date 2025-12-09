@@ -101,6 +101,14 @@ const MATERIALS: Record<
   },
 };
 
+const REFELCTIVE_MATERIAL = {
+  name: "Reflective Coating",
+  kt: 430,
+  emi: 0.05,
+  color: "#eeeeee",
+  roughness: 0.2,
+}
+
 // --- FIXED LAYER CONSTANTS ---
 const LAYER_COSTS = {
   // CPV Cells (Silicon/III-V multijunction)
@@ -489,23 +497,29 @@ const ThermalBox = memo(
     simFwhm,
     simMagicArea,
     simLayerThick,
-    simSinkThick, // NEW
+    simSinkThick,
     simPlateDim,
     simCpvScale,
     simNx,
     simNz,
     simUseCircle,
-    simBaseMatKey, // NEW
-    simSinkMatKey, // NEW
+    simBaseMatKey,
+    simSinkMatKey,
+    // NEW: Sim Props
+    simUseFins,
+    simUseReflector,
     visMatrixSize,
     visFwhm,
     visMagicArea,
     visCpvScale,
     visUseCircle,
-    visLayerThick, // NEW
-    visSinkThick, // NEW
-    visBaseMatKey, // NEW
-    visSinkMatKey, // NEW
+    visLayerThick,
+    visSinkThick,
+    visBaseMatKey,
+    visSinkMatKey,
+    // NEW: Vis Props
+    visUseFins,
+    visUseReflector,
     status,
     showGaussian,
     showAdvanced,
@@ -522,6 +536,8 @@ const ThermalBox = memo(
     simNx: number | null;
     simNz: number | null;
     simUseCircle: boolean | null;
+    simUseFins: boolean | null;
+    simUseReflector: boolean | null;
     simBaseMatKey: string | null;
     simSinkMatKey: string | null;
     visMatrixSize: number;
@@ -531,6 +547,8 @@ const ThermalBox = memo(
     visUseCircle: boolean;
     visLayerThick: number;
     visSinkThick: number;
+    visUseFins: boolean;
+    visUseReflector: boolean;
     visBaseMatKey: string;
     visSinkMatKey: string;
     status: SimStats;
@@ -622,7 +640,7 @@ const ThermalBox = memo(
       };
 
       const relativePath = new URL(
-        "../wasm-embeddings/vc5/solar_bg.wasm",
+        "../wasm-embeddings/vc6/solar_bg.wasm",
         import.meta.url
       ).toString();
       const wasmUrl = new URL(relativePath, window.location.origin).href;
@@ -631,12 +649,12 @@ const ThermalBox = memo(
       const baseMat = MATERIALS[simBaseMatKey];
       const sinkMat = MATERIALS[simSinkMatKey];
 
-      console.log("Starting worker with params:", {
+      const payload = {
         fwhm: simFwhm,
         magicArea: simMagicArea,
         matrixSize: simMatrixSize,
         layerThickness: simLayerThick,
-        sinkThickness: simSinkThick, // Pass to worker
+        sinkThickness: simSinkThick,
         plateDim: simPlateDim,
         cpvScale: simCpvScale,
         nXy: simNx,
@@ -647,26 +665,14 @@ const ThermalBox = memo(
         baseEmi: baseMat.emi,
         sinkKt: sinkMat.kt,
         sinkEmi: sinkMat.emi,
+        // NEW: Boolean Toggles
+        useFins: simUseFins,
+        useReflector: simUseReflector,
         wasmUrl,
-      });
-      workerRef.current.postMessage({
-        fwhm: simFwhm,
-        magicArea: simMagicArea,
-        matrixSize: simMatrixSize,
-        layerThickness: simLayerThick,
-        sinkThickness: simSinkThick, // Pass to worker
-        plateDim: simPlateDim,
-        cpvScale: simCpvScale,
-        nXy: simNx,
-        nZLayer: simNz,
-        useCircle: simUseCircle,
-        // Material props
-        baseKt: baseMat.kt,
-        baseEmi: baseMat.emi,
-        sinkKt: sinkMat.kt,
-        sinkEmi: sinkMat.emi,
-        wasmUrl,
-      });
+      };
+
+      console.log("Starting worker with params:", payload);
+      workerRef.current.postMessage(payload);
 
       return () => {
         if (workerRef.current) {
@@ -685,6 +691,8 @@ const ThermalBox = memo(
       simNx,
       simNz,
       simUseCircle,
+      simUseFins,      // Add dependency
+      simUseReflector, // Add dependency
       simBaseMatKey,
       simSinkMatKey,
       onUpdateStats,
@@ -776,10 +784,10 @@ const ThermalBox = memo(
           roughness: baseMatDef.roughness,
         }),
         cpvSubstrate: new THREE.MeshStandardMaterial({
-          color: "#ffffff",
-          emissive: "#ffffff",
+          color: REFELCTIVE_MATERIAL.color,
+          emissive: REFELCTIVE_MATERIAL.color,
           emissiveIntensity: 0.2,
-          roughness: 0.2,
+          roughness: REFELCTIVE_MATERIAL.roughness,
           metalness: 0.1,
         }),
         cpvCell: new THREE.MeshStandardMaterial({
@@ -818,60 +826,69 @@ const ThermalBox = memo(
 
     return (
       <group rotation={[Math.PI / 6, Math.PI / 4, 0]} position={[0, 0, 0]}>
-        {/* SINK */}
-        <group ref={sinkRef}>
-          {texSink && !hasPendingChanges && !status.loading ? (
-            <mesh
-              onPointerMove={(e) => handlePointerMove(e, texSink)}
-              onPointerOut={handlePointerOut}
-              geometry={geometries.sinkMain}
-            >
-              {texSink.map((tex, i) => (
-                <meshStandardMaterial
-                  key={i}
-                  attach={`material-${i}`}
-                  emissiveMap={tex}
-                  emissiveIntensity={2.0}
-                  emissive="white"
-                  roughness={0.4}
-                  metalness={0.2}
-                  color="gray"
-                />
-              ))}
-            </mesh>
-          ) : (
-            <group>
+        {/* SINK - Conditional Rendering based on Thickness */}
+        {visSinkThick > 0.0001 && (
+          <group ref={sinkRef}>
+            {texSink && !hasPendingChanges && !status.loading ? (
+              // Texture Mode
               <mesh
-                position={[0, 0.04, 0]}
+                onPointerMove={(e) => handlePointerMove(e, texSink)}
+                onPointerOut={handlePointerOut}
                 geometry={geometries.sinkMain}
-                material={visualMaterials.sink}
-              />
-              {Array.from({ length: 15 }).map((_, i) => {
-                const spacing = PLATE_WIDTH / 15;
-                const pos = -PLATE_WIDTH / 2 + spacing / 2 + i * spacing;
-                return (
-                  <mesh
+              >
+                {texSink.map((tex, i) => (
+                  <meshStandardMaterial
                     key={i}
-                    position={[pos, -visSinkThick / 2, 0]}
-                    geometry={geometries.sinkFin}
-                    material={visualMaterials.sink}
+                    attach={`material-${i}`}
+                    emissiveMap={tex}
+                    emissiveIntensity={2.0}
+                    emissive="white"
+                    roughness={0.4}
+                    metalness={0.2}
+                    color="gray"
                   />
-                );
-              })}
-            </group>
-          )}
-          <Html position={[0.8, 0, 0]} center zIndexRange={[10, 0]}>
-            <div
-              style={{
-                ...annotationStyle,
-                opacity: areLabelsVisible ? "1" : "0",
-                transition: "opacity 0.2s ease-in-out",
-              }}
-            >
-              {MATERIALS[visSinkMatKey].name.split(" ")[0]}
-            </div>
-          </Html>
-        </group>
+                ))}
+              </mesh>
+            ) : (
+              // Geometry Mode
+              <group>
+                {/* Main Sink Plate */}
+                <mesh
+                  position={[0, 0.04, 0]}
+                  geometry={geometries.sinkMain}
+                  material={visualMaterials.sink}
+                />
+                
+                {/* Fins - Conditional Rendering */}
+                {visUseFins && (
+                  Array.from({ length: 15 }).map((_, i) => {
+                    const spacing = PLATE_WIDTH / 15;
+                    const pos = -PLATE_WIDTH / 2 + spacing / 2 + i * spacing;
+                    return (
+                      <mesh
+                        key={i}
+                        position={[pos, -visSinkThick / 2, 0]}
+                        geometry={geometries.sinkFin}
+                        material={visualMaterials.sink}
+                      />
+                    );
+                  })
+                )}
+              </group>
+            )}
+            <Html position={[0.8, 0, 0]} center zIndexRange={[10, 0]}>
+              <div
+                style={{
+                  ...annotationStyle,
+                  opacity: areLabelsVisible ? "1" : "0",
+                  transition: "opacity 0.2s ease-in-out",
+                }}
+              >
+                {MATERIALS[visSinkMatKey].name.split(" ")[0]}
+              </div>
+            </Html>
+          </group>
+        )}
 
         {/* BASE */}
         <group ref={baseRef}>
@@ -934,7 +951,7 @@ const ThermalBox = memo(
             <group>
               <mesh
                 geometry={geometries.cpvSubstrate}
-                material={visualMaterials.cpvSubstrate}
+                material={visUseReflector ? visualMaterials.cpvSubstrate : visualMaterials.base}
               />
               {(() => {
                 const n = visMatrixSize;
@@ -1068,6 +1085,12 @@ export default function ThermalPage() {
   const [uiNx, setUiNx] = useState(40);
   const [uiNz, setUiNz] = useState(8);
   const [uiUseCircle, setUiUseCircle] = useState(false);
+
+  // NEW: Boolean Toggles State
+  const [uiUseFins, setUiUseFins] = useState(true);
+  const [uiUseReflector, setUiUseReflector] = useState(true);
+
+
   // Material Keys
   const [uiBaseMatKey, setUiBaseMatKey] = useState("Copper (Oxidized)");
   const [uiSinkMatKey, setUiSinkMatKey] = useState("Al-6061 (Anodized)");
@@ -1084,6 +1107,9 @@ export default function ThermalPage() {
     nx: number;
     nz: number;
     useCircle: boolean;
+    // NEW Params
+    useFins: boolean;
+    useReflector: boolean;
     baseMatKey: string;
     sinkMatKey: string;
   } | null>(null);
@@ -1110,6 +1136,9 @@ export default function ThermalPage() {
       nx: uiNx,
       nz: uiNz,
       useCircle: uiUseCircle,
+      // Pass new params
+      useFins: uiUseFins,
+      useReflector: uiUseReflector,
       baseMatKey: uiBaseMatKey,
       sinkMatKey: uiSinkMatKey,
     });
@@ -1140,6 +1169,8 @@ export default function ThermalPage() {
         uiNx !== activeParams.nx ||
         uiNz !== activeParams.nz ||
         uiUseCircle !== activeParams.useCircle ||
+        uiUseFins !== activeParams.useFins ||         // Check change
+        uiUseReflector !== activeParams.useReflector ||  // Check change
         uiBaseMatKey !== activeParams.baseMatKey ||
         uiSinkMatKey !== activeParams.sinkMatKey
     );
@@ -1155,19 +1186,33 @@ export default function ThermalPage() {
     uiNx,
     uiNz,
     uiUseCircle,
+    uiUseFins,
+    uiUseReflector,
     uiBaseMatKey,
     uiSinkMatKey,
   ]);
 
-  // Update Weight Calculation to use actual material densities
+  // Update Weight Calculation (Handle 0 thickness sink volume)
   const structureWeight = useMemo(() => {
     const baseRho = MATERIALS[uiBaseMatKey].rho;
     const sinkRho = MATERIALS[uiSinkMatKey].rho;
     const volBase = Math.pow(uiPlateDim, 2) * uiLayerThick;
-    // Approximating sink volume (fins usually add significant volume, approximated here as 50% solid block for calc)
-    const volSink = Math.pow(uiPlateDim, 2) * uiSinkThick;
+    
+    // If thickness is 0, volume is 0. 
+    // If fins are on, we assume 50% void, if off (solid block), 100% solid.
+    // However, simplified for now: thickness 0 -> 0 volume.
+
+    const FIN_HEIGHT = 0.02;
+    const FIN_THICKNESS = 0.001;
+    const FIN_SPACING = 0.006;
+
+
+    const nFins = Math.floor(uiPlateDim / (FIN_SPACING + FIN_THICKNESS));
+    console.log("Number of fins for weight calc:", nFins);
+    const volSink = Math.pow(uiPlateDim, 2) * uiSinkThick + FIN_HEIGHT * FIN_THICKNESS * uiPlateDim * (uiUseFins ? nFins : 0);
+
     return volBase * baseRho + volSink * sinkRho;
-  }, [uiPlateDim, uiLayerThick, uiSinkThick, uiBaseMatKey, uiSinkMatKey]);
+  }, [uiPlateDim, uiLayerThick, uiSinkThick, uiBaseMatKey, uiSinkMatKey, uiUseFins]);
 
   // 1. Calculate Scientific Project Cost
   const projectCost = useMemo(() => {
@@ -1426,6 +1471,9 @@ export default function ThermalPage() {
           simNx={activeParams?.nx ?? null}
           simNz={activeParams?.nz ?? null}
           simUseCircle={activeParams?.useCircle ?? null}
+          // Pass new sim params
+          simUseFins={activeParams?.useFins ?? null}
+          simUseReflector={activeParams?.useReflector ?? null}
           simBaseMatKey={activeParams?.baseMatKey ?? null}
           simSinkMatKey={activeParams?.sinkMatKey ?? null}
           visMatrixSize={uiMatrixSize}
@@ -1435,6 +1483,8 @@ export default function ThermalPage() {
           visUseCircle={uiUseCircle}
           visLayerThick={uiLayerThick * 10}
           visSinkThick={uiSinkThick * 10}
+          visUseFins={uiUseFins}
+          visUseReflector={uiUseReflector}
           visBaseMatKey={uiBaseMatKey}
           visSinkMatKey={uiSinkMatKey}
           hasPendingChanges={hasPendingChanges}
@@ -1606,12 +1656,17 @@ export default function ThermalPage() {
                     value={uiSinkThick.toFixed(3)}
                     unit="m"
                     colorClass="text-purple-400"
-                    onDec={() =>
-                      setUiSinkThick((p) => Math.max(p - 0.005, 0.005))
-                    }
-                    onInc={() =>
-                      setUiSinkThick((p) => Math.min(p + 0.005, 0.1))
-                    }
+                    onDec={() => {
+                        // Allow going to 0. If 0, disable fins.
+                        setUiSinkThick((p) => {
+                            const val = Math.max(p - 0.005, 0.0);
+                            if (val < 0.001) setUiUseFins(false);
+                            return val;
+                        });
+                    }}
+                    onInc={() => {
+                        setUiSinkThick((p) => Math.min(p + 0.005, 0.1));
+                    }}
                   />
                   <ControlRow
                     label="Mida Placa"
@@ -1647,13 +1702,32 @@ export default function ThermalPage() {
                   />
 
                   {/* --- Materials & Shape Group --- */}
-                  <div className="lg:col-span-1 flex items-center justify-start">
+                  <div className="lg:col-span-3 flex gap-1 items-center justify-start">
                     <ToggleRow
-                      label="Forma Circular"
+                      label="Forma Circular CPV"
                       checked={uiUseCircle}
                       onChange={setUiUseCircle}
                     />
+                    {/* NEW: Fins Toggle (Disabled if sink thickness is 0) */}
+                    <div className={uiSinkThick < 0.001 ? "opacity-50 pointer-events-none grayscale" : ""}>
+                        <ToggleRow
+                        label="Aletes Dissipació"
+                        checked={uiUseFins}
+                        onChange={setUiUseFins}
+                        />
+                    </div>
+                  {/* NEW: Reflector Toggle */}
+                  <div className="lg:col-span-1 flex flex-col gap-2">
+                    <ToggleRow
+                      label="Capa reflectora superior"
+                      checked={uiUseReflector}
+                      onChange={setUiUseReflector}
+                    />
                   </div>
+                  </div>
+
+                  {/* Empty Spacer to align grid if needed */}
+                  <div className="hidden lg:block lg:col-span-1"></div>
 
                   {/* Materials span 2 cols implicitly due to component definition, fills row in 3-col layout */}
                   <MaterialSelector
