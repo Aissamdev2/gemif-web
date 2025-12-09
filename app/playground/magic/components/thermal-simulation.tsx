@@ -1776,9 +1776,6 @@ export default function ThermalPage() {
                 <p className="text-[11px] uppercase tracking-wider text-yellow-300">
                   Cost Total Aprox.
                 </p>
-                <p className="text-[9px] text-white italic leading-none">
-                  Càlcul multifactor
-                </p>
               </div>
               <p className="font-mono font-bold text-xl text-yellow-400 leading-none">
                 {projectCost.total.toLocaleString("es-ES", {
@@ -1875,7 +1872,7 @@ export default function ThermalPage() {
             <div className={`flex justify-between w-full items-center `}>
               <div className="flex flex-col justify-center">
                 <p
-                  className={`text-[9px] uppercase tracking-wider mb-0.5 ${
+                  className={`text-[11px] uppercase tracking-wider mb-0.5 ${
                     paybackPeriod
                       ? paybackPeriod.isViable
                         ? "text-green-500"
