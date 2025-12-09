@@ -1009,7 +1009,7 @@ const ThermalBox = memo(
                 transition: "opacity 0.2s ease-in-out",
               }}
             >
-              Si+Ag
+              {visUseReflector ? "Si+Ag" : "Si"}
             </div>
           </Html>
         </group>
