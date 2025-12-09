@@ -701,6 +701,7 @@ const ThermalBox = memo(
     const SINK_INIT_Y = -(visSinkThick + visLayerThick + 0.08) / 2;
     const SINK_TARGET_Y = SINK_INIT_Y - 0.5;
     const BASE_TARGET_Y = 0;
+    const CPV_INIT_Y = visLayerThick / 2 + 0.01;
     const CPV_TARGET_Y = visLayerThick / 2 + 0.5;
     const SPEED = 1.5;
 
@@ -725,8 +726,8 @@ const ThermalBox = memo(
         baseRef.current.position.y = THREE.MathUtils.lerp(0, BASE_TARGET_Y, t);
       if (cpvRef.current)
         cpvRef.current.position.y = THREE.MathUtils.lerp(
-          visLayerThick / 2 + 0.01,
-          CPV_TARGET_Y,
+          CPV_INIT_Y,
+          visUseReflector ? CPV_TARGET_Y : CPV_INIT_Y,
           t
         );
     });
@@ -784,11 +785,11 @@ const ThermalBox = memo(
           roughness: baseMatDef.roughness,
         }),
         cpvSubstrate: new THREE.MeshStandardMaterial({
-          color: REFELCTIVE_MATERIAL.color,
-          emissive: REFELCTIVE_MATERIAL.color,
-          emissiveIntensity: 0.2,
-          roughness: REFELCTIVE_MATERIAL.roughness,
-          metalness: 0.1,
+          color: visUseReflector ? REFELCTIVE_MATERIAL.color : baseMatDef.color,
+          emissive: visUseReflector ? REFELCTIVE_MATERIAL.color : baseMatDef.color,
+          emissiveIntensity: 0.35,
+          roughness: visUseReflector ? REFELCTIVE_MATERIAL.roughness : baseMatDef.roughness,
+          metalness: 0.3,
         }),
         cpvCell: new THREE.MeshStandardMaterial({
           color: "#1a237e",
@@ -798,7 +799,7 @@ const ThermalBox = memo(
           metalness: 0.1,
         }),
       };
-    }, [visBaseMatKey, visSinkMatKey]);
+    }, [visBaseMatKey, visSinkMatKey, visUseReflector]);
 
     const geometries = useMemo(() => {
       return {
@@ -940,10 +941,11 @@ const ThermalBox = memo(
                   key={i}
                   attach={`material-${i}`}
                   emissiveMap={tex}
-                  emissiveIntensity={2.0}
+                  emissiveIntensity={0.4}
                   emissive="white"
-                  roughness={0.5}
-                  color="gray"
+                  roughness={0.3}
+                  metalness={0.9}
+                  color={visUseReflector ? REFELCTIVE_MATERIAL.color : "#8B4513"}
                 />
               ))}
             </mesh>
