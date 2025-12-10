@@ -842,11 +842,11 @@ const ThermalBox = memo(
                     key={i}
                     attach={`material-${i}`}
                     emissiveMap={tex}
-                    emissiveIntensity={2.0}
+                    emissiveIntensity={1.5}
                     emissive="white"
                     roughness={0.4}
-                    metalness={0.2}
-                    color="gray"
+                    metalness={0.9}
+                    color="#000"
                   />
                 ))}
               </mesh>
@@ -904,11 +904,11 @@ const ThermalBox = memo(
                   key={i}
                   attach={`material-${i}`}
                   emissiveMap={tex}
-                  emissiveIntensity={0.4}
+                  emissiveIntensity={1.5}
                   emissive="white"
                   roughness={0.3}
                   metalness={0.9}
-                  color="#8B4513"
+                  color="#000"
                 />
               ))
             ) : (
@@ -941,11 +941,11 @@ const ThermalBox = memo(
                   key={i}
                   attach={`material-${i}`}
                   emissiveMap={tex}
-                  emissiveIntensity={0.4}
+                  emissiveIntensity={1.5}
                   emissive="white"
                   roughness={0.3}
                   metalness={0.9}
-                  color={visUseReflector ? REFELCTIVE_MATERIAL.color : "#8B4513"}
+                  color={"#000"}
                 />
               ))}
             </mesh>
