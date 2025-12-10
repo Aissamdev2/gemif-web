@@ -1206,7 +1206,7 @@ export default function ThermalPage() {
 
     const FIN_HEIGHT = 0.02;
     const FIN_THICKNESS = 0.001;
-    const FIN_SPACING = 0.006;
+    const FIN_SPACING = 0.005;
 
 
     const nFins = Math.floor(uiPlateDim / (FIN_SPACING + FIN_THICKNESS));
