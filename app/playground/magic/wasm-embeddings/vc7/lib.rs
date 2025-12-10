@@ -626,7 +626,7 @@ pub fn run_thermal_simulation(
     // Power Calculation: INTEGRATE OVER FULL PLATE
     // Plate goes from -L/2 to +L/2 in both X and Y
     // l_xy passed in is plate_dimension / 2.0 (Half width)
-    let n_vis = 100; // High resolution for integration
+    let n_vis = 200; // High resolution for integration
     let x_vis_lin = linspace(-l_xy, l_xy, n_vis);
     let y_vis_lin = linspace(-l_xy, l_xy, n_vis);
     let dx_vis = x_vis_lin[1] - x_vis_lin[0];
