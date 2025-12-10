@@ -63,7 +63,9 @@ fn eta_cell(concentration_suns: f64) -> f64 {
         return 0.0;
     }
     let log_c = concentration_suns.log10();
-    (-1.83551021 * log_c.powi(2) + 10.33938856 * log_c + 31.75105977) / 100.0
+    let eff = (-1.83551021 * log_c.powi(2) + 10.33938856 * log_c + 31.75105977) / 100.0;
+    // FIX: Clamp to 0.0 to prevent magic energy creation
+    if eff < 0.0 { 0.0 } else { eff }
 }
 
 struct RadBoundary {
@@ -125,7 +127,7 @@ pub fn run_thermal_simulation(
     
     // Sink Layers: If sink exists, give it some grid points (e.g., 5 points)
     if l_z_sink > 1e-9 {
-        z_points.extend(linspace(0.0, l_z_sink, 5));
+        z_points.extend(linspace(0.0, l_z_sink, 3));
     } else {
         z_points.push(0.0);
     }
@@ -212,74 +214,99 @@ pub fn run_thermal_simulation(
         wx_val * wy_val
     };
 
-    // --- 4. Material Allocation & CPV Mask ---
+    // --- 4. Material Allocation & CPV Coverage (Geometric Anti-Aliasing) ---
     let mut kt_vec = vec![0.0; n_total];
-    let mut emi_vec = vec![0.0; n_total];
+    let mut emi_vec = vec![0.0; n_total]; // We will store this but also use it locally for boundaries
     let mut rad_boundaries = Vec::new();
 
-    // Pre-calculate CPV Mask (2D)
-    let mut cpv_mask = vec![false; n_xy * n_xy]; // indexed by j + i*n_xy
+    // 4a. Calculate Geometric Coverage (0.0 to 1.0)
+    // Instead of a boolean mask, we determine the fraction of CPV cell in every grid point.
+    let mut cpv_coverage = vec![0.0; n_xy * n_xy];
 
-    // First pass to determine mask
+    // Use 5x5 sub-sampling for high geometric precision
+    let sub_n = 5; 
+    let sub_step_x = dx / sub_n as f64;
+    let sub_step_y = dy / sub_n as f64;
+    // Offset to center the sub-grid around the main grid point
+    let sub_start_idx = -(sub_n as f64 - 1.0) / 2.0; 
+
     for i in 0..n_xy {
         for j in 0..n_xy {
-            let cx = x[i];
-            let cy = y[j];
-            let mut inside = false;
-            for p in 0..n_cpv_total {
-                let (ccx, ccy) = centers[p];
-                let radius = cell_rads[p];
-                let dist_x = (cx - ccx).abs();
-                let dist_y = (cy - ccy).abs();
+            let cx_cell = x[i];
+            let cy_cell = y[j];
+            let mut hits = 0;
+            
+            for sx_i in 0..sub_n {
+                for sy_i in 0..sub_n {
+                    // Calculate sub-pixel world coordinate
+                    let sx = cx_cell + (sub_start_idx + sx_i as f64) * sub_step_x;
+                    let sy = cy_cell + (sub_start_idx + sy_i as f64) * sub_step_y;
+                    
+                    let mut inside = false;
+                    for p in 0..n_cpv_total {
+                        let (ccx, ccy) = centers[p];
+                        let radius = cell_rads[p];
+                        
+                        // Standard check based on shape toggle
+                        let is_in = if use_circular_cpv {
+                             let dist_sq = (sx - ccx).powi(2) + (sy - ccy).powi(2);
+                             dist_sq <= radius.powi(2)
+                        } else {
+                             let dist_x = (sx - ccx).abs();
+                             let dist_y = (sy - ccy).abs();
+                             dist_x <= radius && dist_y <= radius
+                        };
 
-                let is_in_shape = if use_circular_cpv {
-                    (dist_x * dist_x) + (dist_y * dist_y) <= (radius * radius)
-                } else {
-                    dist_x <= radius && dist_y <= radius
-                };
-
-                if is_in_shape {
-                    inside = true;
-                    break;
+                        if is_in { inside = true; break; }
+                    }
+                    if inside { hits += 1; }
                 }
             }
-            if inside {
-                cpv_mask[j + i * n_xy] = true;
-            }
+            // Store fraction (0.0 = Pure Reflector/Base, 1.0 = Pure Silicon, 0.4 = Edge)
+            cpv_coverage[j + i * n_xy] = hits as f64 / (sub_n * sub_n) as f64;
         }
     }
 
-    // Material Loop
+    // 4b. Material Loop with Blending
     for k in 0..nz {
         for i in 0..n_xy {
             for j in 0..n_xy {
                 let idx = get_idx(i, j, k);
                 let cz = z[k];
+                let xy_idx = j + i * n_xy;
+                let cover = cpv_coverage[xy_idx];
 
-                // Default assignment
-                let mut mat = mat_base; // Default to Base Plate
+                // Default Base Properties
+                let mut k_val = base_kt;
+                let mut emi_val = base_emi;
 
                 if l_z_sink > 1e-9 && cz <= l_z_sink + 1e-6 {
-                    mat = mat_sink; // Assign Sink Material
+                    // Sink Material
+                    k_val = sink_kt;
+                    emi_val = sink_emi;
                 } else if cz > l_z_total - 0.0002 {
-                    // Top Skin layers (Solar Cell or Reflector)
-                    if cpv_mask[j + i * n_xy] {
-                        mat = MAT_SI;
+                    // Top Skin: BLEND Silicon and Reflector/Base
+                    
+                    // Material A: Silicon (CPV)
+                    let k_si = MAT_SI.kt;
+                    let emi_si = MAT_SI.emi;
+                    
+                    // Material B: Reflector OR Base (depending on toggle)
+                    let (k_ref, emi_ref) = if use_reflector {
+                        (MAT_REF.kt, MAT_REF.emi)
                     } else {
-                        // Modified Reflector Logic
-                        if use_reflector {
-                            mat = MAT_REF;
-                        } else {
-                            // If no reflector, the top exposed material is the base material
-                            mat = mat_base;
-                        }
-                    }
+                        (base_kt, base_emi)
+                    };
+
+                    // Linear Interpolation (Physics Blending)
+                    k_val = cover * k_si + (1.0 - cover) * k_ref;
+                    emi_val = cover * emi_si + (1.0 - cover) * emi_ref;
                 }
 
-                kt_vec[idx] = mat.kt;
-                emi_vec[idx] = mat.emi;
+                kt_vec[idx] = k_val;
+                emi_vec[idx] = emi_val;
 
-                // --- Boundary Identification ---
+                // --- Boundary Identification (Using Blended Emissivity) ---
                 let mut is_boundary = false;
                 let mut area_acc = 0.0;
 
@@ -305,14 +332,15 @@ pub fn run_thermal_simulation(
                 }
 
                 if is_boundary {
-                    let factor = area_acc * mat.emi * SIGMA_SB;
+                    // Important: Use the blended `emi_val` here!
+                    let factor = area_acc * emi_val * SIGMA_SB;
                     rad_boundaries.push(RadBoundary { idx, factor });
                 }
             }
         }
     }
 
-    // --- 5. Heat Sources (Gaussian) ---
+    // --- 5. Heat Sources (Blended with Coverage Map) ---
     let q_concentrated = magic_area * Q_SOLAR;
     let sigma_g = fwhm / 2.35;
     let a_tot = q_concentrated / (2.0 * PI * sigma_g.powi(2));
@@ -327,7 +355,9 @@ pub fn run_thermal_simulation(
             let idx = get_idx(i, j, k_top);
             let cx = x[i];
             let cy = y[j];
+            let cover = cpv_coverage[j + i * n_xy];
 
+            // 1. Calculate Incident Flux (Gaussian) at Center of Grid Point
             let mut q_sum = 0.0;
             for p in 0..n_cpv_total {
                 let (ccx, ccy) = centers[p];
@@ -335,25 +365,26 @@ pub fn run_thermal_simulation(
                 q_sum += a_cpv * (-r2 / (2.0 * sigma_g.powi(2))).exp();
             }
 
+            // Total Incident Power (Ambient + Concentrated)
             let q_tot = Q_SOLAR * 0.1 + q_sum;
             let suns = q_tot / 1000.0;
+            
+            // 2. Calculate Efficiency at this intensity
+            let efficiency = eta_cell(suns);
 
-            let q_in;
-            if cpv_mask[j + i * n_xy] {
-                q_in = q_tot * (1.0 - eta_cell(suns));
+            // 3. Blend Absorbed Heat
+            // Path A: If it were pure Silicon (Absorbs what isn't converted to electricity)
+            let q_abs_si = q_tot * (1.0 - efficiency);
+            
+            // Path B: If it were Reflector (or Base)
+            let q_abs_ref = if use_reflector {
+                q_tot * 0.05 // Reflector absorbs 5%
             } else {
-                // Modified Power Logic
-                if use_reflector {
-                    q_in = q_tot * 0.05; // Reflector absorption
-                } else {
-                    // If reflector is removed, incident power hits the base material.
-                    // Removed the 0.05 multiplier. 
-                    // We multiply by base_emi (assuming alpha = epsilon) to be physically correct,
-                    // or strictly q_tot if you assume 100% absorption. 
-                    // Here we use the material property to be consistent with the material change.
-                    q_in = q_tot; 
-                }
-            }
+                q_tot // Base absorbs 100% of incident (minus re-radiation handled by boundary)
+            };
+
+            // Mix based on coverage fraction
+            let q_in = cover * q_abs_si + (1.0 - cover) * q_abs_ref;
 
             let az_face = get_az(i, j);
             q_source_vec[idx] = q_in * az_face;
@@ -370,13 +401,13 @@ pub fn run_thermal_simulation(
     let fin_thickness = 0.001;
     let fin_spacing = 0.005;
 
-
     // Modified Fin Logic: 
     // Force fins off if sink_thickness is 0, otherwise use the passed boolean.
     let effective_use_fins = if l_z_sink <= 1e-9 { false } else { use_fins };
 
     let fin_area_multiplier = if effective_use_fins {
-        let n_fins_x = (l_xy_total / (fin_thickness + fin_spacing)).floor();
+        // FIX: Add epsilon to prevent floating point floor error (249 vs 250 fins)
+        let n_fins_x = ((l_xy_total + 1e-9) / (fin_thickness + fin_spacing)).floor();
         let fin_efficiency = 0.85;
         let a_base = l_xy_total * l_xy_total;
         let a_fin_per_unit = 2.0 * fin_height * l_xy_total;
@@ -466,8 +497,8 @@ pub fn run_thermal_simulation(
     // --- 7. NEWTON-RAPHSON SOLVER ---
 
     let mut t_vec = DVector::from_element(n_total, T_INFINITY_K);
-    let max_newton_iter = 50;
-    let tol_abs = 1e-4;
+    let max_newton_iter = 100;
+    let tol_abs = 1e-7;
 
     // Solver Buffers
     let mut r = DVector::zeros(n_total);

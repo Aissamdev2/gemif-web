@@ -180,11 +180,12 @@ const ControlRow = memo(
     onInc,
     disableDec,
     disableInc,
-    // --- NEW PROPS ---
     onMin,
     onMax,
     showMin = false,
     showMax = false,
+    // NEW
+    onSet,
   }: {
     label: string;
     value: string | number;
@@ -198,74 +199,121 @@ const ControlRow = memo(
     onMax?: () => void;
     showMin?: boolean;
     showMax?: boolean;
-  }) => (
-    <div className="flex flex-col gap-1 items-center bg-neutral-900 p-2 rounded-xl text-white shadow-xl border border-white/10">
-      {showMax && onMax && (
-        <button
-          onClick={onMax}
-          disabled={disableInc}
-          className="cursor-pointer w-full h-4 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 hover:text-pink-300 border border-white/5 transition duration-75 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed group"
-          title="Set Maximum"
-        >
-          <span className="text-[9px] font-black tracking-tighter opacity-70 group-hover:opacity-100">
-            MAX
-          </span>
-        </button>
-      )}
-      <div className="flex items-center justify-center gap-2">
-        {/* MIN BUTTON (Optional) */}
+    onSet?: (v: number) => void;      // NEW
+  }) => {
+    const [editing, setEditing] = useState(false);
+    const [draft, setDraft] = useState(String(value));
 
-        {/* Decrement */}
-        <button
-          onClick={onDec}
-          disabled={disableDec}
-          className="cursor-pointer w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 hover:text-white border border-white/5 transition duration-75 active:scale-95 text-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          -
-        </button>
+    const commit = () => {
+      setEditing(false);
+      if (onSet) {
+        const num = Number(draft);
+        if (!Number.isNaN(num)) onSet(num);
+      }
+    };
 
-        {/* Label & Value */}
-        <div className="flex flex-col items-center min-w-[90px]">
-          <span
-            className={`text-[9px] uppercase tracking-widest font-bold mb-0.5 ${colorClass}`}
+    const cancel = () => {
+      setEditing(false);
+      setDraft(String(value));
+    };
+
+    return (
+      <div className="flex flex-col gap-1 items-center bg-neutral-900 p-2 rounded-xl text-white shadow-xl border border-white/10">
+        {showMax && onMax && (
+          <button
+            onClick={onMax}
+            disabled={disableInc}
+            className="cursor-pointer w-full h-4 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 hover:text-pink-300 border border-white/5 transition duration-75 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed group"
+            title="Set Maximum"
           >
-            {label}
-          </span>
-          <span className="font-mono text-lg font-bold text-white leading-none">
-            {value}
-            <span className="text-xs ml-0.5 font-normal text-gray-400">
-              {unit}
+            <span className="text-[9px] font-black tracking-tighter opacity-70 group-hover:opacity-100">
+              MAX
             </span>
-          </span>
+          </button>
+        )}
+
+        <div className="flex items-center justify-center gap-2">
+          {/* Decrement */}
+          <button
+            onClick={onDec}
+            disabled={disableDec}
+            className="cursor-pointer w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 hover:text-white border border-white/5 transition duration-75 active:scale-95 text-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            -
+          </button>
+
+          {/* Label + Value */}
+          <div className="flex flex-col items-center min-w-[90px]">
+            <span
+              className={`text-[9px] uppercase tracking-widest font-bold mb-0.5 ${colorClass}`}
+            >
+              {label}
+            </span>
+
+            {/* Value or Editable input */}
+            {!editing && (
+              <span
+                className="font-mono text-lg font-bold text-white leading-none cursor-pointer"
+                onClick={() => {
+                  if (onSet) {
+                    setEditing(true);
+                    setDraft(String(value));
+                  }
+                }}
+                title={onSet ? "Click to edit" : undefined}
+              >
+                {value}
+                <span className="text-xs ml-0.5 font-normal text-gray-400">
+                  {unit}
+                </span>
+              </span>
+            )}
+
+            {editing && (
+              <input
+                autoFocus
+                type="number"
+                className="w-20 text-center font-mono text-md font-bold rounded-md bg-neutral-800 border border-white/20 px-1 py-0 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onBlur={commit}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") commit();
+                  if (e.key === "Escape") cancel();
+                }}
+              />
+            )}
+          </div>
+
+          {/* Increment */}
+          <button
+            onClick={onInc}
+            disabled={disableInc}
+            className="cursor-pointer w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 hover:text-white border border-white/5 transition duration-75 active:scale-95 text-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            +
+          </button>
         </div>
 
-        {/* Increment */}
-        <button
-          onClick={onInc}
-          disabled={disableInc}
-          className="cursor-pointer w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 hover:text-white border border-white/5 transition duration-75 active:scale-95 text-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          +
-        </button>
+        {showMin && onMin && (
+          <button
+            onClick={onMin}
+            disabled={disableDec}
+            className="cursor-pointer w-full h-4 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 hover:text-cyan-300 border border-white/5 transition duration-75 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed group"
+            title="Set Minimum"
+          >
+            <span className="text-[9px] font-black tracking-tighter opacity-70 group-hover:opacity-100">
+              MIN
+            </span>
+          </button>
+        )}
       </div>
-
-      {/* MAX BUTTON (Optional) */}
-      {showMin && onMin && (
-        <button
-          onClick={onMin}
-          disabled={disableDec}
-          className="cursor-pointer w-full h-4 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 hover:text-cyan-300 border border-white/5 transition duration-75 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed group"
-          title="Set Minimum"
-        >
-          <span className="text-[9px] font-black tracking-tighter opacity-70 group-hover:opacity-100">
-            MIN
-          </span>
-        </button>
-      )}
-    </div>
-  )
+    );
+  }
 );
+
 ControlRow.displayName = "ControlRow";
+
 
 const ToggleRow = memo(
   ({
@@ -640,7 +688,7 @@ const ThermalBox = memo(
       };
 
       const relativePath = new URL(
-        "../wasm-embeddings/vc6/solar_bg.wasm",
+        "../wasm-embeddings/vc7/solar_bg.wasm",
         import.meta.url
       ).toString();
       const wasmUrl = new URL(relativePath, window.location.origin).href;
@@ -1081,11 +1129,11 @@ export default function ThermalPage() {
   // ADVANCED UI STATE
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [uiLayerThick, setUiLayerThick] = useState(0.03);
-  const [uiSinkThick, setUiSinkThick] = useState(0.01); // NEW
+  const [uiSinkThick, setUiSinkThick] = useState(0.01);
   const [uiPlateDim, setUiPlateDim] = useState(1.5);
   const [uiCpvScale, setUiCpvScale] = useState(0.7);
   const [uiNx, setUiNx] = useState(40);
-  const [uiNz, setUiNz] = useState(8);
+  const [uiNz, setUiNz] = useState(9);
   const [uiUseCircle, setUiUseCircle] = useState(false);
 
   // NEW: Boolean Toggles State
@@ -1226,7 +1274,7 @@ export default function ThermalPage() {
 
     // Materials
     const volBase = area * uiLayerThick;
-    const volSink = area * uiSinkThick * 0.5; // 50% void
+    const volSink = area * uiSinkThick;
     const volAg = area * PROJECT_COSTS.AG_THICKNESS;
 
     // Add 20% material waste factor for machining
@@ -1252,7 +1300,7 @@ export default function ThermalPage() {
     const electronicsCost = estimatedWatts * PROJECT_COSTS.ELEC_COST_PER_WATT;
 
     // Installation (Rigging & Access)
-    const totalWeight = volBase * baseMat.rho + volSink * sinkMat.rho;
+    const totalWeight = structureWeight;
 
     // Logistics / installation: transport + handling (tiered) + optional crane (disabled by default)
     const transportCost = PROJECT_COSTS.TRANSPORT_COST_PER_KG * totalWeight;
@@ -1295,12 +1343,13 @@ export default function ThermalPage() {
         logistics: installationCost + contingency, // Install + Risk
       },
     };
-  }, [uiPlateDim, uiLayerThick, uiSinkThick, uiBaseMatKey, uiSinkMatKey]);
+  }, [uiPlateDim, uiLayerThick, uiSinkThick, uiBaseMatKey, uiSinkMatKey, structureWeight]);
 
   // ... inside ThermalPage component ...
 
   // 2. Calculate ROI / Payback Period
   const paybackPeriod = useMemo(() => {
+    if (!projectCost) return null
     // If we aren't generating power yet, return null
     if (simStats.pElectric <= 0) return null;
 
@@ -1320,7 +1369,7 @@ export default function ThermalPage() {
       annualSavings: annualSavings,
       isViable: years < 15, // Arbitrary lifecycle limit for "viable"
     };
-  }, [simStats.pElectric, projectCost.total]);
+  }, [simStats.pElectric, projectCost]);
 
   return (
     <div className="relative w-full h-full bg-black overflow-hidden rounded-2xl">
@@ -1501,10 +1550,11 @@ export default function ThermalPage() {
       <div className="absolute z-30 top-28 left-8 flex flex-col items-start gap-4 pointer-events-auto">
         <ControlRow
           label="FWHM (m)"
-          value={uiFwhm > 0 ? uiFwhm.toFixed(2) : uiFwhm.toFixed(2)}
+          value={uiFwhm.toFixed(3)}
           colorClass="text-cyan-400"
           onDec={() => setUiFwhm((p) => Math.max(p - 0.01, FWHM_MIN))}
           onInc={() => setUiFwhm((p) => Math.min(p + 0.01, FWHM_MAX))}
+          onSet={(n) => setUiFwhm((p) => Math.min(Math.max(n, FWHM_MIN), FWHM_MAX))}
         />
 
         <ControlRow
@@ -1519,12 +1569,13 @@ export default function ThermalPage() {
           label="Àrea (m²)"
           value={uiMagicArea}
           colorClass="text-green-400"
-          onDec={() => setUiMagicArea((p) => Math.max(p - 1, 10))}
+          onDec={() => setUiMagicArea((p) => Math.max(p - 1, Math.pow(uiMatrixSize, 2)))}
           onInc={() => setUiMagicArea((p) => Math.min(p + 1, 236))}
           onMax={() => setUiMagicArea(236)}
           onMin={() => setUiMagicArea(Math.pow(uiMatrixSize, 2))}
           showMax
           showMin
+          // onSet={(n) => setUiMagicArea(Math.max(Math.min(n, 236),Math.pow(uiMatrixSize, 2)))}
         />
 
         {!simStats.loading && (!activeParams || hasPendingChanges) && (
@@ -1643,7 +1694,7 @@ export default function ThermalPage() {
                   {/* --- Geometry Group --- */}
                   <ControlRow
                     label="Gruix Conductor"
-                    value={uiLayerThick.toFixed(3)}
+                    value={uiLayerThick.toFixed(4)}
                     unit="m"
                     colorClass="text-purple-400"
                     onDec={() =>
@@ -1652,10 +1703,11 @@ export default function ThermalPage() {
                     onInc={() =>
                       setUiLayerThick((p) => Math.min(p + 0.005, 0.1))
                     }
+                    onSet={(n) => setUiLayerThick(Math.max(Math.min(n,0.1), 0.005))}
                   />
                   <ControlRow
                     label="Gruix Dissipador"
-                    value={uiSinkThick.toFixed(3)}
+                    value={uiSinkThick.toFixed(4)}
                     unit="m"
                     colorClass="text-purple-400"
                     onDec={() => {
@@ -1669,6 +1721,7 @@ export default function ThermalPage() {
                     onInc={() => {
                         setUiSinkThick((p) => Math.min(p + 0.005, 0.1));
                     }}
+                    onSet={(n) => setUiSinkThick(Math.max(Math.min(n,0.1), 0.005))}
                   />
                   <ControlRow
                     label="Mida Placa"

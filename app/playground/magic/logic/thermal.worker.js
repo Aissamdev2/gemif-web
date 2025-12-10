@@ -1,5 +1,5 @@
 // thermal.worker.js
-import init, { run_thermal_simulation } from "../wasm-embeddings/vc6/solar.js";
+import init, { run_thermal_simulation } from "../wasm-embeddings/vc7/solar.js";
 
 const tempColor = { r: 0, g: 0, b: 0 };
 
@@ -47,6 +47,7 @@ self.onmessage = async ({ data }) => {
     wasmUrl
   } = data;
 
+  console.log(data)
   try {
     await init(wasmUrl);
 
