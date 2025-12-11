@@ -546,11 +546,13 @@ const ThermalBox = memo(
     simMagicArea,
     simLayerThick,
     simSinkThick,
+    simPvThick,
     simPlateDim,
     simCpvScale,
     simNx,
     simNz,
     simUseCircle,
+    simUsePv,
     simBaseMatKey,
     simSinkMatKey,
     // NEW: Sim Props
@@ -579,11 +581,13 @@ const ThermalBox = memo(
     simMagicArea: number | null;
     simLayerThick: number | null;
     simSinkThick: number | null;
+    simPvThick: number | null;
     simPlateDim: number | null;
     simCpvScale: number | null;
     simNx: number | null;
     simNz: number | null;
     simUseCircle: boolean | null;
+    simUsePv: boolean | null;
     simUseFins: boolean | null;
     simUseReflector: boolean | null;
     simBaseMatKey: string | null;
@@ -688,7 +692,7 @@ const ThermalBox = memo(
       };
 
       const relativePath = new URL(
-        "../wasm-embeddings/vc7/solar_bg.wasm",
+        "../wasm-embeddings/vc8/solar_bg.wasm",
         import.meta.url
       ).toString();
       const wasmUrl = new URL(relativePath, window.location.origin).href;
@@ -703,11 +707,13 @@ const ThermalBox = memo(
         matrixSize: simMatrixSize,
         layerThickness: simLayerThick,
         sinkThickness: simSinkThick,
+        pvThickness: simPvThick,
         plateDim: simPlateDim,
         cpvScale: simCpvScale,
         nXy: simNx,
         nZLayer: simNz,
         useCircle: simUseCircle,
+        usePv: simUsePv,
         // Material props
         baseKt: baseMat.kt,
         baseEmi: baseMat.emi,
@@ -734,11 +740,13 @@ const ThermalBox = memo(
       simFwhm,
       simLayerThick,
       simSinkThick,
+      simPvThick,
       simPlateDim,
       simCpvScale,
       simNx,
       simNz,
       simUseCircle,
+      simUsePv,
       simUseFins,      // Add dependency
       simUseReflector, // Add dependency
       simBaseMatKey,
@@ -1121,20 +1129,22 @@ export default function ThermalPage() {
   });
 
   // UI STATE
-  const [uiFwhm, setUiFwhm] = useState(0.17);
+  const [uiFwhm, setUiFwhm] = useState(0.267);
   const [uiMatrixSize, setUiMatrixSize] = useState(5);
-  const [uiMagicArea, setUiMagicArea] = useState(75);
+  const [uiMagicArea, setUiMagicArea] = useState(45);
   const [showGaussian, setShowGaussian] = useState(false);
 
   // ADVANCED UI STATE
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [uiLayerThick, setUiLayerThick] = useState(0.03);
-  const [uiSinkThick, setUiSinkThick] = useState(0.01);
+  const [uiLayerThick, setUiLayerThick] = useState(0.0189);
+  const [uiSinkThick, setUiSinkThick] = useState(0.0106);
+  const [uiPvThick, setUiPvThick] = useState(0.2);
   const [uiPlateDim, setUiPlateDim] = useState(1.5);
   const [uiCpvScale, setUiCpvScale] = useState(0.7);
   const [uiNx, setUiNx] = useState(40);
   const [uiNz, setUiNz] = useState(9);
   const [uiUseCircle, setUiUseCircle] = useState(false);
+  const [uiUsePv, setUiUsePv] = useState(false);
 
   // NEW: Boolean Toggles State
   const [uiUseFins, setUiUseFins] = useState(true);
@@ -1142,8 +1152,11 @@ export default function ThermalPage() {
 
 
   // Material Keys
-  const [uiBaseMatKey, setUiBaseMatKey] = useState("Copper (Oxidized)");
-  const [uiSinkMatKey, setUiSinkMatKey] = useState("Al-6061 (Anodized)");
+  const [uiBaseMatKey, setUiBaseMatKey] = useState("Al-1050A (Anodized)");
+  const [uiSinkMatKey, setUiSinkMatKey] = useState("Al-1050A (Anodized)");
+
+  const [maxRoi, setMaxRoi] = useState(15);
+  const [maxTemp, setMaxTemp] = useState(85);
 
   // SIMULATION STATE
   const [activeParams, setActiveParams] = useState<{
@@ -1152,11 +1165,13 @@ export default function ThermalPage() {
     magicArea: number;
     layerThick: number;
     sinkThick: number;
+    pvThick: number;
     plateDim: number;
     cpvScale: number;
     nx: number;
     nz: number;
     useCircle: boolean;
+    usePv: boolean;
     // NEW Params
     useFins: boolean;
     useReflector: boolean;
@@ -1181,11 +1196,13 @@ export default function ThermalPage() {
       magicArea: uiMagicArea,
       layerThick: uiLayerThick,
       sinkThick: uiSinkThick,
+      pvThick: uiPvThick,
       plateDim: uiPlateDim,
       cpvScale: uiCpvScale,
       nx: uiNx,
       nz: uiNz,
       useCircle: uiUseCircle,
+      usePv: uiUsePv,
       // Pass new params
       useFins: uiUseFins,
       useReflector: uiUseReflector,
@@ -1214,11 +1231,13 @@ export default function ThermalPage() {
         uiMagicArea !== activeParams.magicArea ||
         uiLayerThick !== activeParams.layerThick ||
         uiSinkThick !== activeParams.sinkThick ||
+        uiPvThick !== activeParams.pvThick ||
         uiPlateDim !== activeParams.plateDim ||
         uiCpvScale !== activeParams.cpvScale ||
         uiNx !== activeParams.nx ||
         uiNz !== activeParams.nz ||
         uiUseCircle !== activeParams.useCircle ||
+        uiUsePv !== activeParams.usePv ||
         uiUseFins !== activeParams.useFins ||         // Check change
         uiUseReflector !== activeParams.useReflector ||  // Check change
         uiBaseMatKey !== activeParams.baseMatKey ||
@@ -1231,11 +1250,13 @@ export default function ThermalPage() {
     activeParams,
     uiLayerThick,
     uiSinkThick,
+    uiPvThick,
     uiPlateDim,
     uiCpvScale,
     uiNx,
     uiNz,
     uiUseCircle,
+    uiUsePv,
     uiUseFins,
     uiUseReflector,
     uiBaseMatKey,
@@ -1367,9 +1388,9 @@ export default function ThermalPage() {
     return {
       years: years,
       annualSavings: annualSavings,
-      isViable: years < 15, // Arbitrary lifecycle limit for "viable"
+      isViable: years < maxRoi, // Arbitrary lifecycle limit for "viable"
     };
-  }, [simStats.pElectric, projectCost]);
+  }, [simStats.pElectric, projectCost, maxRoi]);
 
   return (
     <div className="relative w-full h-full bg-black overflow-hidden rounded-2xl">
@@ -1517,11 +1538,13 @@ export default function ThermalPage() {
           simMagicArea={activeParams?.magicArea ?? null}
           simLayerThick={activeParams?.layerThick ?? null}
           simSinkThick={activeParams?.sinkThick ?? null}
+          simPvThick={activeParams?.pvThick ? activeParams.pvThick / 1000 : null}
           simPlateDim={activeParams?.plateDim ?? null}
           simCpvScale={activeParams?.cpvScale ?? null}
           simNx={activeParams?.nx ?? null}
           simNz={activeParams?.nz ?? null}
           simUseCircle={activeParams?.useCircle ?? null}
+          simUsePv={activeParams?.usePv ?? null}
           // Pass new sim params
           simUseFins={activeParams?.useFins ?? null}
           simUseReflector={activeParams?.useReflector ?? null}
@@ -1724,6 +1747,19 @@ export default function ThermalPage() {
                     onSet={(n) => setUiSinkThick(Math.max(Math.min(n,0.1), 0.005))}
                   />
                   <ControlRow
+                    label="Gruix (C)PV"
+                    value={uiPvThick.toFixed(4)}
+                    unit="mm"
+                    colorClass="text-purple-400"
+                    onDec={() => {
+                        setUiPvThick((p) => Math.max(p - 0.1, 0.2));
+                    }}
+                    onInc={() => {
+                        setUiPvThick((p) => Math.min(p + 0.1, 10));
+                    }}
+                    onSet={(n) => setUiPvThick(Math.max(Math.min(n,10), 0.2))}
+                  />
+                  <ControlRow
                     label="Mida Placa"
                     value={uiPlateDim.toFixed(1)}
                     unit="m"
@@ -1756,10 +1792,28 @@ export default function ThermalPage() {
                     onInc={() => setUiCpvScale((p) => Math.min(p + 0.01, 1.0))}
                   />
 
+                  <ControlRow
+                    label="ROI Màxim"
+                    value={(maxRoi).toFixed(0)}
+                    unit="anys"
+                    colorClass="text-pink-400"
+                    onDec={() => setMaxRoi((p) => Math.max(p - 1, 1))}
+                    onInc={() => setMaxRoi((p) => Math.min(p + 1, 30))}
+                  />
+
+                  <ControlRow
+                    label="Temp. Màxima"
+                    value={(maxTemp).toFixed(0)}
+                    unit="°C"
+                    colorClass="text-pink-400"
+                    onDec={() => setMaxTemp((p) => Math.max(p - 1, 25))}
+                    onInc={() => setMaxTemp((p) => Math.min(p + 1, 500))}
+                  />
+
+
                   {/* --- Materials & Shape Group --- */}
-                  <div className="lg:col-span-3 flex gap-1 items-center justify-start">
                     <ToggleRow
-                      label="Forma Circular CPV"
+                      label="Forma Circular (C)PV"
                       checked={uiUseCircle}
                       onChange={setUiUseCircle}
                     />
@@ -1771,15 +1825,17 @@ export default function ThermalPage() {
                         onChange={setUiUseFins}
                         />
                     </div>
+                    <ToggleRow
+                      label="Fer servir PV"
+                      checked={uiUsePv}
+                      onChange={setUiUsePv}
+                    />
                   {/* NEW: Reflector Toggle */}
-                  <div className="lg:col-span-1 flex flex-col gap-2">
                     <ToggleRow
                       label="Capa reflectora superior"
                       checked={uiUseReflector}
                       onChange={setUiUseReflector}
                     />
-                  </div>
-                  </div>
 
                   {/* Empty Spacer to align grid if needed */}
                   <div className="hidden lg:block lg:col-span-1"></div>
@@ -1914,6 +1970,67 @@ export default function ThermalPage() {
               </p>
             </div>
           </div>
+
+
+          <div
+            className={`col-span-2 rounded-lg p-2.5 border flex flex-col justify-between items-start ${
+              paybackPeriod
+                ? "bg-blue-900/10 border-blue-300/30"
+              : "bg-white/5 border-white/10 opacity-50"
+            }`}
+          >
+            <div className={`flex justify-between w-full items-center `}>
+              <div className="flex flex-col justify-center">
+                <p
+                  className={`text-[11px] uppercase tracking-wider mb-0.5 ${
+                    paybackPeriod
+                      ? "text-blue-500"
+                      : "text-gray-400"
+                  }`}
+                >
+                  Beneficis anuals
+                </p>
+                <div className="flex items-center gap-2">
+                  <p
+                    className={`font-mono font-bold text-lg ${
+                      paybackPeriod ? "text-white" : "text-gray-500"
+                    }`}
+                  >
+                    {paybackPeriod
+                      ? paybackPeriod.annualSavings.toLocaleString("es-ES", {
+                        style: "currency",
+                        currency: "EUR",
+                        notation: "compact",
+                      })
+                      : "--"}
+                  </p>
+                </div>
+              </div>
+            </div>
+            {paybackPeriod && (
+              <div className="mt-2 pt-1.5 border-t border-dashed border-white/10 w-full flex justify-between items-center">
+                <p
+                  className={`text-[11px] uppercase tracking-wider text-blue-400`}
+                >
+                  Benefici Brut
+                </p>
+                <p
+                  className={`font-mono font-bold text-xl text-blue-500 leading-none`}
+                >
+                  {(
+                    maxRoi *
+                    paybackPeriod.annualSavings
+                  ).toLocaleString("es-ES", {
+                    style: "currency",
+                    currency: "EUR",
+                    maximumFractionDigits: 0,
+                    signDisplay: "exceptZero",
+                  })}
+                </p>
+              </div>
+            )}
+          </div>
+
           {/* PAYBACK STAT ITEM */}
           <div
             className={`col-span-2 rounded-lg p-2.5 border flex flex-col justify-between items-start ${
@@ -1952,17 +2069,6 @@ export default function ThermalPage() {
                         })()
                       : "--"}
                   </p>
-                  {paybackPeriod && (
-                    <span className="text-[10px] text-gray-400 font-mono">
-                      (~
-                      {paybackPeriod.annualSavings.toLocaleString("es-ES", {
-                        style: "currency",
-                        currency: "EUR",
-                        notation: "compact",
-                      })}
-                      /any)
-                    </span>
-                  )}
                 </div>
               </div>
 
@@ -2020,7 +2126,7 @@ export default function ThermalPage() {
                   } leading-none`}
                 >
                   {(
-                    (15 - paybackPeriod.years) *
+                    (maxRoi - paybackPeriod.years) *
                     paybackPeriod.annualSavings
                   ).toLocaleString("es-ES", {
                     style: "currency",
@@ -2078,27 +2184,29 @@ export default function ThermalPage() {
                 label="Temp. Màx"
                 value={simStats.maxTemp.toFixed(1) + " °C"}
                 colorBg={
-                  simStats.maxTemp < 85 ? "bg-green-900/10" : "bg-red-900/10"
+                  simStats.maxTemp < maxTemp ? "bg-green-900/10" : "bg-red-900/10"
                 }
                 colorBorder={
-                  simStats.maxTemp < 85
+                  simStats.maxTemp < maxTemp
                     ? "border-green-500/30"
                     : "border-red-500/30"
                 }
                 colorLabel={
-                  simStats.maxTemp < 85 ? "text-green-300" : "text-red-300"
+                  simStats.maxTemp < maxTemp ? "text-green-300" : "text-red-300"
                 }
                 colorValue={
-                  simStats.maxTemp < 85 ? "text-green-400" : "text-red-400"
+                  simStats.maxTemp < maxTemp ? "text-green-400" : "text-red-400"
                 }
               />
 
               {/* Hover Temp Special Item */}
-              <div className="rounded-md py-1 px-3 border border-yellow-500/30 bg-yellow-900/10 flex flex-col justify-center min-w-[100px] h-full">
-                <p className="text-[8px] text-yellow-300 uppercase tracking-wider leading-none mb-1">
+              <div className={`rounded-md py-1 px-3 border ${simStats.hoverTemp && simStats.hoverTemp > maxTemp ? "border-red-500/30 bg-red-900/10" : "border-blue-500/30 bg-blue-900/10"} flex flex-col justify-center min-w-[100px] h-full`}>
+                <p className={`text-[8px] ${simStats.hoverTemp && simStats.hoverTemp > maxTemp ? "text-red-300" : "text-blue-300"} uppercase tracking-wider leading-none mb-1`}>
                   Temp. Punter
                 </p>
-                <p className="font-mono text-sm font-bold leading-none text-yellow-400">
+                <p className={`font-mono text-sm font-bold leading-none ${
+                  simStats.hoverTemp && simStats.hoverTemp > maxTemp ? "text-red-400" : "text-blue-400"
+                }`}>
                   {simStats.hoverTemp !== null &&
                   simStats.hoverTemp !== undefined
                     ? `${simStats.hoverTemp.toFixed(1)} °C`

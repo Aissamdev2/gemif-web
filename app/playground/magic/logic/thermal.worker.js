@@ -1,5 +1,5 @@
 // thermal.worker.js
-import init, { run_thermal_simulation } from "../wasm-embeddings/vc7/solar.js";
+import init, { run_thermal_simulation } from "../wasm-embeddings/vc8/solar.js";
 
 const tempColor = { r: 0, g: 0, b: 0 };
 
@@ -31,11 +31,13 @@ self.onmessage = async ({ data }) => {
     matrixSize,
     layerThickness,
     sinkThickness,
+    pvThickness,
     plateDim,
     cpvScale,
     nXy,
     nZLayer,
     useCircle,
+    usePv,
     // Material Properties
     baseKt,
     baseEmi,
@@ -58,11 +60,13 @@ self.onmessage = async ({ data }) => {
         matrixSize,
         layerThickness,
         sinkThickness,
+        pvThickness,
         plateDim,
         cpvScale,
         nXy,
         nZLayer,
         useCircle,
+        usePv,
         baseKt,
         baseEmi,
         sinkKt,
