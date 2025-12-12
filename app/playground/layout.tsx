@@ -1,7 +1,7 @@
 import Header from "./components/playground-header";
 
 export const metadata = {
-  title: "GEMiFWeb",
+  title: "Starry Sky",
   robots: {
     index: false,
     follow: false,

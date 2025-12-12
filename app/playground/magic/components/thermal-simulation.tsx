@@ -7,6 +7,7 @@ import React, {
   useEffect,
   useCallback,
   memo,
+  Suspense,
 } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import {
@@ -107,7 +108,7 @@ const REFELCTIVE_MATERIAL = {
   emi: 0.05,
   color: "#eeeeee",
   roughness: 0.2,
-}
+};
 
 // --- FIXED LAYER CONSTANTS ---
 const LAYER_COSTS = {
@@ -199,7 +200,7 @@ const ControlRow = memo(
     onMax?: () => void;
     showMin?: boolean;
     showMax?: boolean;
-    onSet?: (v: number) => void;      // NEW
+    onSet?: (v: number) => void; // NEW
   }) => {
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState(String(value));
@@ -313,7 +314,6 @@ const ControlRow = memo(
 );
 
 ControlRow.displayName = "ControlRow";
-
 
 const ToggleRow = memo(
   ({
@@ -747,7 +747,7 @@ const ThermalBox = memo(
       simNz,
       simUseCircle,
       simUsePv,
-      simUseFins,      // Add dependency
+      simUseFins, // Add dependency
       simUseReflector, // Add dependency
       simBaseMatKey,
       simSinkMatKey,
@@ -842,9 +842,13 @@ const ThermalBox = memo(
         }),
         cpvSubstrate: new THREE.MeshStandardMaterial({
           color: visUseReflector ? REFELCTIVE_MATERIAL.color : baseMatDef.color,
-          emissive: visUseReflector ? REFELCTIVE_MATERIAL.color : baseMatDef.color,
+          emissive: visUseReflector
+            ? REFELCTIVE_MATERIAL.color
+            : baseMatDef.color,
           emissiveIntensity: 0.35,
-          roughness: visUseReflector ? REFELCTIVE_MATERIAL.roughness : baseMatDef.roughness,
+          roughness: visUseReflector
+            ? REFELCTIVE_MATERIAL.roughness
+            : baseMatDef.roughness,
           metalness: 0.3,
         }),
         cpvCell: new THREE.MeshStandardMaterial({
@@ -915,9 +919,9 @@ const ThermalBox = memo(
                   geometry={geometries.sinkMain}
                   material={visualMaterials.sink}
                 />
-                
+
                 {/* Fins - Conditional Rendering */}
-                {visUseFins && (
+                {visUseFins &&
                   Array.from({ length: 15 }).map((_, i) => {
                     const spacing = PLATE_WIDTH / 15;
                     const pos = -PLATE_WIDTH / 2 + spacing / 2 + i * spacing;
@@ -929,8 +933,7 @@ const ThermalBox = memo(
                         material={visualMaterials.sink}
                       />
                     );
-                  })
-                )}
+                  })}
               </group>
             )}
             <Html position={[0.8, 0, 0]} center zIndexRange={[10, 0]}>
@@ -1009,7 +1012,11 @@ const ThermalBox = memo(
             <group>
               <mesh
                 geometry={geometries.cpvSubstrate}
-                material={visUseReflector ? visualMaterials.cpvSubstrate : visualMaterials.base}
+                material={
+                  visUseReflector
+                    ? visualMaterials.cpvSubstrate
+                    : visualMaterials.base
+                }
               />
               {(() => {
                 const n = visMatrixSize;
@@ -1074,6 +1081,13 @@ const ThermalBox = memo(
   }
 );
 ThermalBox.displayName = "ThermalBox";
+
+function SceneReady({ onReady }: { onReady: () => void }) {
+  useEffect(() => {
+    onReady();
+  }, [onReady]);
+  return null;
+}
 
 // --- COST CONSTANTS (AJUSTADOS PARA NO-GRUA, INSTRUMENTO CIENTIFICO) ---
 const PROJECT_COSTS = {
@@ -1150,7 +1164,6 @@ export default function ThermalPage() {
   const [uiUseFins, setUiUseFins] = useState(true);
   const [uiUseReflector, setUiUseReflector] = useState(true);
 
-
   // Material Keys
   const [uiBaseMatKey, setUiBaseMatKey] = useState("Al-1050A (Anodized)");
   const [uiSinkMatKey, setUiSinkMatKey] = useState("Al-1050A (Anodized)");
@@ -1180,6 +1193,18 @@ export default function ThermalPage() {
   } | null>(null);
 
   const [hasPendingChanges, setHasPendingChanges] = useState(false);
+
+  const [loaded, setLoaded] = useState(false);
+  const [introFinished, setIntroFinished] = useState(false);
+
+  useEffect(() => {
+    if (loaded) {
+      const timer = setTimeout(() => {
+        setIntroFinished(true);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [loaded]);
 
   const handleRunSimulation = () => {
     setSimStats((prev) => ({
@@ -1238,8 +1263,8 @@ export default function ThermalPage() {
         uiNz !== activeParams.nz ||
         uiUseCircle !== activeParams.useCircle ||
         uiUsePv !== activeParams.usePv ||
-        uiUseFins !== activeParams.useFins ||         // Check change
-        uiUseReflector !== activeParams.useReflector ||  // Check change
+        uiUseFins !== activeParams.useFins || // Check change
+        uiUseReflector !== activeParams.useReflector || // Check change
         uiBaseMatKey !== activeParams.baseMatKey ||
         uiSinkMatKey !== activeParams.sinkMatKey
     );
@@ -1268,8 +1293,8 @@ export default function ThermalPage() {
     const baseRho = MATERIALS[uiBaseMatKey].rho;
     const sinkRho = MATERIALS[uiSinkMatKey].rho;
     const volBase = Math.pow(uiPlateDim, 2) * uiLayerThick;
-    
-    // If thickness is 0, volume is 0. 
+
+    // If thickness is 0, volume is 0.
     // If fins are on, we assume 50% void, if off (solid block), 100% solid.
     // However, simplified for now: thickness 0 -> 0 volume.
 
@@ -1277,13 +1302,21 @@ export default function ThermalPage() {
     const FIN_THICKNESS = 0.001;
     const FIN_SPACING = 0.005;
 
-
     const nFins = Math.floor(uiPlateDim / (FIN_SPACING + FIN_THICKNESS));
     console.log("Number of fins for weight calc:", nFins);
-    const volSink = Math.pow(uiPlateDim, 2) * uiSinkThick + FIN_HEIGHT * FIN_THICKNESS * uiPlateDim * (uiUseFins ? nFins : 0);
+    const volSink =
+      Math.pow(uiPlateDim, 2) * uiSinkThick +
+      FIN_HEIGHT * FIN_THICKNESS * uiPlateDim * (uiUseFins ? nFins : 0);
 
     return volBase * baseRho + volSink * sinkRho;
-  }, [uiPlateDim, uiLayerThick, uiSinkThick, uiBaseMatKey, uiSinkMatKey, uiUseFins]);
+  }, [
+    uiPlateDim,
+    uiLayerThick,
+    uiSinkThick,
+    uiBaseMatKey,
+    uiSinkMatKey,
+    uiUseFins,
+  ]);
 
   // 1. Calculate Scientific Project Cost
   const projectCost = useMemo(() => {
@@ -1364,13 +1397,20 @@ export default function ThermalPage() {
         logistics: installationCost + contingency, // Install + Risk
       },
     };
-  }, [uiPlateDim, uiLayerThick, uiSinkThick, uiBaseMatKey, uiSinkMatKey, structureWeight]);
+  }, [
+    uiPlateDim,
+    uiLayerThick,
+    uiSinkThick,
+    uiBaseMatKey,
+    uiSinkMatKey,
+    structureWeight,
+  ]);
 
   // ... inside ThermalPage component ...
 
   // 2. Calculate ROI / Payback Period
   const paybackPeriod = useMemo(() => {
-    if (!projectCost) return null
+    if (!projectCost) return null;
     // If we aren't generating power yet, return null
     if (simStats.pElectric <= 0) return null;
 
@@ -1395,7 +1435,13 @@ export default function ThermalPage() {
   return (
     <div className="relative w-full h-full bg-black overflow-hidden rounded-2xl">
       {/* HEADER */}
-      <div className="absolute w-full top-0 left-0 px-8 py-3 z-50 pointer-events-none select-none flex justify-between items-center transition-all duration-1000 ease-out border-b border-white/10 bg-neutral-900 shadow-2xl">
+      <div
+        className={`absolute w-full top-0 left-0 px-8 py-3 z-50 pointer-events-none select-none flex justify-between items-center transition-all duration-1000 ease-out border-b border-white/20 bg-neutral-900 shadow-2xl ${
+          introFinished
+            ? "opacity-100 translate-y-0"
+            : "opacity-0 -translate-y-8"
+        }`}
+      >
         <div className="flex flex-col">
           <h1 className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-indigo-200 via-purple-200 to-white drop-shadow-[0_0_25px_rgba(255,255,255,0.6)]">
             STARRY SKY
@@ -1422,6 +1468,23 @@ export default function ThermalPage() {
             </span>
           </div>
         </Link>
+      </div>
+      {/*Initial overlay*/}
+      <div
+        className={`absolute inset-0 bg-black z-40 flex items-center justify-center pointer-events-none transition-all duration-1000 ease-in-out ${
+          !introFinished
+            ? "opacity-100 blur-0 scale-100"
+            : "opacity-0 blur-xl scale-110"
+        }`}
+      >
+        <div className="text-center">
+          <h1 className="text-7xl md:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-br from-indigo-200 via-purple-200 to-white drop-shadow-[0_0_25px_rgba(255,255,255,0.6)] animate-pulse tracking-widest">
+            STARRY SKY
+          </h1>
+          <p className="text-white/60 font-mono mt-4 text-sm tracking-[0.5em] uppercase">
+            Connectant amb la NASA...
+          </p>
+        </div>
       </div>
 
       {/* LOADING OVERLAY */}
@@ -1508,7 +1571,7 @@ export default function ThermalPage() {
           color="#88ccff"
           noise={0.5}
         />
-        <PerspectiveCamera makeDefault position={[4, 0, 0]} fov={40} />
+        <PerspectiveCamera makeDefault position={[4, 1, 0]} fov={40} />
         <OrbitControls
           makeDefault
           minDistance={2}
@@ -1532,52 +1595,65 @@ export default function ThermalPage() {
           intensity={1.0}
           color="#aaccff"
         />
-        <ThermalBox
-          simMatrixSize={activeParams?.matrixSize ?? null}
-          simFwhm={activeParams?.focusOffset ?? null}
-          simMagicArea={activeParams?.magicArea ?? null}
-          simLayerThick={activeParams?.layerThick ?? null}
-          simSinkThick={activeParams?.sinkThick ?? null}
-          simPvThick={activeParams?.pvThick ? activeParams.pvThick / 1000 : null}
-          simPlateDim={activeParams?.plateDim ?? null}
-          simCpvScale={activeParams?.cpvScale ?? null}
-          simNx={activeParams?.nx ?? null}
-          simNz={activeParams?.nz ?? null}
-          simUseCircle={activeParams?.useCircle ?? null}
-          simUsePv={activeParams?.usePv ?? null}
-          // Pass new sim params
-          simUseFins={activeParams?.useFins ?? null}
-          simUseReflector={activeParams?.useReflector ?? null}
-          simBaseMatKey={activeParams?.baseMatKey ?? null}
-          simSinkMatKey={activeParams?.sinkMatKey ?? null}
-          visMatrixSize={uiMatrixSize}
-          visFwhm={uiFwhm}
-          visMagicArea={uiMagicArea}
-          visCpvScale={uiCpvScale}
-          visUseCircle={uiUseCircle}
-          visLayerThick={uiLayerThick * 10}
-          visSinkThick={uiSinkThick * 10}
-          visUseFins={uiUseFins}
-          visUseReflector={uiUseReflector}
-          visBaseMatKey={uiBaseMatKey}
-          visSinkMatKey={uiSinkMatKey}
-          hasPendingChanges={hasPendingChanges}
-          status={simStats}
-          showGaussian={showGaussian}
-          showAdvanced={showAdvanced}
-          onUpdateStats={onUpdateStats}
-        />
+        <Suspense fallback={null}>
+          <SceneReady onReady={() => setLoaded(true)} />
+          <ThermalBox
+            simMatrixSize={activeParams?.matrixSize ?? null}
+            simFwhm={activeParams?.focusOffset ?? null}
+            simMagicArea={activeParams?.magicArea ?? null}
+            simLayerThick={activeParams?.layerThick ?? null}
+            simSinkThick={activeParams?.sinkThick ?? null}
+            simPvThick={
+              activeParams?.pvThick ? activeParams.pvThick / 1000 : null
+            }
+            simPlateDim={activeParams?.plateDim ?? null}
+            simCpvScale={activeParams?.cpvScale ?? null}
+            simNx={activeParams?.nx ?? null}
+            simNz={activeParams?.nz ?? null}
+            simUseCircle={activeParams?.useCircle ?? null}
+            simUsePv={activeParams?.usePv ?? null}
+            // Pass new sim params
+            simUseFins={activeParams?.useFins ?? null}
+            simUseReflector={activeParams?.useReflector ?? null}
+            simBaseMatKey={activeParams?.baseMatKey ?? null}
+            simSinkMatKey={activeParams?.sinkMatKey ?? null}
+            visMatrixSize={uiMatrixSize}
+            visFwhm={uiFwhm}
+            visMagicArea={uiMagicArea}
+            visCpvScale={uiCpvScale}
+            visUseCircle={uiUseCircle}
+            visLayerThick={uiLayerThick * 10}
+            visSinkThick={uiSinkThick * 10}
+            visUseFins={uiUseFins}
+            visUseReflector={uiUseReflector}
+            visBaseMatKey={uiBaseMatKey}
+            visSinkMatKey={uiSinkMatKey}
+            hasPendingChanges={hasPendingChanges}
+            status={simStats}
+            showGaussian={showGaussian}
+            showAdvanced={showAdvanced}
+            onUpdateStats={onUpdateStats}
+          />
+        </Suspense>
       </Canvas>
 
       {/* LEFT CONTROL PANEL */}
-      <div className="absolute z-30 top-28 left-8 flex flex-col items-start gap-4 pointer-events-auto">
+      <div
+        className={`absolute z-30 top-28 left-8 flex flex-col items-start gap-4 pointer-events-auto transition-all duration-1000 ${
+          introFinished
+            ? "opacity-100 translate-x-0"
+            : "opacity-0 -translate-x-10"
+        }`}
+      >
         <ControlRow
           label="FWHM (m)"
           value={uiFwhm.toFixed(3)}
           colorClass="text-cyan-400"
           onDec={() => setUiFwhm((p) => Math.max(p - 0.01, FWHM_MIN))}
           onInc={() => setUiFwhm((p) => Math.min(p + 0.01, FWHM_MAX))}
-          onSet={(n) => setUiFwhm((p) => Math.min(Math.max(n, FWHM_MIN), FWHM_MAX))}
+          onSet={(n) =>
+            setUiFwhm((p) => Math.min(Math.max(n, FWHM_MIN), FWHM_MAX))
+          }
         />
 
         <ControlRow
@@ -1592,7 +1668,9 @@ export default function ThermalPage() {
           label="Àrea (m²)"
           value={uiMagicArea}
           colorClass="text-green-400"
-          onDec={() => setUiMagicArea((p) => Math.max(p - 1, Math.pow(uiMatrixSize, 2)))}
+          onDec={() =>
+            setUiMagicArea((p) => Math.max(p - 1, Math.pow(uiMatrixSize, 2)))
+          }
           onInc={() => setUiMagicArea((p) => Math.min(p + 1, 236))}
           onMax={() => setUiMagicArea(236)}
           onMin={() => setUiMagicArea(Math.pow(uiMatrixSize, 2))}
@@ -1679,42 +1757,54 @@ export default function ThermalPage() {
               : "Sistema Actualitzat"}
           </span>
         </button>
-
-        {/* ADVANCED SETTINGS MODAL */}
-        {showAdvanced && (
-          <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 p-4 animate-in fade-in duration-200">
-            {/* Added max-h-[85vh] and flex-col to keep header/footer fixed while content scrolls */}
-            <div className="bg-neutral-900 border border-white/10 p-6 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] w-full max-w-4xl max-h-[65vh] flex flex-col relative animate-in zoom-in-95 duration-200 mt-12 md:mt-0">
-              {/* Header (Fixed) */}
-              <div className="flex-none flex items-center justify-between mb-6 pb-4 border-b border-white/5">
-                <h2 className="text-sm font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-purple-200 to-white">
-                  Paràmetres Avançats
-                </h2>
-                <button
-                  onClick={() => setShowAdvanced(false)}
-                  className="cursor-pointer text-gray-500 hover:text-white transition-colors"
+      </div>
+      {/* ADVANCED SETTINGS MODAL */}
+      {showAdvanced && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 p-4 animate-in fade-in duration-200">
+          {/* Added max-h-[85vh] and flex-col to keep header/footer fixed while content scrolls */}
+          <div className="bg-neutral-900 border border-white/10 p-6 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] w-full max-w-4xl max-h-[85vh] flex flex-col relative animate-in zoom-in-95 duration-200 mt-12 md:mt-0">
+            {/* --- Header (Fixed) --- */}
+            <div className="flex-none flex items-center justify-between mb-2 pb-4 border-b border-white/5">
+              <h2 className="text-sm font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-purple-200 to-white">
+                Paràmetres Avançats
+              </h2>
+              <button
+                onClick={() => setShowAdvanced(false)}
+                className="cursor-pointer text-gray-500 hover:text-white transition-colors"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                  stroke="currentColor"
+                  className="w-6 h-6"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={2}
-                    stroke="currentColor"
-                    className="w-6 h-6"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
 
-              {/* Content (Scrollable) */}
-              <div className="flex-1 overflow-y-auto min-h-0 pr-2">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-2">
-                  {/* --- Geometry Group --- */}
+            {/* --- Content (Scrollable) --- */}
+            <div className="flex-1 overflow-y-auto min-h-0 pr-2 space-y-6 custom-scrollbar">
+              {/* SECTION 1: GEOMETRIA I DIMENSIONS */}
+              <div>
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-3">
+                  Geometria i Dimensions
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <ControlRow
+                    label="Mida Placa"
+                    value={uiPlateDim.toFixed(1)}
+                    unit="m"
+                    colorClass="text-purple-400"
+                    onDec={() => setUiPlateDim((p) => Math.max(p - 0.1, 0.5))}
+                    onInc={() => setUiPlateDim((p) => Math.min(p + 0.1, 3.0))}
+                  />
                   <ControlRow
                     label="Gruix Conductor"
                     value={uiLayerThick.toFixed(4)}
@@ -1726,7 +1816,9 @@ export default function ThermalPage() {
                     onInc={() =>
                       setUiLayerThick((p) => Math.min(p + 0.005, 0.1))
                     }
-                    onSet={(n) => setUiLayerThick(Math.max(Math.min(n,0.1), 0.005))}
+                    onSet={(n) =>
+                      setUiLayerThick(Math.max(Math.min(n, 0.1), 0.005))
+                    }
                   />
                   <ControlRow
                     label="Gruix Dissipador"
@@ -1734,17 +1826,19 @@ export default function ThermalPage() {
                     unit="m"
                     colorClass="text-purple-400"
                     onDec={() => {
-                        // Allow going to 0. If 0, disable fins.
-                        setUiSinkThick((p) => {
-                            const val = Math.max(p - 0.005, 0.0);
-                            if (val < 0.001) setUiUseFins(false);
-                            return val;
-                        });
+                      // Allow going to 0. If 0, disable fins.
+                      setUiSinkThick((p) => {
+                        const val = Math.max(p - 0.005, 0.0);
+                        if (val < 0.001) setUiUseFins(false);
+                        return val;
+                      });
                     }}
                     onInc={() => {
-                        setUiSinkThick((p) => Math.min(p + 0.005, 0.1));
+                      setUiSinkThick((p) => Math.min(p + 0.005, 0.1));
                     }}
-                    onSet={(n) => setUiSinkThick(Math.max(Math.min(n,0.1), 0.005))}
+                    onSet={(n) =>
+                      setUiSinkThick(Math.max(Math.min(n, 0.1), 0.005))
+                    }
                   />
                   <ControlRow
                     label="Gruix (C)PV"
@@ -1752,23 +1846,84 @@ export default function ThermalPage() {
                     unit="mm"
                     colorClass="text-purple-400"
                     onDec={() => {
-                        setUiPvThick((p) => Math.max(p - 0.1, 0.2));
+                      setUiPvThick((p) => Math.max(p - 0.1, 0.2));
                     }}
                     onInc={() => {
-                        setUiPvThick((p) => Math.min(p + 0.1, 10));
+                      setUiPvThick((p) => Math.min(p + 0.1, 10));
                     }}
-                    onSet={(n) => setUiPvThick(Math.max(Math.min(n,10), 0.2))}
+                    onSet={(n) => setUiPvThick(Math.max(Math.min(n, 10), 0.2))}
                   />
                   <ControlRow
-                    label="Mida Placa"
-                    value={uiPlateDim.toFixed(1)}
-                    unit="m"
+                    label="Escala CPV"
+                    value={(uiCpvScale * 100).toFixed(0)}
+                    unit="%"
                     colorClass="text-purple-400"
-                    onDec={() => setUiPlateDim((p) => Math.max(p - 0.1, 0.5))}
-                    onInc={() => setUiPlateDim((p) => Math.min(p + 0.1, 3.0))}
+                    onDec={() => setUiCpvScale((p) => Math.max(p - 0.01, 0.1))}
+                    onInc={() => setUiCpvScale((p) => Math.min(p + 0.01, 1.0))}
                   />
+                  <ToggleRow
+                    label="Forma Circular (C)PV"
+                    checked={uiUseCircle}
+                    onChange={setUiUseCircle}
+                  />
+                </div>
+              </div>
 
-                  {/* --- Simulation Group --- */}
+              <div className="border-t border-white/5" />
+
+              {/* SECTION 2: MATERIALS I COMPONENTS */}
+              <div>
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-3">
+                  Materials i Components
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <MaterialSelector
+                    label="Material Conductor"
+                    selectedKey={uiBaseMatKey}
+                    onChange={setUiBaseMatKey}
+                    colorClass="text-blue-400"
+                  />
+                  <MaterialSelector
+                    label="Material Dissipador"
+                    selectedKey={uiSinkMatKey}
+                    onChange={setUiSinkMatKey}
+                    colorClass="text-blue-400"
+                  />
+                  {/* Fins Toggle (Disabled if sink thickness is 0) */}
+                  <div
+                    className={
+                      uiSinkThick < 0.001
+                        ? "opacity-50 pointer-events-none grayscale"
+                        : ""
+                    }
+                  >
+                    <ToggleRow
+                      label="Aletes Dissipació"
+                      checked={uiUseFins}
+                      onChange={setUiUseFins}
+                    />
+                  </div>
+                  <ToggleRow
+                    label="Capa reflectora superior"
+                    checked={uiUseReflector}
+                    onChange={setUiUseReflector}
+                  />
+                  <ToggleRow
+                    label="Fer servir PV"
+                    checked={uiUsePv}
+                    onChange={setUiUsePv}
+                  />
+                </div>
+              </div>
+
+              <div className="border-t border-white/5" />
+
+              {/* SECTION 3: SIMULACIÓ I LÍMITS */}
+              <div>
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-3">
+                  Simulació i Límits
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <ControlRow
                     label="Resolució XY"
                     value={uiNx}
@@ -1784,94 +1939,45 @@ export default function ThermalPage() {
                     onInc={() => setUiNz((p) => Math.min(p + 1, 20))}
                   />
                   <ControlRow
-                    label="Tamany CPV"
-                    value={(uiCpvScale * 100).toFixed(0)}
-                    unit="%"
-                    colorClass="text-pink-400"
-                    onDec={() => setUiCpvScale((p) => Math.max(p - 0.01, 0.1))}
-                    onInc={() => setUiCpvScale((p) => Math.min(p + 0.01, 1.0))}
-                  />
-
-                  <ControlRow
                     label="ROI Màxim"
-                    value={(maxRoi).toFixed(0)}
+                    value={maxRoi.toFixed(0)}
                     unit="anys"
                     colorClass="text-pink-400"
                     onDec={() => setMaxRoi((p) => Math.max(p - 1, 1))}
                     onInc={() => setMaxRoi((p) => Math.min(p + 1, 30))}
                   />
-
                   <ControlRow
                     label="Temp. Màxima"
-                    value={(maxTemp).toFixed(0)}
+                    value={maxTemp.toFixed(0)}
                     unit="°C"
                     colorClass="text-pink-400"
                     onDec={() => setMaxTemp((p) => Math.max(p - 1, 25))}
                     onInc={() => setMaxTemp((p) => Math.min(p + 1, 500))}
                   />
-
-
-                  {/* --- Materials & Shape Group --- */}
-                    <ToggleRow
-                      label="Forma Circular (C)PV"
-                      checked={uiUseCircle}
-                      onChange={setUiUseCircle}
-                    />
-                    {/* NEW: Fins Toggle (Disabled if sink thickness is 0) */}
-                    <div className={uiSinkThick < 0.001 ? "opacity-50 pointer-events-none grayscale" : ""}>
-                        <ToggleRow
-                        label="Aletes Dissipació"
-                        checked={uiUseFins}
-                        onChange={setUiUseFins}
-                        />
-                    </div>
-                    <ToggleRow
-                      label="Fer servir PV"
-                      checked={uiUsePv}
-                      onChange={setUiUsePv}
-                    />
-                  {/* NEW: Reflector Toggle */}
-                    <ToggleRow
-                      label="Capa reflectora superior"
-                      checked={uiUseReflector}
-                      onChange={setUiUseReflector}
-                    />
-
-                  {/* Empty Spacer to align grid if needed */}
-                  <div className="hidden lg:block lg:col-span-1"></div>
-
-                  {/* Materials span 2 cols implicitly due to component definition, fills row in 3-col layout */}
-                  <MaterialSelector
-                    label="Material Conductor"
-                    selectedKey={uiBaseMatKey}
-                    onChange={setUiBaseMatKey}
-                    colorClass="text-blue-400"
-                  />
-                  <MaterialSelector
-                    label="Material Dissipador"
-                    selectedKey={uiSinkMatKey}
-                    onChange={setUiSinkMatKey}
-                    colorClass="text-blue-400"
-                  />
                 </div>
               </div>
+            </div>
 
-              {/* Footer (Fixed) */}
-              <div className="flex-none mt-6 pt-4 border-t border-white/5 flex justify-end">
-                <button
-                  onClick={() => setShowAdvanced(false)}
-                  className="px-6 py-2 cursor-pointer rounded-full bg-white/5 hover:bg-white/10 text-xs font-bold uppercase tracking-widest text-cyan-400 hover:text-cyan-300 transition-all border border-white/10"
-                >
-                  Confirmar Canvis
-                </button>
-              </div>
+            {/* --- Footer (Fixed) --- */}
+            <div className="flex-none mt-6 pt-4 border-t border-white/5 flex justify-end">
+              <button
+                onClick={() => setShowAdvanced(false)}
+                className="px-6 py-2 cursor-pointer rounded-full bg-white/5 hover:bg-white/10 text-xs font-bold uppercase tracking-widest text-cyan-400 hover:text-cyan-300 transition-all border border-white/10"
+              >
+                Confirmar Canvis
+              </button>
             </div>
           </div>
-        )}
-      </div>
-
+        </div>
+      )}
       {/* RIGHT STATS PANEL */}
-      <div className="absolute top-28 right-8 w-[320px] pointer-events-auto bg-neutral-900 p-5 rounded-2xl border border-white/20 shadow-2xl transition-all duration-300 hover:border-cyan-500/30">
+      <div
+        className={`absolute top-28 right-8 w-[320px] pointer-events-auto bg-neutral-900 p-5 rounded-2xl border border-white/20 shadow-2xl transition-all duration-1000 hover:border-cyan-500/30 ${
+          introFinished
+            ? "opacity-100 translate-x-0"
+            : "opacity-0 translate-x-10"
+        }`}
+      >
         <div className="flex items-center justify-between mb-4 border-b border-white/10 pb-2">
           <h3 className="text-xs font-extrabold uppercase tracking-widest text-cyan-400">
             Dades de viabilitat
@@ -1971,21 +2077,18 @@ export default function ThermalPage() {
             </div>
           </div>
 
-
           <div
             className={`col-span-2 rounded-lg p-2.5 border flex flex-col justify-between items-start ${
               paybackPeriod
                 ? "bg-blue-900/10 border-blue-300/30"
-              : "bg-white/5 border-white/10 opacity-50"
+                : "bg-white/5 border-white/10 opacity-50"
             }`}
           >
             <div className={`flex justify-between w-full items-center `}>
               <div className="flex flex-col justify-center">
                 <p
                   className={`text-[11px] uppercase tracking-wider mb-0.5 ${
-                    paybackPeriod
-                      ? "text-blue-500"
-                      : "text-gray-400"
+                    paybackPeriod ? "text-blue-500" : "text-gray-400"
                   }`}
                 >
                   Beneficis anuals
@@ -1998,10 +2101,10 @@ export default function ThermalPage() {
                   >
                     {paybackPeriod
                       ? paybackPeriod.annualSavings.toLocaleString("es-ES", {
-                        style: "currency",
-                        currency: "EUR",
-                        notation: "compact",
-                      })
+                          style: "currency",
+                          currency: "EUR",
+                          notation: "compact",
+                        })
                       : "--"}
                   </p>
                 </div>
@@ -2017,15 +2120,15 @@ export default function ThermalPage() {
                 <p
                   className={`font-mono font-bold text-xl text-blue-500 leading-none`}
                 >
-                  {(
-                    maxRoi *
-                    paybackPeriod.annualSavings
-                  ).toLocaleString("es-ES", {
-                    style: "currency",
-                    currency: "EUR",
-                    maximumFractionDigits: 0,
-                    signDisplay: "exceptZero",
-                  })}
+                  {(maxRoi * paybackPeriod.annualSavings).toLocaleString(
+                    "es-ES",
+                    {
+                      style: "currency",
+                      currency: "EUR",
+                      maximumFractionDigits: 0,
+                      signDisplay: "exceptZero",
+                    }
+                  )}
                 </p>
               </div>
             )}
@@ -2184,7 +2287,9 @@ export default function ThermalPage() {
                 label="Temp. Màx"
                 value={simStats.maxTemp.toFixed(1) + " °C"}
                 colorBg={
-                  simStats.maxTemp < maxTemp ? "bg-green-900/10" : "bg-red-900/10"
+                  simStats.maxTemp < maxTemp
+                    ? "bg-green-900/10"
+                    : "bg-red-900/10"
                 }
                 colorBorder={
                   simStats.maxTemp < maxTemp
@@ -2200,13 +2305,29 @@ export default function ThermalPage() {
               />
 
               {/* Hover Temp Special Item */}
-              <div className={`rounded-md py-1 px-3 border ${simStats.hoverTemp && simStats.hoverTemp > maxTemp ? "border-red-500/30 bg-red-900/10" : "border-blue-500/30 bg-blue-900/10"} flex flex-col justify-center min-w-[100px] h-full`}>
-                <p className={`text-[8px] ${simStats.hoverTemp && simStats.hoverTemp > maxTemp ? "text-red-300" : "text-blue-300"} uppercase tracking-wider leading-none mb-1`}>
+              <div
+                className={`rounded-md py-1 px-3 border ${
+                  simStats.hoverTemp && simStats.hoverTemp > maxTemp
+                    ? "border-red-500/30 bg-red-900/10"
+                    : "border-blue-500/30 bg-blue-900/10"
+                } flex flex-col justify-center min-w-[100px] h-full`}
+              >
+                <p
+                  className={`text-[8px] ${
+                    simStats.hoverTemp && simStats.hoverTemp > maxTemp
+                      ? "text-red-300"
+                      : "text-blue-300"
+                  } uppercase tracking-wider leading-none mb-1`}
+                >
                   Temp. Punter
                 </p>
-                <p className={`font-mono text-sm font-bold leading-none ${
-                  simStats.hoverTemp && simStats.hoverTemp > maxTemp ? "text-red-400" : "text-blue-400"
-                }`}>
+                <p
+                  className={`font-mono text-sm font-bold leading-none ${
+                    simStats.hoverTemp && simStats.hoverTemp > maxTemp
+                      ? "text-red-400"
+                      : "text-blue-400"
+                  }`}
+                >
                   {simStats.hoverTemp !== null &&
                   simStats.hoverTemp !== undefined
                     ? `${simStats.hoverTemp.toFixed(1)} °C`
