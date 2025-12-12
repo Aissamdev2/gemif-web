@@ -540,15 +540,15 @@ const StatItem = memo(
     <div
       className={`${
         colorBg || "bg-white/5"
-      } rounded-md py-1 px-3 border ${colorBorder} flex flex-col justify-center min-w-[100px] h-full`}
+      } rounded-md py-2 px-4 border ${colorBorder} flex flex-col justify-center min-w-[100px] h-full`}
     >
       <p
-        className={`text-[8px] uppercase tracking-wider leading-none mb-1 ${colorLabel}`}
+        className={`text-[10px] uppercase tracking-wider leading-none mb-1 ${colorLabel}`}
       >
         {label}
       </p>
       <p
-        className={`font-mono text-sm font-bold leading-none ${
+        className={`font-mono text-md font-bold leading-none ${
           colorValue || "text-white"
         }`}
       >
@@ -1612,7 +1612,7 @@ export default function ThermalPage() {
             STARRY SKY
           </h1>
           <p className="text-white/60 font-mono mt-4 text-sm tracking-[0.5em] uppercase">
-            Connectant amb la NASA...
+            Preparant Simulació...
           </p>
         </div>
       </div>
@@ -1769,7 +1769,7 @@ export default function ThermalPage() {
 
       {/* LEFT CONTROL PANEL */}
       <div
-        className={`absolute z-30 top-28 left-8 flex flex-col items-start gap-4 pointer-events-auto transition-all duration-1000 ${
+        className={`absolute z-30 top-22 left-8 flex flex-col items-start gap-4 pointer-events-auto transition-all duration-1000 ${
           introFinished
             ? "opacity-100 translate-x-0"
             : "opacity-0 -translate-x-10"
@@ -2409,7 +2409,7 @@ export default function ThermalPage() {
       !hasPendingChanges ? (
         <div className="fixed bottom-0 left-0 z-50 w-full bg-neutral-900 border-t border-white/20 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
           {/* Flex Container: Single Horizontal Line */}
-          <div className="flex items-center justify-between px-4 py-2 gap-6 overflow-x-auto no-scrollbar h-16">
+          <div className="flex items-center justify-between px-4 py-2 gap-6 overflow-x-auto no-scrollbar h-20">
             {/* LEFT: Title & Status */}
             <div className="flex items-center gap-4 shrink-0 border-r border-white/10 pr-6 h-full">
               <h3 className="text-xs font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-white leading-tight">
@@ -2463,14 +2463,14 @@ export default function ThermalPage() {
 
               {/* Hover Temp Special Item */}
               <div
-                className={`rounded-md py-1 px-3 border ${
+                className={`rounded-md py-2 px-4 border ${
                   simStats.hoverTemp && simStats.hoverTemp > maxTemp
                     ? "border-red-500/30 bg-red-900/10"
                     : "border-blue-500/30 bg-blue-900/10"
                 } flex flex-col justify-center min-w-[100px] h-full`}
               >
                 <p
-                  className={`text-[8px] ${
+                  className={`text-[10px] ${
                     simStats.hoverTemp && simStats.hoverTemp > maxTemp
                       ? "text-red-300"
                       : "text-blue-300"
@@ -2479,7 +2479,7 @@ export default function ThermalPage() {
                   Temp. Punter
                 </p>
                 <p
-                  className={`font-mono text-sm font-bold leading-none ${
+                  className={`font-mono text-md font-bold leading-none ${
                     simStats.hoverTemp && simStats.hoverTemp > maxTemp
                       ? "text-red-400"
                       : "text-blue-400"
