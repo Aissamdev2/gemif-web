@@ -38,7 +38,7 @@ export default function RegisterClient() {
         disabled={pending}
         className="btn btn-primary"
       >
-        {pending ? 'Cargando...' : "Crear cuenta"}
+        {pending ? 'Carregant...' : "Crear compte"}
       </button>
     </>
   )

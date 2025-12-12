@@ -1,46 +1,48 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { Analytics } from "@vercel/analytics/next"
-import { SpeedInsights } from "@vercel/speed-insights/next"
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "GEMiFWeb URV: Matemáticas y Física",
+  title: "GEMiF URV: Matemàtiques i Física a Catalunya",
   description:
-    "Pagina web de GEMiF Grado en Ingeniería Matemática y Física, Universitat Rovira i Virgili (URV)",
+    "Pàgina oficial del grau GEMiF (Enginyeria Matemàtica i Física) de la Universitat Rovira i Virgili (URV), Tarragona. Comunitat d'estudiants i professors vinculats a la cultura científica de Catalunya.",
   keywords:
-    "Pagina web, Página web, web, etse, gemif, GEMIF, GEMiF, GEMIFWeb, gemifweb, matemáticas, fisica, matematicas, URV, Universitat Rovira i Virgili, estudiantes gemif, universitat rovira i virgili, enginyeria, matematica",
+    "Pàgina web, GEMiF, URV, Universitat Rovira i Virgili, Tarragona, Catalunya, enginyeria matemàtica, enginyeria física, estudiants URV, comunitat catalana, ciència a Catalunya",
   applicationName: "GEMiF",
   authors: [{ name: "Aissam Khadraoui" }],
   openGraph: {
-    title: "GEMiFWeb URV: Matemáticas y Física",
-    description: "Pagina web de GEMiF, Universitat Rovira i Virgili (URV)",
-    url: "https://gemif.es",
+    title: "GEMiF URV: Matemàtiques i Física a Catalunya",
+    description:
+      "Portal de la comunitat d'estudiants del grau GEMiF de la URV (Tarragona), amb continguts científics útils.",
+    url: "https://gemif.cat",
     siteName: "GEMiF",
-    locale: "es_ES",
+    locale: "ca_ES",
     type: "website",
     images: [
       {
-        url: "https://gemif.es/preview_og.png",
+        url: "https://gemif.cat/preview_og.png",
         width: 1200,
         height: 630,
-        alt: "Comunidad GEMiF URV - Ingeniería Matemático-Física",
+        alt: "Comunitat GEMiF URV - Enginyeria Matemàtica i Física a Catalunya",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "GEMiFWeb URV: Matemáticas y Física",
+    title: "GEMiF URV: Matemàtiques i Física",
     description:
-      "Pagina web de GEMiF Grado en Ingeniería Matemática y Física, Universitat Rovira i Virgili (URV)",
-    images: ["https://gemif.es/preview_twitter.png"],
+      "Portal en català del grau d'Enginyeria Matemàtica i Física de la URV (Catalunya).",
+    images: ["https://gemif.cat/preview_twitter.png"],
   },
   icons: [
-    { rel: "icon", type: "image/ico", sizes: "64x64", url: "/favicon.ico" },
+    { rel: "icon", type: "image/ico", sizes: "64x64", url: "/favicon-64x64.ico" },
     { rel: "icon", type: "image/ico", sizes: "32x32", url: "/favicon-32x32.ico" },
     { rel: "icon", type: "image/png", sizes: "32x32", url: "/favicon-32x32.png" },
+    { rel: "icon", type: "image/png", sizes: "64x64", url: "/favicon-64x64.png" },
     {
       rel: "apple-touch-icon",
       sizes: "144x144",
@@ -48,7 +50,7 @@ export const metadata: Metadata = {
       url: "/apple-touch-icon.png",
     },
   ],
-  metadataBase: new URL("https://gemif.es"),
+  metadataBase: new URL("https://gemif.cat"),
   alternates: {
     canonical: "/",
   },
@@ -62,7 +64,6 @@ export const metadata: Metadata = {
       noimageindex: false,
     },
   },
-
 };
 
 export default async function RootLayout({
@@ -70,19 +71,15 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-
-
-
   return (
-    <html lang="es">
+    <html lang="ca">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="application-name" content="GEMiF" />
         <meta property="og:site_name" content="GEMiF" />
         <JsonLdSiteNavigation />
-
       </head>
-      
+
       <body className={"h-screen flex flex-col " + inter.className}>
         {children}
         <Analytics />
@@ -103,10 +100,10 @@ function JsonLdSiteNavigation() {
           "@context": "https://schema.org",
           "@type": "WebSite",
           name: "GEMiF",
-          url: "https://gemif.es/",
+          url: "https://gemif.cat/",
           potentialAction: {
             "@type": "SearchAction",
-            target: "https://gemif.es/search?q={search_term_string}",
+            target: "https://gemif.cat/search?q={search_term_string}",
             "query-input": "required name=search_term_string",
           },
           mainEntity: {
@@ -114,13 +111,13 @@ function JsonLdSiteNavigation() {
             itemListElement: [
               {
                 "@type": "SiteNavigationElement",
-                name: "Iniciar sesión",
-                url: "https://gemif.es/login",
+                name: "Iniciar sessió",
+                url: "https://gemif.cat/login",
               },
               {
                 "@type": "SiteNavigationElement",
-                name: "Registro",
-                url: "https://gemif.es/register",
+                name: "Registre",
+                url: "https://gemif.cat/register",
               },
             ],
           },
@@ -129,4 +126,3 @@ function JsonLdSiteNavigation() {
     />
   );
 }
-

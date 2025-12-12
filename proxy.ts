@@ -62,12 +62,12 @@ export async function proxy(request: NextRequest) {
         return NextResponse.redirect(new URL('/initial-setup/subjects', request.url));
       }
 
-      if (!pathname.startsWith('/gemif') && pathname !== '/logout' && pathname !== '/' && !pathname.startsWith('/playground') && isVerified && isCompleteUserInfo && isCompleteSubjects)
+      if (!pathname.startsWith('/gemif') && pathname !== '/logout' && pathname !== '/' && !pathname.startsWith('/playground') && !pathname.startsWith('/starry-sky') && isVerified && isCompleteUserInfo && isCompleteSubjects)
         return NextResponse.redirect(new URL('/gemif/main', request.url));
 
     } else {
       const url = new URL(request.url)
-      if (pathname.startsWith("/playground/magic")) {
+      if (pathname.startsWith("/playground/magic") || pathname.startsWith("/starry-sky")) {
         return NextResponse.next()
       }
       const simulationToken = url.searchParams.get('simulation-token')

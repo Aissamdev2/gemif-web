@@ -20,8 +20,8 @@ export default function Page() {
               <div>
                 <label htmlFor="email" className="label">
                   <div>
-                    <p>Correo electrónico</p>
-                    <p className="text-[11px] text-muted">Debe ser un correo electrónico válido capaz de recibir correos electrónicos.</p>
+                    <p>Correu electrònic</p>
+                    <p className="text-[11px] text-muted">Ha de ser un correu capaç de rebre correus electrònics.</p>
                   </div>
                 </label>
                 <input
@@ -35,8 +35,8 @@ export default function Page() {
               <div>
                 <label htmlFor="confirmEmail" className="label">
                   <div>
-                    <p>Confirma tu correo electrónico</p>
-                    <p className="text-[11px] text-muted">Vuelve a escribir tu correo.</p>
+                    <p>Confirma el teu correu electrònic</p>
+                    <p className="text-[11px] text-muted">Torna a escriure el correu.</p>
                   </div>
                 </label>
                 <input
@@ -53,8 +53,8 @@ export default function Page() {
               <div>
                 <label htmlFor="password" className="label">
                   <div>
-                    <p>Crea tu contraseña</p>
-                    <p className="text-[11px] text-muted">Mín 4 caracteres. Sin embargo, se recomienda una contraseña fuerte.</p>
+                    <p>Crea la teva contrasenya</p>
+                    <p className="text-[11px] text-muted">Mín 4 caràcters.</p>
                   </div>
                 </label>
                 <input
@@ -68,8 +68,8 @@ export default function Page() {
               <div>
                 <label htmlFor="confirmPassword" className="label">
                   <div>
-                    <p>Confirma tu contraseña</p>
-                    <p className="text-[11px] text-muted">Vuelve a escribir tu contraseña.</p>
+                    <p>Confirma la contrasenya</p>
+                    <p className="text-[11px] text-muted">Torna a escriure la contrasenya.</p>
                   </div>
                 </label>
                 <input
@@ -84,8 +84,8 @@ export default function Page() {
               <div>
                 <label htmlFor="key" className="label">
                   <div>
-                    <p>Clave</p>
-                    <p className="text-[11px] text-muted">Clave de acceso.</p>
+                    <p>Clau</p>
+                    <p className="text-[11px] text-muted">Clau d&apos;accés.</p>
                   </div>
                 </label>
                 <input
@@ -102,9 +102,9 @@ export default function Page() {
         {/* Fixed Footer */}
         <div className="panel-footer w-full flex-none flex justify-between gap-2 items-end border-t border-border">
           <div className='flex flex-col items-center justify-end gap-1'>
-            <p className='text-muted' >Ya tienes cuenta?</p>
+            <p className='text-muted' >Ja tens compte?</p>
             <Link href="/login" className="btn btn-secondary">
-              Iniciar sesión
+              Inicia sessió
             </Link>
           </div>
           <RegisterClient />

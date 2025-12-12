@@ -40,7 +40,7 @@ export default function LoginClient() {
         formAction={dispatch}
         className="btn btn-primary"
       >
-        {loginLoading ? "Iniciando sesión..." : "Iniciar sesión"}
+        {loginLoading ? "Iniciant sessió..." : "Iniciar sessió"}
       </button>
     </>
   );

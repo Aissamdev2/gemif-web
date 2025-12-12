@@ -15,8 +15,8 @@ export default function GEMiFWebLanding() {
           <div
             className="absolute inset-0 bg-white/30 dark:bg-surface/30 backdrop-blur-sm pointer-events-none"
             style={{
-              maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 80%, rgba(0,0,0,0))',
-              WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 80%, rgba(0,0,0,0))',
+              maskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 80%, rgba(0,0,0,0))",
+              WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 80%, rgba(0,0,0,0))",
             }}
           ></div>
 
@@ -27,17 +27,17 @@ export default function GEMiFWebLanding() {
               </div>
               <div>
                 <div className="heading-lg">GEMiFWeb</div>
-                <div className="text-muted">Ingeniería Matemática y Física — URV</div>
+                <div className="text-muted">Enginyeria Matemàtica i Física — URV</div>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-3 relative z-10">
             <Link href="/login" className="btn btn-ghost btn-md">
-              Iniciar sesión
+              Inicia sessió
             </Link>
             <Link href="/register" className="btn btn-primary btn-md">
-              Registrarse
+              Registra&apos;t
             </Link>
           </div>
         </nav>
@@ -49,35 +49,35 @@ export default function GEMiFWebLanding() {
           <LandingFramer animation="fadeUp" custom={0}>
             <div className="flex-1">
               <h1 className="heading-2xl mb-4 typed-out">
-                GEMiFWeb — Grado en Ingeniería Matemática y Física
+                GEMiFWeb — Grau en Enginyeria Matemàtica i Física
               </h1>
               <p className="text-muted mb-6">
-                GEMiFWeb es el espacio para compartir ejercicios, proyectos, recursos, debates y herramientas aplicadas a las matemáticas y la física. Diseñado por estudiantes, para estudiantes.
+                GEMiFWeb és l&apos;espai de la comunitat d&apos;estudiants del grau GEMiF de la Universitat Rovira i Virgili (URV) a Tarragona, Catalunya. Compartim exercicis, projectes, recursos i eines aplicades a les matemàtiques i la física amb una clara vocació acadèmica i cultural catalana.
               </p>
 
               <div className="flex gap-3">
                 <Link href="/register" className="btn btn-primary btn-lg">
-                  Únete gratis
+                  Uneix-te gratis
                 </Link>
                 <Link href="#about" className="btn btn-secondary btn-lg">
-                  Saber más
+                  Més informació
                 </Link>
               </div>
 
               <div className="mt-6 panel p-6 border-border bg-surface rounded-lg shadow-md">
-                <div className="heading-md mb-3">Lo que encontrarás</div>
+                <div className="heading-md mb-3">El que hi trobaràs</div>
                 <ul className="space-y-3 text-body ml-0 list-none">
                   <li className="flex items-start gap-2">
                     <span className="font-bold text-primary">✓</span>
-                    <span>Repositorio de ejercicios resueltos y problemas de selectividad universitaria.</span>
+                    <span>Repositori d&apos;exercicis resolts i problemes d&apos;accés a la universitat amb explicacions en català.</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="font-bold text-primary">✓</span>
-                    <span>Guías para programación científica (MATLAB, Python, C++) y despliegue web (Next.js, WASM).</span>
+                    <span>Guies per a programació científica pensades per estudiants de la URV.</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="font-bold text-primary">✓</span>
-                    <span>Foros y grupo de estudio por asignatura y proyecto.</span>
+                    <span>Fòrums i grups d&apos;estudi per assignatura i per projectes impulsats per la comunitat estudiantil a Tarragona.</span>
                   </li>
                 </ul>
               </div>
@@ -87,10 +87,10 @@ export default function GEMiFWebLanding() {
           <LandingFramer animation="scaleIn">
             <div className="flex-1 flex items-center justify-center">
               <div className="w-full max-w-md rounded-lg overflow-hidden shadow-lg border border-border bg-surface">
-                <Image src={LandingHero} alt="estudiantes trabajando" className="w-full h-64 object-cover" />
+                <Image src={LandingHero} alt="estudiants treballant a la URV" className="w-full h-64 object-cover" />
                 <div className="p-4">
-                  <div className="heading-md">Aprende colaborando</div>
-                  <div className="text-muted">Recursos compartidos, información academica.</div>
+                  <div className="heading-md">Aprèn col·laborant</div>
+                  <div className="text-muted">Recursos compartits i informació acadèmica per a la comunitat de la URV.</div>
                 </div>
               </div>
             </div>
@@ -101,30 +101,30 @@ export default function GEMiFWebLanding() {
         <section id="about" className="max-w-6xl mx-auto px-6 py-12">
           <LandingFramer animation="fadeUp" custom={1}>
             <div className="panel p-8 border-border bg-surface">
-              <h2 className="heading-xl mb-2">¿Por qué GEMiFWeb?</h2>
+              <h2 className="heading-xl mb-2">Per què GEMiFWeb?</h2>
               <p className="text-muted mb-4">
-                Muchos de nuestros módulos combinan teoría compleja con implementaciones prácticas y proyectos de grupo. GEMiFWeb centraliza material didáctico, planes de trabajo, exposiciones y soluciones — además de ofrecer un espacio para practicar presentaciones y evaluar propuestas de proyectos.
+                Molts dels nostres mòduls combinen teoria i implementacions pràctiques amb projectes de grup. GEMiFWeb centralitza material docent, plans de treball, exposicions i solucions — i ofereix un espai per practicar presentacions i avaluar propostes de projectes dins de la comunitat acadèmica catalana.
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <LandingFramer animation="fadeUp">
                   <div className="card">
                     <div className="heading-md">Recursos</div>
-                    <div className="text-muted">Apuntes, notebooks, ejemplos interactivos y enlaces a WASM/MATLAB.</div>
+                    <div className="text-muted">Apunts, notebooks, exemples interactius i enllaços a eines amb suport en català.</div>
                   </div>
                 </LandingFramer>
 
                 <LandingFramer animation="fadeUp">
                   <div className="card">
-                    <div className="heading-md">Proyectos</div>
-                    <div className="text-muted">Busca compañeros, explora ideas, publica tu propuesta y consigue feedback.</div>
+                    <div className="heading-md">Projectes</div>
+                    <div className="text-muted">Troba companys, publica la teva proposta i rep feedback de la comunitat estudiantil de la URV.</div>
                   </div>
                 </LandingFramer>
 
                 <LandingFramer animation="fadeUp">
                   <div className="card">
-                    <div className="heading-md">Eventos</div>
-                    <div className="text-muted">Seminarios, workshops y hackathons organizados por la facultad y estudiantes.</div>
+                    <div className="heading-md">Esdeveniments</div>
+                    <div className="text-muted">Seminaris, tallers i hackathons organitzats per la facultat i estudis a Tarragona i la resta de Catalunya.</div>
                   </div>
                 </LandingFramer>
               </div>
@@ -137,19 +137,19 @@ export default function GEMiFWebLanding() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
             <LandingFramer animation="fadeRight">
               <div className="mt-6 panel p-6 border-border bg-surface rounded-lg shadow-md">
-                <div className="heading-md mb-3">Herramientas prácticas</div>
+                <div className="heading-md mb-3">Eines pràctiques</div>
                 <ul className="space-y-3 text-body ml-0 list-none">
                   <li className="flex items-start gap-2">
                     <span className="font-bold text-primary">✓</span>
-                    <span>Simulaciones de conceptos matemáticos y físicos.</span>
+                    <span>Simulacions de conceptes matemàtics i físics pensades per a l&apos;aprenentatge col·laboratiu.</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="font-bold text-primary">✓</span>
-                    <span>Herramientas útiles de càlculo para diversas situaciones.</span>
+                    <span>Eines de càlcul útils per a pràctiques i treballs.</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="font-bold text-primary">✓</span>
-                    <span>Recopilación de herramientas externas.</span>
+                    <span>Recopilació d&apos;eines externes i recursos locals de la comunitat estudiantil universitària.</span>
                   </li>
                 </ul>
               </div>
@@ -158,10 +158,10 @@ export default function GEMiFWebLanding() {
             <LandingFramer animation="fadeLeft">
               <div className="rounded overflow-hidden">
                 <div className="grid grid-cols-2 gap-3">
-                  <Image src={LandingHero} alt={`galeria`} className="w-full h-44 object-cover rounded" />
-                  <Image src={LandingHero} alt={`galeria`} className="w-full h-44 object-cover rounded" />
-                  <Image src={LandingHero} alt={`galeria`} className="w-full h-44 object-cover rounded" />
-                  <Image src={LandingHero} alt={`galeria`} className="w-full h-44 object-cover rounded" />
+                  <Image src={LandingHero} alt={`galeria URV`} className="w-full h-44 object-cover rounded" />
+                  <Image src={LandingHero} alt={`galeria URV`} className="w-full h-44 object-cover rounded" />
+                  <Image src={LandingHero} alt={`galeria URV`} className="w-full h-44 object-cover rounded" />
+                  <Image src={LandingHero} alt={`galeria URV`} className="w-full h-44 object-cover rounded" />
                 </div>
               </div>
             </LandingFramer>
@@ -170,13 +170,13 @@ export default function GEMiFWebLanding() {
 
         {/* GALLERY */}
         <section className="max-w-6xl mx-auto px-6 py-12">
-          <h3 className="heading-lg mb-4">Galería</h3>
+          <h3 className="heading-lg mb-4">Galeria</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <LandingFramer key={i} animation="fadeUp">
                 <figure className="card overflow-hidden">
-                  <Image src={LandingHero} alt={`galeria-${i}`} className="w-full h-40 object-cover rounded" />
-                  <figcaption className="p-3 text-muted text-sm">Foto {i} — actividades y proyectos</figcaption>
+                  <Image src={LandingHero} alt={`galeria-${i} URV`} className="w-full h-40 object-cover rounded" />
+                  <figcaption className="p-3 text-muted text-sm">Foto {i} — activitats i projectes de la comunitat estudiantil a Tarragona</figcaption>
                 </figure>
               </LandingFramer>
             ))}
@@ -187,11 +187,11 @@ export default function GEMiFWebLanding() {
         <section className="max-w-6xl mx-auto px-6 py-12">
           <LandingFramer animation="scaleIn">
             <div className="panel p-8 text-center border-border bg-surface">
-              <h3 className="heading-xl mb-2">¿Listo para colaborar?</h3>
-              <p className="text-muted mb-6">Crea tu cuenta, publica tu proyecto y encuentra compañeros con intereses similares.</p>
+              <h3 className="heading-xl mb-2">Preparat per col·laborar?</h3>
+              <p className="text-muted mb-6">Crea el teu compte, publica el teu projecte i troba companys amb interessos similars dins de la comunitat GEMiF de la URV.</p>
               <div className="flex items-center justify-center gap-3">
-                <Link href="/register" className="btn btn-primary btn-lg">Crear cuenta</Link>
-                <Link href="/login" className="btn btn-secondary btn-lg">Entrar</Link>
+                <Link href="/register" className="btn btn-primary btn-lg">Crear compte</Link>
+                <Link href="/login" className="btn btn-secondary btn-lg">Entra</Link>
               </div>
             </div>
           </LandingFramer>

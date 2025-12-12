@@ -14,7 +14,7 @@ export default function Page() {
         id="login-form"
       >
         <h1 className="panel-header w-full text-center heading-md border-b border-border flex-none">
-          Iniciar sesión
+          Inicia sessió
         </h1>
 
         {/* Scrollable Container with body + footer */}
@@ -25,8 +25,8 @@ export default function Page() {
               <div>
                 <label htmlFor="email" className="label">
                   <div>
-                    <p>Correo electrónico</p>
-                    <p className='text-[11px] text-muted'>Introduce tu correo electrónico.</p>
+                    <p>Correu electrònic</p>
+                    <p className='text-[11px] text-muted'>Introdueix el teu correu electrònic.</p>
                   </div>
                 </label>
                 <input
@@ -41,8 +41,8 @@ export default function Page() {
               <div>
                 <label htmlFor="password" className="label">
                   <div>
-                    <p>Contraseña</p>
-                    <p className='text-[11px] text-muted'>Escribe tu contraseña.</p>
+                    <p>Contrasenya</p>
+                    <p className='text-[11px] text-muted'>Escriu la teva contrasenya.</p>
                   </div>
                 </label>
                 <input
@@ -57,7 +57,7 @@ export default function Page() {
               <div className="flex items-center justify-between mt-1">
                 <div className="flex items-center gap-2">
                   <input id="remember" name="remember" type="checkbox" className="h-4 w-4 rounded" />
-                  <label htmlFor="remember" className="text-body">Recuérdame en este dispositivo</label>
+                  <label htmlFor="remember" className="text-body">Recorda&apos;m en aquest dispositiu</label>
                 </div>
               </div>
             </div>
@@ -67,7 +67,7 @@ export default function Page() {
 
             {/* Alternate Sign-in */}
             <div className="w-full flex flex-col items-center gap-3">
-              <p className="text-muted">Iniciar sesión de otro modo</p>
+              <p className="text-muted">Inicia sessió amb altres mètodes</p>
               <button
                 type="button"
                 className="btn btn-md btn-secondary flex items-center gap-2 px-4 py-2"
@@ -84,9 +84,9 @@ export default function Page() {
           {/* Sticky Footer (inside scrollable container) */}
           <div className="panel-footer w-full flex-none flex justify-between gap-2 items-end border-t border-border p-3">
             <div className='flex flex-col items-center justify-end gap-1'>
-              <p className='text-muted'>¿No tienes cuenta?</p>
+              <p className='text-muted'>¿No tens compte?</p>
               <Link href="/register" className="btn btn-secondary">
-                Crear cuenta
+                Crear compte
               </Link>
             </div>
             <LoginClient />
