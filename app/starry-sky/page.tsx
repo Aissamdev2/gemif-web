@@ -1201,7 +1201,7 @@ export default function ThermalPage() {
     if (loaded) {
       const timer = setTimeout(() => {
         setIntroFinished(true);
-      }, 1000);
+      }, 100000);
       return () => clearTimeout(timer);
     }
   }, [loaded]);
@@ -1482,7 +1482,6 @@ export default function ThermalPage() {
             STARRY SKY
           </h1>
           <p className="text-white/60 font-mono mt-4 text-sm tracking-[0.5em] uppercase">
-            Connectant amb la NASA...
           </p>
         </div>
       </div>

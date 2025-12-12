@@ -7,17 +7,17 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "GEMiF URV: Matemàtiques i Física a Catalunya",
+  title: "GEMiF URV: Matemàtiques i Física",
   description:
-    "Pàgina oficial del grau GEMiF (Enginyeria Matemàtica i Física) de la Universitat Rovira i Virgili (URV), Tarragona. Comunitat d'estudiants i professors vinculats a la cultura científica de Catalunya.",
+    "Pàgina no oficial del grau GEMiF (Enginyeria Matemàtica i Física) de la Universitat Rovira i Virgili (URV), Tarragona. Feta per la comunitat d'estudiants.",
   keywords:
     "Pàgina web, GEMiF, URV, Universitat Rovira i Virgili, Tarragona, Catalunya, enginyeria matemàtica, enginyeria física, estudiants URV, comunitat catalana, ciència a Catalunya",
   applicationName: "GEMiF",
   authors: [{ name: "Aissam Khadraoui" }],
   openGraph: {
-    title: "GEMiF URV: Matemàtiques i Física a Catalunya",
+    title: "GEMiF URV: Matemàtiques i Física",
     description:
-      "Portal de la comunitat d'estudiants del grau GEMiF de la URV (Tarragona), amb continguts científics útils.",
+      "Portal de la comunitat d'estudiants del grau GEMiF de la URV (Tarragona).",
     url: "https://gemif.cat",
     siteName: "GEMiF",
     locale: "ca_ES",
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
         url: "https://gemif.cat/preview_og.png",
         width: 1200,
         height: 630,
-        alt: "Comunitat GEMiF URV - Enginyeria Matemàtica i Física a Catalunya",
+        alt: "Comunitat GEMiF URV - Enginyeria Matemàtica i Física",
       },
     ],
   },
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "GEMiF URV: Matemàtiques i Física",
     description:
-      "Portal en català del grau d'Enginyeria Matemàtica i Física de la URV (Catalunya).",
+      "Portal de la comunitat d'estudiants del grau d'Enginyeria Matemàtica i Física de la URV (Catalunya).",
     images: ["https://gemif.cat/preview_twitter.png"],
   },
   icons: [
