@@ -110,6 +110,68 @@ const REFELCTIVE_MATERIAL = {
   roughness: 0.2,
 };
 
+// --- PRESET CONFIGURATIONS ---
+type PresetDef = {
+  name: string;
+  fwhm: number;
+  matrixSize: number;
+  magicArea: number;
+  layerThick: number;
+  sinkThick: number;
+  pvThick: number;
+  plateDim: number;
+  cpvScale: number;
+  nx: number;
+  nz: number;
+  useCircle: boolean;
+  usePv: boolean;
+  useFins: boolean;
+  useReflector: boolean;
+  baseMatKey: string;
+  sinkMatKey: string;
+};
+
+const PRESETS: Record<string, PresetDef> = {
+  Initial: {
+    name: "Inicial",
+    fwhm: 0.17,
+    matrixSize: 1,
+    magicArea: 236,
+    layerThick: 0.03,
+    sinkThick: 0.0,
+    pvThick: 0.2,
+    plateDim: 1.5,
+    cpvScale: 0.7,
+    nx: 40,
+    nz: 9,
+    useCircle: false,
+    usePv: false,
+    useFins: false,
+    useReflector: false,
+    baseMatKey: "Al-1050A (Anodized)",
+    sinkMatKey: "Al-1050A (Anodized)",
+  },
+  Under_Limits: {
+    name: "Sota límits",
+    fwhm: 0.267,
+    matrixSize: 5,
+    magicArea: 45,
+    layerThick: 0.0189,
+    sinkThick: 0.0106,
+    pvThick: 0.2,
+    plateDim: 1.5,
+    cpvScale: 0.7,
+    nx: 40,
+    nz: 9,
+    useCircle: false,
+    usePv: false,
+    useFins: true,
+    useReflector: true,
+    baseMatKey: "Al-1050A (Anodized)",
+    sinkMatKey: "Al-1050A (Anodized)",
+  },
+};
+
 // --- FIXED LAYER CONSTANTS ---
 const LAYER_COSTS = {
   // CPV Cells (Silicon/III-V multijunction)
@@ -419,6 +481,45 @@ const MaterialSelector = memo(
   }
 );
 MaterialSelector.displayName = "MaterialSelector";
+
+const PresetSelector = memo(
+  ({ onSelect }: { onSelect: (key: string) => void }) => {
+    return (
+      <div className="flex flex-col gap-2 bg-neutral-900 p-2 rounded-xl text-white shadow-xl border border-white/10">
+        <div className="flex justify-between items-end">
+          <span className="text-[10px] uppercase tracking-widest font-black text-cyan-300">
+            Paràm. Predefinits
+          </span>
+        </div>
+
+        <div className="relative group">
+          <select
+            onChange={(e) => {
+              if (e.target.value) onSelect(e.target.value);
+              // Reset selector visually if needed, though usually staying on selection is fine
+            }}
+            defaultValue=""
+            className="w-full bg-black/40 border border-cyan-500/20 rounded-lg p-2 text-xs font-bold text-white focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 cursor-pointer appearance-none hover:bg-black/60 transition-all uppercase tracking-wider"
+          >
+            <option value="" className="bg-neutral-900 py-2 text-center">
+              No
+            </option>
+            {Object.entries(PRESETS).map(([key, def]) => (
+              <option
+                key={key}
+                value={key}
+                className="bg-neutral-900 py-2 text-center"
+              >
+                {def.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+    );
+  }
+);
+PresetSelector.displayName = "PresetSelector";
 
 const StatItem = memo(
   ({
@@ -902,10 +1003,10 @@ const ThermalBox = memo(
                     key={i}
                     attach={`material-${i}`}
                     emissiveMap={tex}
-                    emissiveIntensity={1.5}
+                    emissiveIntensity={2.5}
                     emissive="white"
-                    roughness={0.4}
-                    metalness={0.9}
+                    roughness={0.9}
+                    metalness={0.1}
                     color="#000"
                   />
                 ))}
@@ -963,10 +1064,10 @@ const ThermalBox = memo(
                   key={i}
                   attach={`material-${i}`}
                   emissiveMap={tex}
-                  emissiveIntensity={1.5}
+                  emissiveIntensity={2.5}
                   emissive="white"
-                  roughness={0.3}
-                  metalness={0.9}
+                  roughness={0.9}
+                  metalness={0.1}
                   color="#000"
                 />
               ))
@@ -1000,10 +1101,10 @@ const ThermalBox = memo(
                   key={i}
                   attach={`material-${i}`}
                   emissiveMap={tex}
-                  emissiveIntensity={1.5}
+                  emissiveIntensity={2.5}
                   emissive="white"
-                  roughness={0.3}
-                  metalness={0.9}
+                  roughness={0.9}
+                  metalness={0.1}
                   color={"#000"}
                 />
               ))}
@@ -1150,6 +1251,7 @@ export default function ThermalPage() {
 
   // ADVANCED UI STATE
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showFeasibility, setShowFeasibility] = useState(false);
   const [uiLayerThick, setUiLayerThick] = useState(0.0189);
   const [uiSinkThick, setUiSinkThick] = useState(0.0106);
   const [uiPvThick, setUiPvThick] = useState(0.2);
@@ -1197,6 +1299,33 @@ export default function ThermalPage() {
   const [loaded, setLoaded] = useState(false);
   const [introFinished, setIntroFinished] = useState(false);
 
+  // --- PRESET HANDLER ---
+  const applyPreset = useCallback((key: string) => {
+    const p = PRESETS[key];
+    if (!p) return;
+
+    // Apply all values instantly
+    setUiFwhm(p.fwhm);
+    setUiMatrixSize(p.matrixSize);
+    setUiMagicArea(p.magicArea);
+    setUiLayerThick(p.layerThick);
+    setUiSinkThick(p.sinkThick);
+    setUiPvThick(p.pvThick);
+    setUiPlateDim(p.plateDim);
+    setUiCpvScale(p.cpvScale);
+    setUiNx(p.nx);
+    setUiNz(p.nz);
+    setUiUseCircle(p.useCircle);
+    setUiUsePv(p.usePv);
+    setUiUseFins(p.useFins);
+    setUiUseReflector(p.useReflector);
+    setUiBaseMatKey(p.baseMatKey);
+    setUiSinkMatKey(p.sinkMatKey);
+
+    // Optional: Stop current simulation if running to force user to click "Simular" again
+    // setSimStats((prev) => ({ ...prev, status: "Settings Changed" }));
+  }, []);
+
   useEffect(() => {
     if (loaded) {
       const timer = setTimeout(() => {
@@ -1204,7 +1333,7 @@ export default function ThermalPage() {
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [loaded]);
+  }, [loaded, applyPreset]);
 
   const handleRunSimulation = () => {
     setSimStats((prev) => ({
@@ -1580,12 +1709,12 @@ export default function ThermalPage() {
           enablePan={true}
           panSpeed={1.0}
         />
-        <ambientLight intensity={1.5} /> {/* Increased from 0.5 */}
+        <ambientLight intensity={5} /> {/* Increased from 0.5 */}
         <directionalLight
           shadow-mapSize={[512, 512]}
           shadow-bias={-0.0001}
           position={[10, 20, 5]}
-          intensity={3.0}
+          intensity={9.0}
           castShadow
           color="#fffaed"
         />
@@ -1645,6 +1774,11 @@ export default function ThermalPage() {
             : "opacity-0 -translate-x-10"
         }`}
       >
+        {/* NEW PRESET SELECTOR HERE */}
+        <div className="w-full">
+          <PresetSelector onSelect={applyPreset} />
+        </div>
+
         <ControlRow
           label="FWHM (m)"
           value={uiFwhm.toFixed(3)}
@@ -1978,270 +2112,292 @@ export default function ThermalPage() {
             : "opacity-0 translate-x-10"
         }`}
       >
-        <div className="flex items-center justify-between mb-4 border-b border-white/10 pb-2">
+        <div className={`flex items-center justify-between ${showFeasibility ? "mb-4 border-b border-white/10 pb-2" : ""}`}>
           <h3 className="text-xs font-extrabold uppercase tracking-widest text-cyan-400">
             Dades de viabilitat
           </h3>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 text-white">
-          {/* COST BLOCK - Spans 2 columns */}
-          <div className="col-span-2 bg-neutral-800/80 rounded-lg p-3 border border-yellow-500/40 shadow-[0_0_15px_rgba(234,179,8,0.1)]">
-            {/* Header: Total Cost */}
-            <div className="flex justify-between items-center mb-2">
-              <div>
-                <p className="text-[11px] uppercase tracking-wider text-yellow-300">
-                  Cost Total Aprox.
-                </p>
-              </div>
-              <p className="font-mono font-bold text-xl text-yellow-400 leading-none">
-                {projectCost.total.toLocaleString("es-ES", {
-                  style: "currency",
-                  currency: "EUR",
-                  notation: "compact",
-                })}
-              </p>
-            </div>
-
-            {/* Detailed Breakdown Grid */}
-            <div className="grid grid-cols-4 gap-1 mt-2 pt-2 border-t border-white/10">
-              <div className="text-center">
-                <p className="text-[9px] text-white uppercase tracking-tight">
-                  Mat & Fab
-                </p>
-                <p className="text-[10px] font-mono font-extrabold text-cyan-400">
-                  {(
-                    projectCost.breakdown.materials +
-                    projectCost.breakdown.manufacturing
-                  ).toLocaleString("es-ES", {
-                    style: "currency",
-                    currency: "EUR",
-                    notation: "compact",
-                  })}
-                </p>
-              </div>
-              <div className="text-center border-l border-white/10">
-                <p className="text-[9px] text-white uppercase tracking-tight">
-                  Muntatge
-                </p>
-                <p className="text-[10px] font-mono font-extrabold text-cyan-400">
-                  {projectCost.breakdown.assembly.toLocaleString("es-ES", {
-                    style: "currency",
-                    currency: "EUR",
-                    notation: "compact",
-                  })}
-                </p>
-              </div>
-              <div className="text-center border-l border-white/10">
-                <p className="text-[9px] text-white uppercase tracking-tight">
-                  Enginyeria
-                </p>
-                <p className="text-[10px] font-mono font-extrabold text-cyan-400">
-                  {projectCost.breakdown.engineering.toLocaleString("es-ES", {
-                    style: "currency",
-                    currency: "EUR",
-                    notation: "compact",
-                  })}
-                </p>
-              </div>
-              <div className="text-center border-l border-white/10">
-                <p className="text-[9px] text-white uppercase tracking-tight">
-                  Log/Risc
-                </p>
-                <p className="text-[10px] font-mono font-extrabold text-cyan-400">
-                  {projectCost.breakdown.logistics.toLocaleString("es-ES", {
-                    style: "currency",
-                    currency: "EUR",
-                    notation: "compact",
-                  })}
-                </p>
-              </div>
-            </div>
-
-            {/* NEW: Structural Weight Footer */}
-            <div className="mt-2 pt-1.5 border-t border-dashed border-white/10 flex justify-between items-center">
-              <p
-                className={`text-[11px] uppercase tracking-wider ${
-                  structureWeight > 200 ? "text-red-400" : "text-yellow-300"
-                }`}
-              >
-                Pes Estructural
-              </p>
-              <p
-                className={`font-mono font-bold text-xl ${
-                  structureWeight > 200 ? "text-red-500" : "text-yellow-400"
-                } leading-none`}
-              >
-                {structureWeight.toFixed(1)} kg
-              </p>
-            </div>
-          </div>
-
-          <div
-            className={`col-span-2 rounded-lg p-2.5 border flex flex-col justify-between items-start ${
-              paybackPeriod
-                ? "bg-blue-900/10 border-blue-300/30"
-                : "bg-white/5 border-white/10 opacity-50"
+          <button
+            onClick={() => setShowFeasibility(!showFeasibility)}
+            className={`relative cursor-pointer w-10 h-5 rounded-full transition-all duration-300 ease-out focus:outline-none ${
+              showFeasibility
+                ? "bg-cyan-600 shadow-[0_0_10px_rgba(8,145,178,0.4)]"
+                : "bg-white/10 hover:bg-white/20"
             }`}
           >
-            <div className={`flex justify-between w-full items-center `}>
-              <div className="flex flex-col justify-center">
-                <p
-                  className={`text-[11px] uppercase tracking-wider mb-0.5 ${
-                    paybackPeriod ? "text-blue-500" : "text-gray-400"
-                  }`}
-                >
-                  Beneficis anuals
+            <div
+              className={`absolute top-1 left-1 w-3 h-3 bg-white rounded-full shadow-sm transition-transform duration-300 ease-out ${
+                showFeasibility ? "translate-x-5" : "translate-x-0"
+              }`}
+            />
+          </button>
+        </div>
+
+        {showFeasibility && (
+          <div className="grid grid-cols-2 gap-3 text-white">
+            {/* COST BLOCK - Spans 2 columns */}
+            <div className="col-span-2 bg-neutral-800/80 rounded-lg p-3 border border-yellow-500/40 shadow-[0_0_15px_rgba(234,179,8,0.1)]">
+              {/* Header: Total Cost */}
+              <div className="flex justify-between items-center mb-2">
+                <div>
+                  <p className="text-[11px] uppercase tracking-wider text-yellow-300">
+                    Cost Total Aprox.
+                  </p>
+                </div>
+                <p className="font-mono font-bold text-xl text-yellow-400 leading-none">
+                  {projectCost.total.toLocaleString("es-ES", {
+                    style: "currency",
+                    currency: "EUR",
+                    notation: "compact",
+                  })}
                 </p>
-                <div className="flex items-center gap-2">
-                  <p
-                    className={`font-mono font-bold text-lg ${
-                      paybackPeriod ? "text-white" : "text-gray-500"
-                    }`}
-                  >
-                    {paybackPeriod
-                      ? paybackPeriod.annualSavings.toLocaleString("es-ES", {
-                          style: "currency",
-                          currency: "EUR",
-                          notation: "compact",
-                        })
-                      : "--"}
+              </div>
+
+              {/* Detailed Breakdown Grid */}
+              <div className="grid grid-cols-4 gap-1 mt-2 pt-2 border-t border-white/10">
+                <div className="text-center">
+                  <p className="text-[9px] text-white uppercase tracking-tight">
+                    Mat & Fab
+                  </p>
+                  <p className="text-[10px] font-mono font-extrabold text-cyan-400">
+                    {(
+                      projectCost.breakdown.materials +
+                      projectCost.breakdown.manufacturing
+                    ).toLocaleString("es-ES", {
+                      style: "currency",
+                      currency: "EUR",
+                      notation: "compact",
+                    })}
+                  </p>
+                </div>
+                <div className="text-center border-l border-white/10">
+                  <p className="text-[9px] text-white uppercase tracking-tight">
+                    Muntatge
+                  </p>
+                  <p className="text-[10px] font-mono font-extrabold text-cyan-400">
+                    {projectCost.breakdown.assembly.toLocaleString("es-ES", {
+                      style: "currency",
+                      currency: "EUR",
+                      notation: "compact",
+                    })}
+                  </p>
+                </div>
+                <div className="text-center border-l border-white/10">
+                  <p className="text-[9px] text-white uppercase tracking-tight">
+                    Enginyeria
+                  </p>
+                  <p className="text-[10px] font-mono font-extrabold text-cyan-400">
+                    {projectCost.breakdown.engineering.toLocaleString("es-ES", {
+                      style: "currency",
+                      currency: "EUR",
+                      notation: "compact",
+                    })}
+                  </p>
+                </div>
+                <div className="text-center border-l border-white/10">
+                  <p className="text-[9px] text-white uppercase tracking-tight">
+                    Log/Risc
+                  </p>
+                  <p className="text-[10px] font-mono font-extrabold text-cyan-400">
+                    {projectCost.breakdown.logistics.toLocaleString("es-ES", {
+                      style: "currency",
+                      currency: "EUR",
+                      notation: "compact",
+                    })}
                   </p>
                 </div>
               </div>
-            </div>
-            {paybackPeriod && (
-              <div className="mt-2 pt-1.5 border-t border-dashed border-white/10 w-full flex justify-between items-center">
+
+              {/* NEW: Structural Weight Footer */}
+              <div className="mt-2 pt-1.5 border-t border-dashed border-white/10 flex justify-between items-center">
                 <p
-                  className={`text-[11px] uppercase tracking-wider text-blue-400`}
+                  className={`text-[11px] uppercase tracking-wider ${
+                    structureWeight > 200 ? "text-red-400" : "text-yellow-300"
+                  }`}
                 >
-                  Benefici Brut
+                  Pes Estructural
                 </p>
                 <p
-                  className={`font-mono font-bold text-xl text-blue-500 leading-none`}
+                  className={`font-mono font-bold text-xl ${
+                    structureWeight > 200 ? "text-red-500" : "text-yellow-400"
+                  } leading-none`}
                 >
-                  {(maxRoi * paybackPeriod.annualSavings).toLocaleString(
-                    "es-ES",
-                    {
+                  {structureWeight.toFixed(1)} kg
+                </p>
+              </div>
+            </div>
+
+            <div
+              className={`col-span-2 rounded-lg p-2.5 border flex flex-col justify-between items-start ${
+                paybackPeriod
+                  ? "bg-blue-900/10 border-blue-300/30"
+                  : "bg-white/5 border-white/10 opacity-50"
+              }`}
+            >
+              <div className={`flex justify-between w-full items-center `}>
+                <div className="flex flex-col justify-center">
+                  <p
+                    className={`text-[11px] uppercase tracking-wider mb-0.5 ${
+                      paybackPeriod ? "text-blue-500" : "text-gray-400"
+                    }`}
+                  >
+                    Beneficis anuals
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <p
+                      className={`font-mono font-bold text-lg ${
+                        paybackPeriod ? "text-white" : "text-gray-500"
+                      }`}
+                    >
+                      {paybackPeriod
+                        ? paybackPeriod.annualSavings.toLocaleString("es-ES", {
+                            style: "currency",
+                            currency: "EUR",
+                            notation: "compact",
+                          })
+                        : "--"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              {paybackPeriod && (
+                <div className="mt-2 pt-1.5 border-t border-dashed border-white/10 w-full flex justify-between items-center">
+                  <p
+                    className={`text-[11px] uppercase tracking-wider text-blue-400`}
+                  >
+                    Benefici Brut
+                  </p>
+                  <p
+                    className={`font-mono font-bold text-xl text-blue-500 leading-none`}
+                  >
+                    {(maxRoi * paybackPeriod.annualSavings).toLocaleString(
+                      "es-ES",
+                      {
+                        style: "currency",
+                        currency: "EUR",
+                        maximumFractionDigits: 0,
+                        signDisplay: "exceptZero",
+                      }
+                    )}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* PAYBACK STAT ITEM */}
+            <div
+              className={`col-span-2 rounded-lg p-2.5 border flex flex-col justify-between items-start ${
+                paybackPeriod
+                  ? paybackPeriod.isViable
+                    ? "bg-green-900/10 border-green-500/30"
+                    : "bg-red-900/10 border-red-300/30"
+                  : "bg-white/5 border-white/10 opacity-50"
+              }`}
+            >
+              <div className={`flex justify-between w-full items-center `}>
+                <div className="flex flex-col justify-center">
+                  <p
+                    className={`text-[11px] uppercase tracking-wider mb-0.5 ${
+                      paybackPeriod
+                        ? paybackPeriod.isViable
+                          ? "text-green-500"
+                          : "text-red-400"
+                        : "text-gray-400"
+                    }`}
+                  >
+                    Retorn de la Inversió
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <p
+                      className={`font-mono font-bold text-lg ${
+                        paybackPeriod ? "text-white" : "text-gray-500"
+                      }`}
+                    >
+                      {paybackPeriod
+                        ? (() => {
+                            const y = Math.floor(paybackPeriod.years);
+                            const m = Math.round(
+                              (paybackPeriod.years - y) * 12
+                            );
+                            if (y > 100) return "> 100 Anys";
+                            return `${y}a ${m}m`;
+                          })()
+                        : "--"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Viability Indicator Icon */}
+                {paybackPeriod && (
+                  <div
+                    className={`rounded-full p-1.5 ${
+                      paybackPeriod.isViable
+                        ? "bg-green-500/20 text-green-400"
+                        : "bg-red-500/20 text-red-400"
+                    }`}
+                  >
+                    {paybackPeriod.isViable ? (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        className="w-4 h-4"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        className="w-4 h-4"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    )}
+                  </div>
+                )}
+              </div>
+              {paybackPeriod && (
+                <div className="mt-2 pt-1.5 border-t border-dashed border-white/10 w-full flex justify-between items-center">
+                  <p
+                    className={`text-[11px] uppercase tracking-wider ${
+                      !paybackPeriod.isViable
+                        ? "text-red-400"
+                        : "text-green-400"
+                    }`}
+                  >
+                    Benefici Net
+                  </p>
+                  <p
+                    className={`font-mono font-bold text-xl ${
+                      !paybackPeriod.isViable
+                        ? "text-red-500"
+                        : "text-green-500"
+                    } leading-none`}
+                  >
+                    {(
+                      (maxRoi - paybackPeriod.years) *
+                      paybackPeriod.annualSavings
+                    ).toLocaleString("es-ES", {
                       style: "currency",
                       currency: "EUR",
                       maximumFractionDigits: 0,
                       signDisplay: "exceptZero",
-                    }
-                  )}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* PAYBACK STAT ITEM */}
-          <div
-            className={`col-span-2 rounded-lg p-2.5 border flex flex-col justify-between items-start ${
-              paybackPeriod
-                ? paybackPeriod.isViable
-                  ? "bg-green-900/10 border-green-500/30"
-                  : "bg-red-900/10 border-red-300/30"
-                : "bg-white/5 border-white/10 opacity-50"
-            }`}
-          >
-            <div className={`flex justify-between w-full items-center `}>
-              <div className="flex flex-col justify-center">
-                <p
-                  className={`text-[11px] uppercase tracking-wider mb-0.5 ${
-                    paybackPeriod
-                      ? paybackPeriod.isViable
-                        ? "text-green-500"
-                        : "text-red-400"
-                      : "text-gray-400"
-                  }`}
-                >
-                  Retorn de la Inversió
-                </p>
-                <div className="flex items-center gap-2">
-                  <p
-                    className={`font-mono font-bold text-lg ${
-                      paybackPeriod ? "text-white" : "text-gray-500"
-                    }`}
-                  >
-                    {paybackPeriod
-                      ? (() => {
-                          const y = Math.floor(paybackPeriod.years);
-                          const m = Math.round((paybackPeriod.years - y) * 12);
-                          if (y > 100) return "> 100 Anys";
-                          return `${y}a ${m}m`;
-                        })()
-                      : "--"}
+                    })}
                   </p>
-                </div>
-              </div>
-
-              {/* Viability Indicator Icon */}
-              {paybackPeriod && (
-                <div
-                  className={`rounded-full p-1.5 ${
-                    paybackPeriod.isViable
-                      ? "bg-green-500/20 text-green-400"
-                      : "bg-red-500/20 text-red-400"
-                  }`}
-                >
-                  {paybackPeriod.isViable ? (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      className="w-4 h-4"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  ) : (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      className="w-4 h-4"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  )}
                 </div>
               )}
             </div>
-            {paybackPeriod && (
-              <div className="mt-2 pt-1.5 border-t border-dashed border-white/10 w-full flex justify-between items-center">
-                <p
-                  className={`text-[11px] uppercase tracking-wider ${
-                    !paybackPeriod.isViable ? "text-red-400" : "text-green-400"
-                  }`}
-                >
-                  Benefici Net
-                </p>
-                <p
-                  className={`font-mono font-bold text-xl ${
-                    !paybackPeriod.isViable ? "text-red-500" : "text-green-500"
-                  } leading-none`}
-                >
-                  {(
-                    (maxRoi - paybackPeriod.years) *
-                    paybackPeriod.annualSavings
-                  ).toLocaleString("es-ES", {
-                    style: "currency",
-                    currency: "EUR",
-                    maximumFractionDigits: 0,
-                    signDisplay: "exceptZero",
-                  })}
-                </p>
-              </div>
-            )}
           </div>
-        </div>
+        )}
       </div>
 
       {/* BOTTOM HUD BAR */}
