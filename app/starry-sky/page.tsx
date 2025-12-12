@@ -1571,10 +1571,11 @@ export default function ThermalPage() {
             : "opacity-0 -translate-y-8"
         }`}
       >
-        <div className="flex flex-col">
+        <div className="flex gap-5">
           <h1 className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-indigo-200 via-purple-200 to-white drop-shadow-[0_0_25px_rgba(255,255,255,0.6)]">
             STARRY SKY
           </h1>
+          <div className="h-9 border-r border-cyan-700" />
           <div className="flex items-center gap-2 text-[10px] md:text-xs font-medium text-cyan-400 uppercase tracking-widest">
             <span className="opacity-80">Aissam Khadraoui</span>
             <span className="text-white/20">•</span>
@@ -1584,7 +1585,7 @@ export default function ThermalPage() {
           </div>
         </div>
 
-        <Link
+        {/* <Link
           href="/playground/magic"
           className="pointer-events-auto group relative overflow-hidden rounded-full bg-cyan-600 px-6 py-2.5 transition-all duration-300 hover:bg-cyan-500 hover:scale-105 hover:shadow-[0_0_20px_rgba(34,211,238,0.6)] border border-white/20 shadow-lg"
         >
@@ -1596,7 +1597,7 @@ export default function ThermalPage() {
               &rarr;
             </span>
           </div>
-        </Link>
+        </Link> */}
       </div>
       {/*Initial overlay*/}
       <div
