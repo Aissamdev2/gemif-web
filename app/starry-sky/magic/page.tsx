@@ -925,7 +925,7 @@ const FocusIncidenceView = ({
   const targetY = FOCAL_LENGTH + focusOffset;
 
   return (
-    <div className="absolute bottom-12 right-8 w-[320px] bg-neutral-900 border p-5 border-white/20 rounded-2xl overflow-hidden z-50">
+    <div className="absolute bottom-20 right-8 w-[320px] h-[300px] bg-neutral-900 border p-5 border-white/20 rounded-2xl overflow-hidden z-50">
       {/* Label */}
       <div className="flex items-center justify-between mb-4 border-b border-white/10 pb-2">
             <h3 className="text-xs font-extrabold uppercase tracking-widest text-cyan-400">
@@ -939,7 +939,7 @@ const FocusIncidenceView = ({
         <OrthographicCamera
           makeDefault
           position={[0, targetY - 10, 0]} // Above the plate
-          rotation={[Math.PI / 2, 0, 0]} // Looking straight down
+          rotation={[Math.PI / 2 -0.02, 0, 0]} // Looking straight down
           zoom={120} // High zoom for close detail
           near={0}
           far={50}
