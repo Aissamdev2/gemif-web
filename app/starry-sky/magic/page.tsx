@@ -1018,7 +1018,7 @@ export default function TelescopePage() {
             <span className="opacity-80">Filip Denis</span>
           </div>
         </div>
-        <Link
+        {/* <Link
           href="magic/thermal-simulation"
           className={`
         pointer-events-auto group relative overflow-hidden rounded-full bg-cyan-600 px-6 py-2.5 transition-all duration-300 
@@ -1034,7 +1034,7 @@ export default function TelescopePage() {
               &rarr;
             </span>
           </div>
-        </Link>
+        </Link> */}
       </div>
 
       <div
