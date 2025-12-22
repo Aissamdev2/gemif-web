@@ -96,7 +96,7 @@ const MATERIALS: Record<
     rho: 8960,
     cost: 10.0,
     machiningFactor: 2.5, // Hard on tools, slow feed rates, heavy
-    color: "#ff8c42",
+    color: "#6b3818",
     metalness: 0.4,
     roughness: 0.4,
   },
