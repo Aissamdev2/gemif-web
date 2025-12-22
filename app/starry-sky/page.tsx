@@ -111,7 +111,8 @@ const REFELCTIVE_MATERIAL = {
 };
 
 // --- PRESET CONFIGURATIONS ---
-type PresetDef = {
+// Changed to Partial to allow modular stacking
+type PresetDef = Partial<{
   name: string;
   fwhm: number;
   matrixSize: number;
@@ -129,11 +130,12 @@ type PresetDef = {
   useReflector: boolean;
   baseMatKey: string;
   sinkMatKey: string;
-};
+}>;
 
+// Modular presets designed for stacking
 const PRESETS: Record<string, PresetDef> = {
-  Initial: {
-    name: "Inicial",
+  PC: {
+    name: "Pitjor Cas",
     fwhm: 0.17,
     matrixSize: 1,
     magicArea: 236,
@@ -151,7 +153,35 @@ const PRESETS: Record<string, PresetDef> = {
     baseMatKey: "Al-1050A (Anodized)",
     sinkMatKey: "Al-1050A (Anodized)",
   },
-  Under_Limits: {
+  MC: {
+    name: "Multicapa",
+    sinkThick: 0.01,
+    baseMatKey: "Copper (Oxidized)",
+    sinkMatKey: "Al-1050A (Anodized)",
+  },
+  A: {
+    name: "Aletes",
+
+    useFins: true,
+  },
+
+  M: {
+    name: "Matriu",
+    matrixSize: 5,
+  },
+  R: {
+    name: "Reflector",
+    useReflector: true,
+  },
+  AM: {
+    name: "Apagar miralls",
+    magicArea: 100,
+  },
+  D: {
+    name: "Desenfocar",
+    fwhm: 0.4,
+  },
+  SL: {
     name: "Sota límits",
     fwhm: 0.267,
     matrixSize: 5,
@@ -380,15 +410,19 @@ ControlRow.displayName = "ControlRow";
 const ToggleRow = memo(
   ({
     label,
+    colorClass,
     checked,
     onChange,
   }: {
     label: string;
+    colorClass: string;
     checked: boolean;
     onChange: (val: boolean) => void;
   }) => (
-    <div className="flex items-center justify-evenly gap-4 bg-neutral-900 p-3 px-5 rounded-xl text-white shadow-xl border border-white/10">
-      <span className="text-[10px] text-cyan-400 uppercase tracking-widest font-bold">
+    <div className="flex items-center justify-between gap-4 bg-neutral-900 p-3 px-5 rounded-xl text-white shadow-xl border border-white/10">
+      <span
+        className={`text-[10px] ${colorClass} uppercase tracking-widest font-bold`}
+      >
         {label}
       </span>
       <button
@@ -483,37 +517,38 @@ const MaterialSelector = memo(
 MaterialSelector.displayName = "MaterialSelector";
 
 const PresetSelector = memo(
-  ({ onSelect }: { onSelect: (key: string) => void }) => {
+  ({
+    activeKeys,
+    onToggle,
+  }: {
+    activeKeys: string[];
+    onToggle: (key: string) => void;
+  }) => {
     return (
-      <div className="flex flex-col gap-2 bg-neutral-900 p-2 rounded-xl text-white shadow-xl border border-white/10">
-        <div className="flex justify-between items-end">
-          <span className="text-[10px] uppercase tracking-widest font-black text-cyan-300">
-            Paràm. Predefinits
-          </span>
-        </div>
-
-        <div className="relative group">
-          <select
-            onChange={(e) => {
-              if (e.target.value) onSelect(e.target.value);
-              // Reset selector visually if needed, though usually staying on selection is fine
-            }}
-            defaultValue=""
-            className="w-full bg-black/40 border border-cyan-500/20 rounded-lg p-2 text-xs font-bold text-white focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 cursor-pointer appearance-none hover:bg-black/60 transition-all uppercase tracking-wider"
-          >
-            <option value="" className="bg-neutral-900 py-2 text-center">
-              No
-            </option>
-            {Object.entries(PRESETS).map(([key, def]) => (
-              <option
+      <div className="w-full flex flex-col items-center gap-2 bg-neutral-900/80 p-1.5 rounded-xl border border-white/10 shadow-lg overflow-hidden">
+        {/* Scrollable Container */}
+        <span
+          className={`text-[10px] uppercase tracking-widest font-bold text-cyan-400 transition-colors`}
+        >
+          Paràmteres ràpids
+        </span>
+        <div className="flex-1 overflow-x-auto no-scrollbar grid grid-cols-2 gap-1 pr-2 mask-linear-fade">
+          {Object.entries(PRESETS).map(([key, def]) => {
+            const isActive = activeKeys.includes(key);
+            return (
+              <button
                 key={key}
-                value={key}
-                className="bg-neutral-900 py-2 text-center"
+                onClick={() => onToggle(key)}
+                className={`shrink-0 px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider transition-all duration-200 border whitespace-nowrap ${
+                  isActive
+                    ? "bg-cyan-600 border-cyan-400 text-white shadow-[0_0_8px_rgba(8,145,178,0.4)]"
+                    : "bg-white/5 border-transparent text-gray-400 hover:bg-white/10 hover:text-white hover:border-white/10"
+                }`}
               >
                 {def.name}
-              </option>
-            ))}
-          </select>
+              </button>
+            );
+          })}
         </div>
       </div>
     );
@@ -672,6 +707,7 @@ const ThermalBox = memo(
     visUseFins,
     visUseReflector,
     status,
+    realScale,
     showGaussian,
     showAdvanced,
     hasPendingChanges,
@@ -705,6 +741,7 @@ const ThermalBox = memo(
     visBaseMatKey: string;
     visSinkMatKey: string;
     status: SimStats;
+    realScale: boolean;
     showGaussian: boolean;
     showAdvanced: boolean;
     hasPendingChanges: boolean;
@@ -720,6 +757,12 @@ const ThermalBox = memo(
     const cpvRef = useRef<THREE.Group>(null);
     const currentExpansion = useRef(0);
     const workerRef = useRef<Worker | null>(null);
+
+    // --- CONSTANTS FOR GEOMETRY ---
+    const CPV_SUBSTRATE_THICK = 0.002; // Thin layer for the wafer
+    const CPV_CELL_HEIGHT = 0.001; // Height of the actual PV cells
+    const FIN_HEIGHT = realScale ? 0.02 : 0.05; // Height of the cooling fins
+    const FIN_THICKNESS = realScale ? 0.001 : 0.005;
 
     // Cleanup Textures
     useEffect(() => {
@@ -848,48 +891,74 @@ const ThermalBox = memo(
       simNz,
       simUseCircle,
       simUsePv,
-      simUseFins, // Add dependency
-      simUseReflector, // Add dependency
+      simUseFins,
+      simUseReflector,
       simBaseMatKey,
       simSinkMatKey,
       onUpdateStats,
     ]);
 
-    const SINK_INIT_Y = -(visSinkThick + visLayerThick + 0.08) / 2;
-    const SINK_TARGET_Y = SINK_INIT_Y - 0.5;
-    const BASE_TARGET_Y = 0;
-    const CPV_INIT_Y = visLayerThick / 2 + 0.01;
-    const CPV_TARGET_Y = visLayerThick / 2 + 0.5;
-    const SPEED = 1.5;
+    // --- DYNAMIC POSITIONING LOGIC ---
+    // We treat the BASE as the anchor at Y=0.
+    // Dimensions are "Thickness" (Heights).
+    // BoxGeometries are drawn from the center.
+
+    // 1. Base Layer (Center at 0)
+    const BASE_REST_Y = 0;
+
+    // 2. Sink Layer (Below Base)
+    // Position = Base Bottom - Sink Half Height
+    const SINK_REST_Y = -(visLayerThick / 2 + visSinkThick / 2);
+    // Expansion target (move down)
+    const SINK_EXPANDED_Y = SINK_REST_Y - 0.2;
+
+    // 3. CPV Layer (Above Base)
+    // Position = Base Top + Substrate Half Height
+    const CPV_REST_Y = visLayerThick / 2 + CPV_SUBSTRATE_THICK / 2;
+    // Expansion target (move up)
+    const CPV_EXPANDED_Y = CPV_REST_Y + 0.2;
+
+    const SPEED = 2.0;
 
     useFrame((_, delta) => {
+      // Determine if we should be in "Exploded View"
+      // Explode if we have results (textures) AND we are not loading/changing
       const isVisualizing =
         texSink !== null && !status.loading && !hasPendingChanges;
+      
       const targetExpansion = isVisualizing ? 1 : 0;
+      
       currentExpansion.current = THREE.MathUtils.damp(
         currentExpansion.current,
         targetExpansion,
         3.0,
         delta * SPEED
       );
+
       const t = currentExpansion.current;
-      if (sinkRef.current)
+
+      // Animate Groups
+      if (sinkRef.current) {
         sinkRef.current.position.y = THREE.MathUtils.lerp(
-          SINK_INIT_Y,
-          SINK_TARGET_Y,
+          SINK_REST_Y,
+          SINK_EXPANDED_Y,
           t
         );
-      if (baseRef.current)
-        baseRef.current.position.y = THREE.MathUtils.lerp(0, BASE_TARGET_Y, t);
-      if (cpvRef.current)
+      }
+      if (baseRef.current) {
+        baseRef.current.position.y = BASE_REST_Y; // Base stays anchored
+      }
+      if (cpvRef.current) {
+        // Only float up if we are visualizing, otherwise stay flush
         cpvRef.current.position.y = THREE.MathUtils.lerp(
-          CPV_INIT_Y,
-          visUseReflector ? CPV_TARGET_Y : CPV_INIT_Y,
+          CPV_REST_Y,
+          CPV_EXPANDED_Y,
           t
         );
+      }
     });
 
-    // --- HOVER ---
+    // --- HOVER HANDLERS ---
     const handlePointerMove = useCallback(
       (e: any, textures: LayerTextures | null) => {
         if (!textures || status.loading || hasPendingChanges) return;
@@ -920,6 +989,7 @@ const ThermalBox = memo(
       onUpdateStats({ hoverTemp: null });
     }, [onUpdateStats]);
 
+    // --- MATERIALS & GEOMETRIES ---
     const visualMaterials = useMemo(() => {
       const baseMatDef = MATERIALS[visBaseMatKey];
       const sinkMatDef = MATERIALS[visSinkMatKey];
@@ -927,10 +997,8 @@ const ThermalBox = memo(
       return {
         sink: new THREE.MeshStandardMaterial({
           color: sinkMatDef.color,
-          // Self-illuminate slightly so it's always visible
           emissive: sinkMatDef.color,
           emissiveIntensity: 0.25,
-          // Low metalness prevents reflecting the black sky too much
           metalness: 0.3,
           roughness: sinkMatDef.roughness,
         }),
@@ -942,7 +1010,9 @@ const ThermalBox = memo(
           roughness: baseMatDef.roughness,
         }),
         cpvSubstrate: new THREE.MeshStandardMaterial({
-          color: visUseReflector ? REFELCTIVE_MATERIAL.color : baseMatDef.color,
+          color: visUseReflector
+            ? REFELCTIVE_MATERIAL.color
+            : baseMatDef.color,
           emissive: visUseReflector
             ? REFELCTIVE_MATERIAL.color
             : baseMatDef.color,
@@ -955,7 +1025,7 @@ const ThermalBox = memo(
         cpvCell: new THREE.MeshStandardMaterial({
           color: "#1a237e",
           emissive: "#1a237e",
-          emissiveIntensity: 0.4, // Cells should pop
+          emissiveIntensity: 0.4,
           roughness: 0.2,
           metalness: 0.1,
         }),
@@ -965,9 +1035,14 @@ const ThermalBox = memo(
     const geometries = useMemo(() => {
       return {
         sinkMain: new THREE.BoxGeometry(PLATE_WIDTH, visSinkThick, PLATE_DEPTH),
-        sinkFin: new THREE.BoxGeometry(0.02, 0.1, PLATE_DEPTH),
+        // Fin height is fixed visually, attached to bottom
+        sinkFin: new THREE.BoxGeometry(FIN_THICKNESS, FIN_HEIGHT, PLATE_DEPTH),
         base: new THREE.BoxGeometry(PLATE_WIDTH, visLayerThick, PLATE_DEPTH),
-        cpvSubstrate: new THREE.BoxGeometry(PLATE_WIDTH, 0.02, PLATE_DEPTH),
+        cpvSubstrate: new THREE.BoxGeometry(
+          PLATE_WIDTH,
+          CPV_SUBSTRATE_THICK,
+          PLATE_DEPTH
+        ),
       };
     }, [visLayerThick, visSinkThick]);
 
@@ -988,11 +1063,13 @@ const ThermalBox = memo(
 
     return (
       <group rotation={[Math.PI / 6, Math.PI / 4, 0]} position={[0, 0, 0]}>
-        {/* SINK - Conditional Rendering based on Thickness */}
+        
+        {/* --- SINK GROUP (Bottom) --- */}
+        {/* Render only if thickness > 0 to avoid errors/artifacts */}
         {visSinkThick > 0.0001 && (
           <group ref={sinkRef}>
             {texSink && !hasPendingChanges && !status.loading ? (
-              // Texture Mode
+              // Texture Mode (Heatmap)
               <mesh
                 onPointerMove={(e) => handlePointerMove(e, texSink)}
                 onPointerOut={handlePointerOut}
@@ -1012,24 +1089,30 @@ const ThermalBox = memo(
                 ))}
               </mesh>
             ) : (
-              // Geometry Mode
+              // Geometry Mode (Solid Material)
               <group>
-                {/* Main Sink Plate */}
+                {/* Main Plate */}
                 <mesh
-                  position={[0, 0.04, 0]}
                   geometry={geometries.sinkMain}
                   material={visualMaterials.sink}
                 />
 
-                {/* Fins - Conditional Rendering */}
+                {/* Fins (Attached to bottom of Sink Plate) */}
                 {visUseFins &&
-                  Array.from({ length: 15 }).map((_, i) => {
-                    const spacing = PLATE_WIDTH / 15;
-                    const pos = -PLATE_WIDTH / 2 + spacing / 2 + i * spacing;
+                  Array.from({ length: 50 }).map((_, i) => {
+                    // Spread fins across the width
+                    const spacing = PLATE_WIDTH / 50;
+                    const xPos = -PLATE_WIDTH / 2 + spacing / 2 + i * spacing;
+                    
+                    // Y Position: Relative to Sink Center (0).
+                    // Bottom of sink is -visSinkThick/2.
+                    // Center of Fin is -visSinkThick/2 - FIN_HEIGHT/2.
+                    const yPos = -visSinkThick / 2 - FIN_HEIGHT / 2;
+
                     return (
                       <mesh
                         key={i}
-                        position={[pos, -visSinkThick / 2, 0]}
+                        position={[xPos, yPos, 0]}
                         geometry={geometries.sinkFin}
                         material={visualMaterials.sink}
                       />
@@ -1051,7 +1134,7 @@ const ThermalBox = memo(
           </group>
         )}
 
-        {/* BASE */}
+        {/* --- BASE GROUP (Middle - Anchor) --- */}
         <group ref={baseRef}>
           <mesh
             onPointerMove={(e) => handlePointerMove(e, texBase)}
@@ -1088,7 +1171,7 @@ const ThermalBox = memo(
           </Html>
         </group>
 
-        {/* CPV */}
+        {/* --- CPV GROUP (Top) --- */}
         <group ref={cpvRef}>
           {texCPV && !hasPendingChanges && !status.loading ? (
             <mesh
@@ -1111,6 +1194,7 @@ const ThermalBox = memo(
             </mesh>
           ) : (
             <group>
+              {/* CPV Substrate Wafer */}
               <mesh
                 geometry={geometries.cpvSubstrate}
                 material={
@@ -1119,6 +1203,7 @@ const ThermalBox = memo(
                     : visualMaterials.base
                 }
               />
+              {/* PV Cells (Sitting on top of Substrate) */}
               {(() => {
                 const n = visMatrixSize;
                 const cellSpacing = (PLATE_WIDTH * 0.9) / n;
@@ -1130,12 +1215,21 @@ const ThermalBox = memo(
                   cellGeo = new THREE.CylinderGeometry(
                     cellSize / 2,
                     cellSize / 2,
-                    0.01,
+                    CPV_CELL_HEIGHT,
                     32
                   );
                 } else {
-                  cellGeo = new THREE.BoxGeometry(cellSize, 0.01, cellSize);
+                  cellGeo = new THREE.BoxGeometry(
+                    cellSize,
+                    CPV_CELL_HEIGHT,
+                    cellSize
+                  );
                 }
+
+                // Y Position: Relative to CPV Group Center (0)
+                // Substrate Top is +CPV_SUBSTRATE_THICK/2
+                // Cell Center is +CPV_SUBSTRATE_THICK/2 + CPV_CELL_HEIGHT/2
+                const cellY = CPV_SUBSTRATE_THICK / 2 + CPV_CELL_HEIGHT / 2;
 
                 const cells = [];
                 for (let x = 0; x < n; x++) {
@@ -1145,7 +1239,7 @@ const ThermalBox = memo(
                         key={`${x}-${z}`}
                         position={[
                           startOffset + x * cellSpacing,
-                          0.02,
+                          cellY,
                           startOffset + z * cellSpacing,
                         ]}
                         geometry={cellGeo}
@@ -1156,6 +1250,8 @@ const ThermalBox = memo(
                 }
                 return cells;
               })()}
+              
+              {/* Gaussian Heat Distribution Overlay */}
               {showGaussian && (
                 <GaussianOverlay
                   fwhm={visFwhm}
@@ -1248,6 +1344,7 @@ export default function ThermalPage() {
   const [uiMatrixSize, setUiMatrixSize] = useState(5);
   const [uiMagicArea, setUiMagicArea] = useState(45);
   const [showGaussian, setShowGaussian] = useState(false);
+  const [realScale, setRealScale] = useState(false);
 
   // ADVANCED UI STATE
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -1270,8 +1367,15 @@ export default function ThermalPage() {
   const [uiBaseMatKey, setUiBaseMatKey] = useState("Al-1050A (Anodized)");
   const [uiSinkMatKey, setUiSinkMatKey] = useState("Al-1050A (Anodized)");
 
+  const [selectedPreset, setSelectedPreset] = useState<string>("");
+  const [activePresetKeys, setActivePresetKeys] = useState<string[]>([]);
+
   const [maxRoi, setMaxRoi] = useState(15);
   const [maxTemp, setMaxTemp] = useState(85);
+
+  // NEW: Manual Cost State
+  const [useManualCost, setUseManualCost] = useState(false);
+  const [manualCostInput, setManualCostInput] = useState<number>(50000); // Default manual value
 
   // SIMULATION STATE
   const [activeParams, setActiveParams] = useState<{
@@ -1299,41 +1403,92 @@ export default function ThermalPage() {
   const [loaded, setLoaded] = useState(false);
   const [introFinished, setIntroFinished] = useState(false);
 
-  // --- PRESET HANDLER ---
-  const applyPreset = useCallback((key: string) => {
-    const p = PRESETS[key];
-    if (!p) return;
+  // --- NEW: SMART PRESET HANDLER ---
+  const togglePreset = useCallback((key: string) => {
+    const targetPreset = PRESETS[key];
+    if (!targetPreset) return;
 
-    // Apply all values instantly
-    setUiFwhm(p.fwhm);
-    setUiMatrixSize(p.matrixSize);
-    setUiMagicArea(p.magicArea);
-    setUiLayerThick(p.layerThick);
-    setUiSinkThick(p.sinkThick);
-    setUiPvThick(p.pvThick);
-    setUiPlateDim(p.plateDim);
-    setUiCpvScale(p.cpvScale);
-    setUiNx(p.nx);
-    setUiNz(p.nz);
-    setUiUseCircle(p.useCircle);
-    setUiUsePv(p.usePv);
-    setUiUseFins(p.useFins);
-    setUiUseReflector(p.useReflector);
-    setUiBaseMatKey(p.baseMatKey);
-    setUiSinkMatKey(p.sinkMatKey);
+    setActivePresetKeys((prevKeys) => {
+      // 1. If currently active, simply remove it (toggle off)
+      if (prevKeys.includes(key)) {
+        return prevKeys.filter((k) => k !== key);
+      }
 
-    // Optional: Stop current simulation if running to force user to click "Simular" again
-    // setSimStats((prev) => ({ ...prev, status: "Settings Changed" }));
+      // 2. If adding new one, check for overlaps with existing ones
+      const targetParams = Object.keys(targetPreset).filter(
+        (k) => k !== "name"
+      );
+
+      const nonConflictingKeys = prevKeys.filter((existingKey) => {
+        const existingPreset = PRESETS[existingKey];
+        if (!existingPreset) return false;
+
+        const existingParams = Object.keys(existingPreset);
+        // Check if they share any parameter key
+        const hasOverlap = existingParams.some((p) => targetParams.includes(p));
+
+        // If overlap exists, we remove the OLD one to let the NEW one take precedence
+        return !hasOverlap;
+      });
+
+      return [...nonConflictingKeys, key];
+    });
+
+    // 3. Apply the values of the NEW preset immediately
+    // Note: We don't need to re-apply old presets because their values
+    // are already in the state. We just overwrite with the new one.
+    if (targetPreset.fwhm !== undefined) setUiFwhm(targetPreset.fwhm);
+    if (targetPreset.matrixSize !== undefined)
+      setUiMatrixSize(targetPreset.matrixSize);
+    if (targetPreset.magicArea !== undefined)
+      setUiMagicArea(targetPreset.magicArea);
+    if (targetPreset.layerThick !== undefined)
+      setUiLayerThick(targetPreset.layerThick);
+    if (targetPreset.sinkThick !== undefined)
+      setUiSinkThick(targetPreset.sinkThick);
+    if (targetPreset.pvThick !== undefined) setUiPvThick(targetPreset.pvThick);
+    if (targetPreset.plateDim !== undefined)
+      setUiPlateDim(targetPreset.plateDim);
+    if (targetPreset.cpvScale !== undefined)
+      setUiCpvScale(targetPreset.cpvScale);
+    if (targetPreset.nx !== undefined) setUiNx(targetPreset.nx);
+    if (targetPreset.nz !== undefined) setUiNz(targetPreset.nz);
+    if (targetPreset.useCircle !== undefined)
+      setUiUseCircle(targetPreset.useCircle);
+    if (targetPreset.usePv !== undefined) setUiUsePv(targetPreset.usePv);
+    if (targetPreset.useFins !== undefined) setUiUseFins(targetPreset.useFins);
+    if (targetPreset.useReflector !== undefined)
+      setUiUseReflector(targetPreset.useReflector);
+    if (targetPreset.baseMatKey !== undefined)
+      setUiBaseMatKey(targetPreset.baseMatKey);
+    if (targetPreset.sinkMatKey !== undefined)
+      setUiSinkMatKey(targetPreset.sinkMatKey);
+  }, []);
+
+  // --- NEW: GRANULAR MANUAL CHANGE HANDLER ---
+  // When a specific param is changed manually, we only remove presets that controlled THAT param.
+  const handleManualChange = useCallback((paramKey: keyof PresetDef) => {
+    setActivePresetKeys((prevKeys) => {
+      // Filter out any preset that defines the parameter being changed manually
+      return prevKeys.filter((key) => {
+        const preset = PRESETS[key];
+        // Keep the preset only if it DOES NOT contain the changed parameter
+        return (
+          !preset || !Object.prototype.hasOwnProperty.call(preset, paramKey)
+        );
+      });
+    });
   }, []);
 
   useEffect(() => {
     if (loaded) {
+      togglePreset("PC");
       const timer = setTimeout(() => {
         setIntroFinished(true);
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [loaded, applyPreset]);
+  }, [loaded, togglePreset]);
 
   const handleRunSimulation = () => {
     setSimStats((prev) => ({
@@ -1449,12 +1604,12 @@ export default function ThermalPage() {
 
   // 1. Calculate Scientific Project Cost
   const projectCost = useMemo(() => {
+    // ... (keep existing calculation logic variables: area, baseMat, etc.) ...
     const area = Math.pow(uiPlateDim, 2);
     const baseMat = MATERIALS[uiBaseMatKey];
     const sinkMat = MATERIALS[uiSinkMatKey];
 
     // --- A. VARIABLE COSTS (Depend on Size/Weight) ---
-
     // Materials
     const volBase = area * uiLayerThick;
     const volSink = area * uiSinkThick;
@@ -1468,24 +1623,21 @@ export default function ThermalPage() {
     const costMatCPV = area * PROJECT_COSTS.CPV_PRICE_PER_M2;
     const totalMaterials = costMatBase + costMatSink + costMatAg + costMatCPV;
 
-    // Manufacturing (Precision Machining + Surface Treatment)
-    // Harder materials multiply the machining time/wear
+    // Manufacturing
     const machiningCost =
       area * PROJECT_COSTS.CNC_BASE_RATE_M2 * sinkMat.machiningFactor +
       area * PROJECT_COSTS.SURFACE_TREAT_M2;
 
-    // Assembly (Cleanroom Labor)
+    // Assembly
     const assemblyCost =
       area * PROJECT_COSTS.HOURS_PER_M2 * PROJECT_COSTS.ASSEMBLY_HOURLY_RATE;
 
-    // Electronics (Scientific Grade)
-    const estimatedWatts = area * 1000 * 0.4; // 40% efficiency for modern CPV
+    // Electronics
+    const estimatedWatts = area * 1000 * 0.4;
     const electronicsCost = estimatedWatts * PROJECT_COSTS.ELEC_COST_PER_WATT;
 
-    // Installation (Rigging & Access)
+    // Installation
     const totalWeight = structureWeight;
-
-    // Logistics / installation: transport + handling (tiered) + optional crane (disabled by default)
     const transportCost = PROJECT_COSTS.TRANSPORT_COST_PER_KG * totalWeight;
     const weightPenalty =
       Math.max(0, totalWeight - PROJECT_COSTS.WEIGHT_FREE_THRESHOLD_KG) *
@@ -1493,7 +1645,6 @@ export default function ThermalPage() {
     const craneCost = PROJECT_COSTS.NEEDS_CRANE
       ? PROJECT_COSTS.CRANE_DAY_RATE * PROJECT_COSTS.CRANE_DAYS
       : 0;
-
     const installationCost =
       PROJECT_COSTS.INSTALL_BASE_FEE +
       transportCost +
@@ -1507,23 +1658,25 @@ export default function ThermalPage() {
       electronicsCost +
       installationCost;
 
-    // --- B. FIXED COSTS (Engineering & Qual) ---
+    // --- B. FIXED COSTS ---
     const fixedCosts =
       PROJECT_COSTS.NRE_FLAT_FEE + PROJECT_COSTS.QUALIFICATION_FEE;
 
-    // --- C. TOTAL with Contingency ---
+    // --- C. TOTAL ---
     const subTotal = totalVariable + fixedCosts;
     const contingency = subTotal * PROJECT_COSTS.CONTINGENCY_PCT;
-    const total = subTotal + contingency;
+    const calculatedTotal = subTotal + contingency;
 
+    // RETURN OBJECT (Now supports Manual Override)
     return {
-      total: total,
+      total: useManualCost ? manualCostInput : calculatedTotal,
+      isManual: useManualCost,
       breakdown: {
         materials: totalMaterials,
         manufacturing: machiningCost,
         assembly: assemblyCost,
-        engineering: fixedCosts, // NRE + Qual
-        logistics: installationCost + contingency, // Install + Risk
+        engineering: fixedCosts,
+        logistics: installationCost + contingency,
       },
     };
   }, [
@@ -1533,9 +1686,9 @@ export default function ThermalPage() {
     uiBaseMatKey,
     uiSinkMatKey,
     structureWeight,
+    useManualCost, // Added dependency
+    manualCostInput, // Added dependency
   ]);
-
-  // ... inside ThermalPage component ...
 
   // 2. Calculate ROI / Payback Period
   const paybackPeriod = useMemo(() => {
@@ -1701,7 +1854,7 @@ export default function ThermalPage() {
           color="#88ccff"
           noise={0.5}
         />
-        <PerspectiveCamera makeDefault position={[4, 1, 0]} fov={40} />
+        <PerspectiveCamera makeDefault position={[3, 0, 1]} fov={40} />
         <OrbitControls
           makeDefault
           minDistance={2}
@@ -1752,14 +1905,15 @@ export default function ThermalPage() {
             visMagicArea={uiMagicArea}
             visCpvScale={uiCpvScale}
             visUseCircle={uiUseCircle}
-            visLayerThick={uiLayerThick * 10}
-            visSinkThick={uiSinkThick * 10}
+            visLayerThick={realScale ? uiLayerThick : uiLayerThick * 5}
+            visSinkThick={realScale ? uiSinkThick : uiSinkThick * 5}
             visUseFins={uiUseFins}
             visUseReflector={uiUseReflector}
             visBaseMatKey={uiBaseMatKey}
             visSinkMatKey={uiSinkMatKey}
             hasPendingChanges={hasPendingChanges}
             status={simStats}
+            realScale={realScale}
             showGaussian={showGaussian}
             showAdvanced={showAdvanced}
             onUpdateStats={onUpdateStats}
@@ -1775,61 +1929,39 @@ export default function ThermalPage() {
             : "opacity-0 -translate-x-10"
         }`}
       >
-        {/* NEW PRESET SELECTOR HERE */}
+        {/* UPDATED MULTI-SELECTOR */}
         <div className="w-full">
-          <PresetSelector onSelect={applyPreset} />
+          <PresetSelector
+            activeKeys={activePresetKeys}
+            onToggle={togglePreset}
+          />
         </div>
-
-        <ControlRow
-          label="FWHM (m)"
-          value={uiFwhm.toFixed(3)}
-          colorClass="text-cyan-400"
-          onDec={() => setUiFwhm((p) => Math.max(p - 0.01, FWHM_MIN))}
-          onInc={() => setUiFwhm((p) => Math.min(p + 0.01, FWHM_MAX))}
-          onSet={(n) =>
-            setUiFwhm((p) => Math.min(Math.max(n, FWHM_MIN), FWHM_MAX))
-          }
-        />
-
-        <ControlRow
-          label="Matriu NxN"
-          value={`${uiMatrixSize}x${uiMatrixSize}`}
-          colorClass="text-yellow-400"
-          onDec={() => setUiMatrixSize((p) => Math.max(p - 1, MATRIX_SIZE_MIN))}
-          onInc={() => setUiMatrixSize((p) => Math.min(p + 1, MATRIX_SIZE_MAX))}
-        />
-
-        <ControlRow
-          label="Àrea (m²)"
-          value={uiMagicArea}
-          colorClass="text-green-400"
-          onDec={() =>
-            setUiMagicArea((p) => Math.max(p - 1, Math.pow(uiMatrixSize, 2)))
-          }
-          onInc={() => setUiMagicArea((p) => Math.min(p + 1, 236))}
-          onMax={() => setUiMagicArea(236)}
-          onMin={() => setUiMagicArea(Math.pow(uiMatrixSize, 2))}
-          showMax
-          showMin
-          // onSet={(n) => setUiMagicArea(Math.max(Math.min(n, 236),Math.pow(uiMatrixSize, 2)))}
-        />
 
         {!simStats.loading && (!activeParams || hasPendingChanges) && (
           <div className="w-full">
             <ToggleRow
-              label="Veure Distribució"
+              label="Veure Calor Incident"
+              colorClass="text-cyan-400"
               checked={showGaussian}
               onChange={setShowGaussian}
             />
           </div>
         )}
+        <div className="w-full">
+            <ToggleRow
+              label="Escala Realista"
+              colorClass="text-cyan-400"
+              checked={realScale}
+              onChange={setRealScale}
+            />
+          </div>
 
         <button
           onClick={() => setShowAdvanced(true)}
           className="group cursor-pointer w-full flex items-center justify-between px-4 py-3 bg-neutral-900 border border-white/10 rounded-xl transition-all duration-300"
         >
           <span className="text-[10px] uppercase tracking-widest font-bold text-cyan-400 transition-colors">
-            Configuració Avançada
+            Configuració Paràmteres
           </span>
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -1893,497 +2025,513 @@ export default function ThermalPage() {
           </span>
         </button>
       </div>
-      {/* ADVANCED SETTINGS MODAL */}
-      {showAdvanced && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 p-4 animate-in fade-in duration-200">
-          {/* Added max-h-[85vh] and flex-col to keep header/footer fixed while content scrolls */}
-          <div className="bg-neutral-900 border border-white/10 p-6 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] w-full max-w-4xl max-h-[85vh] flex flex-col relative animate-in zoom-in-95 duration-200 mt-12 md:mt-0">
-            {/* --- Header (Fixed) --- */}
-            <div className="flex-none flex items-center justify-between mb-2 pb-4 border-b border-white/5">
-              <h2 className="text-sm font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-purple-200 to-white">
-                Paràmetres Avançats
-              </h2>
-              <button
-                onClick={() => setShowAdvanced(false)}
-                className="cursor-pointer text-gray-500 hover:text-white transition-colors"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={2}
-                  stroke="currentColor"
-                  className="w-6 h-6"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
+      {/* ADVANCED SETTINGS SIDEBAR (Sliding from Left) */}
+      <div
+        className={`absolute top-0 left-0 h-full z-[60] w-full md:w-[500px] bg-neutral-900 border-r border-white/10 flex flex-col transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform ${
+          showAdvanced
+            ? "translate-x-0 pointer-events-auto"
+            : "-translate-x-full pointer-events-none"
+        }`}
+      >
+        {/* --- Header (Fixed) --- */}
+        <div className="flex-none flex items-center justify-between p-6 pb-4 border-b border-white/10 bg-neutral-900/50">
+          <div>
+            <h2 className="text-sm font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-purple-200 to-white">
+              Configuració Avançada
+            </h2>
+            <p className="text-[10px] text-gray-400 mt-1">
+              Ajusts manuals de paràmetres
+            </p>
+          </div>
+          <button
+            onClick={() => setShowAdvanced(false)}
+            className="cursor-pointer text-gray-500 hover:text-white transition-colors bg-white/5 p-2 rounded-full hover:bg-white/10"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
+              className="w-5 h-5"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
 
-            {/* --- Content (Scrollable) --- */}
-            <div className="flex-1 overflow-y-auto min-h-0 pr-2 space-y-6 custom-scrollbar">
-              {/* SECTION 1: GEOMETRIA I DIMENSIONS */}
-              <div>
-                <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-3">
-                  Geometria i Dimensions
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <ControlRow
-                    label="Mida Placa"
-                    value={uiPlateDim.toFixed(1)}
-                    unit="m"
-                    colorClass="text-purple-400"
-                    onDec={() => setUiPlateDim((p) => Math.max(p - 0.1, 0.5))}
-                    onInc={() => setUiPlateDim((p) => Math.min(p + 0.1, 3.0))}
-                  />
-                  <ControlRow
-                    label="Gruix Conductor"
-                    value={uiLayerThick.toFixed(4)}
-                    unit="m"
-                    colorClass="text-purple-400"
-                    onDec={() =>
-                      setUiLayerThick((p) => Math.max(p - 0.005, 0.005))
-                    }
-                    onInc={() =>
-                      setUiLayerThick((p) => Math.min(p + 0.005, 0.1))
-                    }
-                    onSet={(n) =>
-                      setUiLayerThick(Math.max(Math.min(n, 0.1), 0.005))
-                    }
-                  />
-                  <ControlRow
-                    label="Gruix Dissipador"
-                    value={uiSinkThick.toFixed(4)}
-                    unit="m"
-                    colorClass="text-purple-400"
-                    onDec={() => {
-                      // Allow going to 0. If 0, disable fins.
-                      setUiSinkThick((p) => {
-                        const val = Math.max(p - 0.005, 0.0);
-                        if (val < 0.001) setUiUseFins(false);
-                        return val;
-                      });
-                    }}
-                    onInc={() => {
-                      setUiSinkThick((p) => Math.min(p + 0.005, 0.1));
-                    }}
-                    onSet={(n) =>
-                      setUiSinkThick(Math.max(Math.min(n, 0.1), 0.005))
-                    }
-                  />
-                  <ControlRow
-                    label="Gruix (C)PV"
-                    value={uiPvThick.toFixed(4)}
-                    unit="mm"
-                    colorClass="text-purple-400"
-                    onDec={() => {
-                      setUiPvThick((p) => Math.max(p - 0.1, 0.2));
-                    }}
-                    onInc={() => {
-                      setUiPvThick((p) => Math.min(p + 0.1, 10));
-                    }}
-                    onSet={(n) => setUiPvThick(Math.max(Math.min(n, 10), 0.2))}
-                  />
-                  <ControlRow
-                    label="Escala CPV"
-                    value={(uiCpvScale * 100).toFixed(0)}
-                    unit="%"
-                    colorClass="text-purple-400"
-                    onDec={() => setUiCpvScale((p) => Math.max(p - 0.01, 0.1))}
-                    onInc={() => setUiCpvScale((p) => Math.min(p + 0.01, 1.0))}
-                  />
-                  <ToggleRow
-                    label="Forma Circular (C)PV"
-                    checked={uiUseCircle}
-                    onChange={setUiUseCircle}
-                  />
-                </div>
-              </div>
-
-              <div className="border-t border-white/5" />
-
-              {/* SECTION 2: MATERIALS I COMPONENTS */}
-              <div>
-                <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-3">
-                  Materials i Components
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <MaterialSelector
-                    label="Material Conductor"
-                    selectedKey={uiBaseMatKey}
-                    onChange={setUiBaseMatKey}
-                    colorClass="text-blue-400"
-                  />
-                  <MaterialSelector
-                    label="Material Dissipador"
-                    selectedKey={uiSinkMatKey}
-                    onChange={setUiSinkMatKey}
-                    colorClass="text-blue-400"
-                  />
-                  {/* Fins Toggle (Disabled if sink thickness is 0) */}
-                  <div
-                    className={
-                      uiSinkThick < 0.001
-                        ? "opacity-50 pointer-events-none grayscale"
-                        : ""
-                    }
-                  >
-                    <ToggleRow
-                      label="Aletes Dissipació"
-                      checked={uiUseFins}
-                      onChange={setUiUseFins}
-                    />
-                  </div>
-                  <ToggleRow
-                    label="Capa reflectora superior"
-                    checked={uiUseReflector}
-                    onChange={setUiUseReflector}
-                  />
-                  <ToggleRow
-                    label="Fer servir PV"
-                    checked={uiUsePv}
-                    onChange={setUiUsePv}
-                  />
-                </div>
-              </div>
-
-              <div className="border-t border-white/5" />
-
-              {/* SECTION 3: SIMULACIÓ I LÍMITS */}
-              <div>
-                <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-3">
-                  Simulació i Límits
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <ControlRow
-                    label="Resolució XY"
-                    value={uiNx}
-                    colorClass="text-pink-400"
-                    onDec={() => setUiNx((p) => Math.max(p - 10, 10))}
-                    onInc={() => setUiNx((p) => Math.min(p + 10, 100))}
-                  />
-                  <ControlRow
-                    label="Resolució Z"
-                    value={uiNz}
-                    colorClass="text-pink-400"
-                    onDec={() => setUiNz((p) => Math.max(p - 1, 3))}
-                    onInc={() => setUiNz((p) => Math.min(p + 1, 20))}
-                  />
-                  <ControlRow
-                    label="ROI Màxim"
-                    value={maxRoi.toFixed(0)}
-                    unit="anys"
-                    colorClass="text-pink-400"
-                    onDec={() => setMaxRoi((p) => Math.max(p - 1, 1))}
-                    onInc={() => setMaxRoi((p) => Math.min(p + 1, 30))}
-                  />
-                  <ControlRow
-                    label="Temp. Màxima"
-                    value={maxTemp.toFixed(0)}
-                    unit="°C"
-                    colorClass="text-pink-400"
-                    onDec={() => setMaxTemp((p) => Math.max(p - 1, 25))}
-                    onInc={() => setMaxTemp((p) => Math.min(p + 1, 500))}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* --- Footer (Fixed) --- */}
-            <div className="flex-none mt-6 pt-4 border-t border-white/5 flex justify-end">
-              <button
-                onClick={() => setShowAdvanced(false)}
-                className="px-6 py-2 cursor-pointer rounded-full bg-white/5 hover:bg-white/10 text-xs font-bold uppercase tracking-widest text-cyan-400 hover:text-cyan-300 transition-all border border-white/10"
-              >
-                Confirmar Canvis
-              </button>
+        {/* --- Content (Scrollable) --- */}
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-10 no-scrollbar">
+          {/* SECTION 1: GEOMETRIA I DIMENSIONS */}
+          <div>
+            <h3 className="text-[12px] font-bold uppercase tracking-widest text-cyan-500/80 mb-4 flex items-center gap-2">
+              <span className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></span>
+              Paràmetres del Telescopi
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <ControlRow
+                label="FWHM (m)"
+                value={uiFwhm.toFixed(3)}
+                colorClass="text-cyan-400"
+                onDec={() => {
+                  setUiFwhm((p) => Math.max(p - 0.01, FWHM_MIN));
+                  handleManualChange("fwhm");
+                }}
+                onInc={() => {
+                  setUiFwhm((p) => Math.min(p + 0.01, FWHM_MAX));
+                  handleManualChange("fwhm");
+                }}
+                onSet={(n) => {
+                  setUiFwhm((p) => Math.min(Math.max(n, FWHM_MIN), FWHM_MAX));
+                  handleManualChange("fwhm");
+                }}
+                showMax
+                showMin
+                onMax={() => {
+                  setUiFwhm(FWHM_MAX);
+                  handleManualChange("fwhm");
+                }}
+                onMin={() => {
+                  setUiFwhm(FWHM_MIN);
+                  handleManualChange("fwhm");
+                }}
+              />
+              <ControlRow
+                label="Àrea (m²)"
+                value={uiMagicArea}
+                colorClass="text-cyan-400"
+                onDec={() => {
+                  setUiMagicArea((p) =>
+                    Math.max(p - 1, Math.pow(uiMatrixSize, 2))
+                  );
+                  handleManualChange("magicArea");
+                }}
+                onInc={() => {
+                  setUiMagicArea((p) => Math.min(p + 1, 236));
+                  handleManualChange("magicArea");
+                }}
+                onMax={() => {
+                  setUiMagicArea(236);
+                  handleManualChange("magicArea");
+                }}
+                onMin={() => {
+                  setUiMagicArea(Math.pow(uiMatrixSize, 2));
+                  handleManualChange("magicArea");
+                }}
+                showMax
+                showMin
+              />
             </div>
           </div>
+
+          <div className="border-t border-white/5" />
+
+          <div>
+            <h3 className="text-[12px] font-bold uppercase tracking-widest text-purple-500/80 mb-4 flex items-center gap-2">
+              <span className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></span>
+              Geometria i Dimensions
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <ControlRow
+                label="Matriu NxN"
+                value={`${uiMatrixSize}x${uiMatrixSize}`}
+                colorClass="text-purple-400"
+                onDec={() => {
+                  setUiMatrixSize((p) => Math.max(p - 1, MATRIX_SIZE_MIN));
+                  handleManualChange("matrixSize");
+                }}
+                onInc={() => {
+                  setUiMatrixSize((p) => Math.min(p + 1, MATRIX_SIZE_MAX));
+                  handleManualChange("matrixSize");
+                }}
+              />
+              <ControlRow
+                label="Mida Placa"
+                value={uiPlateDim.toFixed(1)}
+                unit="m"
+                colorClass="text-purple-400"
+                onDec={() => {
+                  setUiPlateDim((p) => Math.max(p - 0.1, 0.5));
+                  handleManualChange("plateDim");
+                }}
+                onInc={() => {
+                  setUiPlateDim((p) => Math.min(p + 0.1, 3.0));
+                  handleManualChange("plateDim");
+                }}
+              />
+              <ControlRow
+                label="Gruix Conductor"
+                value={uiLayerThick.toFixed(4)}
+                unit="m"
+                colorClass="text-purple-400"
+                onDec={() => {
+                  setUiLayerThick((p) => Math.max(p - 0.005, 0.005));
+                  handleManualChange("layerThick");
+                }}
+                onInc={() => {
+                  setUiLayerThick((p) => Math.min(p + 0.005, 0.1));
+                  handleManualChange("layerThick");
+                }}
+                onSet={(n) => {
+                  setUiLayerThick(Math.max(Math.min(n, 0.1), 0.005));
+                  handleManualChange("layerThick");
+                }}
+              />
+              <ControlRow
+                label="Gruix Dissipador"
+                value={uiSinkThick.toFixed(4)}
+                unit="m"
+                colorClass="text-purple-400"
+                onDec={() => {
+                  setUiSinkThick((p) => {
+                    const val = Math.max(p - 0.005, 0.0);
+                    if (val < 0.001) setUiUseFins(false);
+                    return val;
+                  });
+                  handleManualChange("sinkThick");
+                }}
+                onInc={() => {
+                  setUiSinkThick((p) => Math.min(p + 0.005, 0.1));
+                  handleManualChange("sinkThick");
+                }}
+                onSet={(n) => {
+                  setUiSinkThick(Math.max(Math.min(n, 0.1), 0.005));
+                  handleManualChange("sinkThick");
+                }}
+              />
+              <ControlRow
+                label="Gruix (C)PV"
+                value={uiPvThick.toFixed(4)}
+                unit="mm"
+                colorClass="text-purple-400"
+                onDec={() => {
+                  setUiPvThick((p) => Math.max(p - 0.1, 0.2));
+                  handleManualChange("pvThick");
+                }}
+                onInc={() => {
+                  setUiPvThick((p) => Math.min(p + 0.1, 10));
+                  handleManualChange("pvThick");
+                }}
+                onSet={(n) => {
+                  setUiPvThick(Math.max(Math.min(n, 10), 0.2));
+                  handleManualChange("pvThick");
+                }}
+              />
+              <ControlRow
+                label="Escala CPV"
+                value={(uiCpvScale * 100).toFixed(0)}
+                unit="%"
+                colorClass="text-purple-400"
+                onDec={() => {
+                  setUiCpvScale((p) => Math.max(p - 0.01, 0.1));
+                  handleManualChange("cpvScale");
+                }}
+                onInc={() => {
+                  setUiCpvScale((p) => Math.min(p + 0.01, 1.0));
+                  handleManualChange("cpvScale");
+                }}
+              />
+              <div className="col-span-1 sm:col-span-2">
+                <ToggleRow
+                  label="Forma Circular (C)PV"
+                  colorClass="text-purple-400"
+                  checked={uiUseCircle}
+                  onChange={(v) => {
+                    setUiUseCircle(v);
+                    handleManualChange("useCircle");
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-white/5" />
+
+          {/* SECTION 2: MATERIALS I COMPONENTS */}
+          <div>
+            <h3 className="text-[12px] font-bold uppercase tracking-widest text-blue-500/80 mb-4 flex items-center gap-2">
+              <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+              Materials i Components
+            </h3>
+            <div className="grid grid-cols-1 gap-4">
+              <MaterialSelector
+                label="Material Conductor"
+                selectedKey={uiBaseMatKey}
+                onChange={(v) => {
+                  setUiBaseMatKey(v);
+                  handleManualChange("baseMatKey");
+                }}
+                colorClass="text-blue-400"
+              />
+              <MaterialSelector
+                label="Material Dissipador"
+                selectedKey={uiSinkMatKey}
+                onChange={(v) => {
+                  setUiSinkMatKey(v);
+                  handleManualChange("sinkMatKey");
+                }}
+                colorClass="text-blue-400"
+              />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                <div
+                  className={`col-span-1 sm:col-span-2 ${
+                    uiSinkThick < 0.001
+                      ? "opacity-50 pointer-events-none grayscale"
+                      : ""
+                  }`}
+                >
+                  <ToggleRow
+                    label="Aletes Dissipació"
+                    colorClass="text-blue-400"
+                    checked={uiUseFins}
+                    onChange={(v) => {
+                      setUiUseFins(v);
+                      handleManualChange("useFins");
+                    }}
+                  />
+                </div>
+                <div className="col-span-1 sm:col-span-2">
+                  <ToggleRow
+                    label="Capa reflectora"
+                    colorClass="text-blue-400"
+                    checked={uiUseReflector}
+                    onChange={(v) => {
+                      setUiUseReflector(v);
+                      handleManualChange("useReflector");
+                    }}
+                  />
+                </div>
+                <div className="col-span-1 sm:col-span-2">
+                  <ToggleRow
+                    label="Fer servir PV"
+                    colorClass="text-blue-400"
+                    checked={uiUsePv}
+                    onChange={(v) => {
+                      setUiUsePv(v);
+                      handleManualChange("usePv");
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-white/5" />
+
+          {/* SECTION 3: SIMULACIÓ I LÍMITS */}
+          <div>
+            <h3 className="text-[12px] font-bold uppercase tracking-widest text-pink-500/80 mb-4 flex items-center gap-2">
+              <span className="w-2 h-2 bg-pink-500 rounded-full animate-pulse"></span>
+              Simulació i Límits
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <ControlRow
+                label="Resolució XY"
+                value={uiNx}
+                colorClass="text-pink-400"
+                onDec={() => {
+                  setUiNx((p) => Math.max(p - 10, 10));
+                  handleManualChange("nx");
+                }}
+                onInc={() => {
+                  setUiNx((p) => Math.min(p + 10, 100));
+                  handleManualChange("nx");
+                }}
+              />
+              <ControlRow
+                label="Resolució Z"
+                value={uiNz}
+                colorClass="text-pink-400"
+                onDec={() => {
+                  setUiNz((p) => Math.max(p - 1, 3));
+                  handleManualChange("nz");
+                }}
+                onInc={() => {
+                  setUiNz((p) => Math.min(p + 1, 20));
+                  handleManualChange("nz");
+                }}
+              />
+              <ControlRow
+                label="ROI Màxim"
+                value={maxRoi.toFixed(0)}
+                unit="anys"
+                colorClass="text-pink-400"
+                onDec={() => setMaxRoi((p) => Math.max(p - 1, 1))}
+                onInc={() => setMaxRoi((p) => Math.min(p + 1, 30))}
+              />
+              <ControlRow
+                label="Temp. Màxima"
+                value={maxTemp.toFixed(0)}
+                unit="°C"
+                colorClass="text-pink-400"
+                onDec={() => setMaxTemp((p) => Math.max(p - 1, 25))}
+                onInc={() => setMaxTemp((p) => Math.min(p + 1, 500))}
+              />
+            </div>
+          </div>
+
+          {/* Bottom Padding for scroll */}
+          <div className="h-10" />
         </div>
-      )}
+
+        {/* --- Footer (Fixed) --- */}
+        <div className="flex-none p-6 border-t border-white/10 bg-neutral-900/50 flex justify-end gap-3">
+          <button
+            onClick={() => setShowAdvanced(false)}
+            className="px-6 py-3 cursor-pointer rounded-xl bg-cyan-600 hover:bg-cyan-500 text-[10px] font-bold uppercase tracking-widest text-white transition-all shadow-lg shadow-cyan-900/20"
+          >
+            Aplicar Canvis
+          </button>
+        </div>
+      </div>
       {/* RIGHT STATS PANEL */}
       <div
-        className={`absolute top-28 right-8 w-[320px] pointer-events-auto bg-neutral-900 p-5 rounded-2xl border border-white/20 shadow-2xl transition-all duration-1000 hover:border-cyan-500/30 ${
+        className={`absolute top-28 right-8 w-[320px] pointer-events-auto bg-neutral-900/95 p-5 rounded-2xl border border-white/20 shadow-2xl transition-all duration-1000 hover:border-cyan-500/30 ${
           introFinished
             ? "opacity-100 translate-x-0"
             : "opacity-0 translate-x-10"
         }`}
       >
-        <div className={`flex items-center justify-between ${showFeasibility ? "mb-4 border-b border-white/10 pb-2" : ""}`}>
+        <div className="flex items-center justify-between mb-4 border-b border-white/10 pb-2">
           <h3 className="text-xs font-extrabold uppercase tracking-widest text-cyan-400">
             Dades de viabilitat
           </h3>
-          <button
-            onClick={() => setShowFeasibility(!showFeasibility)}
-            className={`relative cursor-pointer w-10 h-5 rounded-full transition-all duration-300 ease-out focus:outline-none ${
-              showFeasibility
-                ? "bg-cyan-600 shadow-[0_0_10px_rgba(8,145,178,0.4)]"
-                : "bg-white/10 hover:bg-white/20"
-            }`}
-          >
-            <div
-              className={`absolute top-1 left-1 w-3 h-3 bg-white rounded-full shadow-sm transition-transform duration-300 ease-out ${
-                showFeasibility ? "translate-x-5" : "translate-x-0"
-              }`}
-            />
-          </button>
         </div>
 
-        {showFeasibility && (
-          <div className="grid grid-cols-2 gap-3 text-white">
-            {/* COST BLOCK - Spans 2 columns */}
-            <div className="col-span-2 bg-neutral-800/80 rounded-lg p-3 border border-yellow-500/40 shadow-[0_0_15px_rgba(234,179,8,0.1)]">
-              {/* Header: Total Cost */}
-              <div className="flex justify-between items-center mb-2">
-                <div>
-                  <p className="text-[11px] uppercase tracking-wider text-yellow-300">
-                    Cost Total Aprox.
-                  </p>
-                </div>
-                <p className="font-mono font-bold text-xl text-yellow-400 leading-none">
-                  {projectCost.total.toLocaleString("es-ES", {
-                    style: "currency",
-                    currency: "EUR",
-                    notation: "compact",
-                  })}
-                </p>
-              </div>
-
-              {/* Detailed Breakdown Grid */}
-              <div className="grid grid-cols-4 gap-1 mt-2 pt-2 border-t border-white/10">
-                <div className="text-center">
-                  <p className="text-[9px] text-white uppercase tracking-tight">
-                    Mat & Fab
-                  </p>
-                  <p className="text-[10px] font-mono font-extrabold text-cyan-400">
-                    {(
-                      projectCost.breakdown.materials +
-                      projectCost.breakdown.manufacturing
-                    ).toLocaleString("es-ES", {
-                      style: "currency",
-                      currency: "EUR",
-                      notation: "compact",
-                    })}
-                  </p>
-                </div>
-                <div className="text-center border-l border-white/10">
-                  <p className="text-[9px] text-white uppercase tracking-tight">
-                    Muntatge
-                  </p>
-                  <p className="text-[10px] font-mono font-extrabold text-cyan-400">
-                    {projectCost.breakdown.assembly.toLocaleString("es-ES", {
-                      style: "currency",
-                      currency: "EUR",
-                      notation: "compact",
-                    })}
-                  </p>
-                </div>
-                <div className="text-center border-l border-white/10">
-                  <p className="text-[9px] text-white uppercase tracking-tight">
-                    Enginyeria
-                  </p>
-                  <p className="text-[10px] font-mono font-extrabold text-cyan-400">
-                    {projectCost.breakdown.engineering.toLocaleString("es-ES", {
-                      style: "currency",
-                      currency: "EUR",
-                      notation: "compact",
-                    })}
-                  </p>
-                </div>
-                <div className="text-center border-l border-white/10">
-                  <p className="text-[9px] text-white uppercase tracking-tight">
-                    Log/Risc
-                  </p>
-                  <p className="text-[10px] font-mono font-extrabold text-cyan-400">
-                    {projectCost.breakdown.logistics.toLocaleString("es-ES", {
-                      style: "currency",
-                      currency: "EUR",
-                      notation: "compact",
-                    })}
-                  </p>
-                </div>
-              </div>
-
-              {/* NEW: Structural Weight Footer */}
-              <div className="mt-2 pt-1.5 border-t border-dashed border-white/10 flex justify-between items-center">
-                <p
-                  className={`text-[11px] uppercase tracking-wider ${
-                    structureWeight > 200 ? "text-red-400" : "text-yellow-300"
-                  }`}
-                >
-                  Pes Estructural
-                </p>
-                <p
-                  className={`font-mono font-bold text-xl ${
-                    structureWeight > 200 ? "text-red-500" : "text-yellow-400"
-                  } leading-none`}
-                >
-                  {structureWeight.toFixed(1)} kg
-                </p>
-              </div>
-            </div>
-
-            <div
-              className={`col-span-2 rounded-lg p-2.5 border flex flex-col justify-between items-start ${
-                paybackPeriod
-                  ? "bg-blue-900/10 border-blue-300/30"
-                  : "bg-white/5 border-white/10 opacity-50"
-              }`}
-            >
-              <div className={`flex justify-between w-full items-center `}>
-                <div className="flex flex-col justify-center">
-                  <p
-                    className={`text-[11px] uppercase tracking-wider mb-0.5 ${
-                      paybackPeriod ? "text-blue-500" : "text-gray-400"
+        {/* ALWAYS SHOW STRUCTURAL WEIGHT */}
+        <div className="flex justify-between items-center mb-4">
+          <p className={`text-[11px] uppercase tracking-wider ${structureWeight > 200 ? "text-red-400" : "text-white"}`}>
+            Pes Estructural
+          </p>
+          <p
+            className={`font-mono font-bold text-lg ${
+              structureWeight > 200 ? "text-red-400" : "text-white"
+            } leading-none`}
+          >
+            {structureWeight.toFixed(1)} kg
+          </p>
+        </div>
+          <div className="flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-300">
+            {/* COST INPUT / TOGGLE SECTION */}
+            <div className="flex flex-col gap-2 bg-neutral-800/50 rounded-lg p-3 border border-white/10">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] uppercase text-gray-300 font-bold">
+                  Mode de Cost
+                </span>
+                <div className="flex bg-black/40 rounded-lg p-0.5 border border-white/5">
+                  <button
+                    onClick={() => setUseManualCost(false)}
+                    className={`px-2 py-1 text-[9px] font-bold uppercase rounded-md transition-all ${
+                      !useManualCost
+                        ? "bg-cyan-600 text-white shadow-sm"
+                        : "text-gray-500 hover:text-white"
                     }`}
                   >
-                    Beneficis anuals
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <p
-                      className={`font-mono font-bold text-lg ${
-                        paybackPeriod ? "text-white" : "text-gray-500"
-                      }`}
-                    >
-                      {paybackPeriod
-                        ? paybackPeriod.annualSavings.toLocaleString("es-ES", {
-                            style: "currency",
-                            currency: "EUR",
-                            notation: "compact",
-                          })
-                        : "--"}
-                    </p>
-                  </div>
+                    Auto
+                  </button>
+                  <button
+                    onClick={() => setUseManualCost(true)}
+                    className={`px-2 py-1 text-[9px] font-bold uppercase rounded-md transition-all ${
+                      useManualCost
+                        ? "bg-cyan-600 text-white shadow-sm"
+                        : "text-gray-500 hover:text-white"
+                    }`}
+                  >
+                    Manual
+                  </button>
                 </div>
               </div>
-              {paybackPeriod && (
-                <div className="mt-2 pt-1.5 border-t border-dashed border-white/10 w-full flex justify-between items-center">
-                  <p
-                    className={`text-[11px] uppercase tracking-wider text-blue-400`}
-                  >
-                    Benefici Brut
-                  </p>
-                  <p
-                    className={`font-mono font-bold text-xl text-blue-500 leading-none`}
-                  >
-                    {(maxRoi * paybackPeriod.annualSavings).toLocaleString(
-                      "es-ES",
-                      {
-                        style: "currency",
-                        currency: "EUR",
-                        maximumFractionDigits: 0,
-                        signDisplay: "exceptZero",
-                      }
-                    )}
-                  </p>
+
+              {useManualCost ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-white font-mono text-sm">€</span>
+                  <input
+                    type="number"
+                    value={manualCostInput}
+                    onChange={(e) => setManualCostInput(Number(e.target.value))}
+                    className="w-full bg-black/40 border border-white/10 rounded px-2 py-1 text-right font-mono text-white text-sm focus:border-cyan-500 focus:outline-none"
+                  />
+                </div>
+              ) : (
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] text-yellow-500/80">
+                    Estimat (Mat + Fab + Log)
+                  </span>
+                  <span className="font-mono font-bold text-lg text-yellow-400">
+                    {projectCost.total.toLocaleString("es-ES", {
+                      style: "currency",
+                      currency: "EUR",
+                      maximumFractionDigits: 0,
+                    })}
+                  </span>
                 </div>
               )}
             </div>
 
-            {/* PAYBACK STAT ITEM */}
-            <div
-              className={`col-span-2 rounded-lg p-2.5 border flex flex-col justify-between items-start ${
-                paybackPeriod
-                  ? paybackPeriod.isViable
+            {/* ROI RESULTS BLOCK */}
+            {paybackPeriod && (
+              <div
+                className={`rounded-lg p-3 border flex flex-col gap-3 ${
+                  paybackPeriod.isViable
                     ? "bg-green-900/10 border-green-500/30"
                     : "bg-red-900/10 border-red-300/30"
-                  : "bg-white/5 border-white/10 opacity-50"
-              }`}
-            >
-              <div className={`flex justify-between w-full items-center `}>
-                <div className="flex flex-col justify-center">
-                  <p
-                    className={`text-[11px] uppercase tracking-wider mb-0.5 ${
-                      paybackPeriod
-                        ? paybackPeriod.isViable
-                          ? "text-green-500"
-                          : "text-red-400"
-                        : "text-gray-400"
-                    }`}
-                  >
-                    Retorn de la Inversió
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <p
-                      className={`font-mono font-bold text-lg ${
-                        paybackPeriod ? "text-white" : "text-gray-500"
-                      }`}
-                    >
-                      {paybackPeriod
-                        ? (() => {
-                            const y = Math.floor(paybackPeriod.years);
-                            const m = Math.round(
-                              (paybackPeriod.years - y) * 12
-                            );
-                            if (y > 100) return "> 100 Anys";
-                            return `${y}a ${m}m`;
-                          })()
-                        : "--"}
-                    </p>
-                  </div>
+                }`}
+              >
+                {/* 1. Annual Savings */}
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] uppercase tracking-wider text-gray-300">
+                    Beneficis anuals
+                  </span>
+                  <span className="font-mono font-bold text-white">
+                    {paybackPeriod.annualSavings.toLocaleString("es-ES", {
+                      style: "currency",
+                      currency: "EUR",
+                      maximumFractionDigits: 0,
+                    })}
+                  </span>
                 </div>
 
-                {/* Viability Indicator Icon */}
-                {paybackPeriod && (
-                  <div
-                    className={`rounded-full p-1.5 ${
-                      paybackPeriod.isViable
-                        ? "bg-green-500/20 text-green-400"
-                        : "bg-red-500/20 text-red-400"
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] uppercase tracking-wider text-gray-300">
+                    Beneficis bruts ({maxRoi}a)
+                  </span>
+                  <span className="font-mono font-bold text-white">
+                    {(maxRoi * paybackPeriod.annualSavings).toLocaleString("es-ES", {
+                      style: "currency",
+                      currency: "EUR",
+                      maximumFractionDigits: 0,
+                    })}
+                  </span>
+                </div>
+                <div className="border-t border-white/10 my-1"></div>
+
+                {/* 2. ROI Years */}
+                <div className="flex justify-between items-center">
+                  <span className={`text-[10px] uppercase tracking-wider ${paybackPeriod.isViable ? "text-green-300" : "text-red-300"}`}>
+                    Retorn Inversió
+                  </span>
+                  <span
+                    className={`font-mono font-bold text-lg ${
+                      paybackPeriod.isViable ? "text-green-400" : "text-red-400"
                     }`}
                   >
-                    {paybackPeriod.isViable ? (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                        className="w-4 h-4"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    ) : (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                        className="w-4 h-4"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    )}
-                  </div>
-                )}
-              </div>
-              {paybackPeriod && (
-                <div className="mt-2 pt-1.5 border-t border-dashed border-white/10 w-full flex justify-between items-center">
-                  <p
-                    className={`text-[11px] uppercase tracking-wider ${
-                      !paybackPeriod.isViable
-                        ? "text-red-400"
-                        : "text-green-400"
-                    }`}
-                  >
-                    Benefici Net
-                  </p>
-                  <p
-                    className={`font-mono font-bold text-xl ${
-                      !paybackPeriod.isViable
-                        ? "text-red-500"
-                        : "text-green-500"
-                    } leading-none`}
-                  >
+                    {paybackPeriod.years.toFixed(1)} Anys
+                  </span>
+                </div>
+
+                <div className="border-t border-white/10 my-1"></div>
+
+                {/* 3. Total Profit (Projected) */}
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] uppercase tracking-wider text-blue-300">
+                    Benefici Net ({maxRoi}a)
+                  </span>
+                  <span className="font-mono font-bold text-lg text-blue-400">
                     {(
                       (maxRoi - paybackPeriod.years) *
                       paybackPeriod.annualSavings
@@ -2391,14 +2539,20 @@ export default function ThermalPage() {
                       style: "currency",
                       currency: "EUR",
                       maximumFractionDigits: 0,
-                      signDisplay: "exceptZero",
                     })}
-                  </p>
+                  </span>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+
+            {!paybackPeriod && (
+              <div className="p-4 text-center border border-dashed border-white/10 rounded-lg">
+                <p className="text-[10px] text-gray-500 uppercase tracking-widest">
+                  Dades de viabilitat no disponibles
+                </p>
+              </div>
+            )}
           </div>
-        )}
       </div>
 
       {/* BOTTOM HUD BAR */}
@@ -2407,7 +2561,7 @@ export default function ThermalPage() {
       simStats.status !== "Stopped" &&
       !simStats.loading &&
       !hasPendingChanges ? (
-        <div className="fixed bottom-0 left-0 z-50 w-full bg-neutral-900 border-t border-white/20 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+        <div className="absolute bottom-0 left-0 z-50 w-full bg-neutral-900 border-t border-white/20 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
           {/* Flex Container: Single Horizontal Line */}
           <div className="flex items-center justify-between px-4 py-2 gap-6 overflow-x-auto no-scrollbar h-20">
             {/* LEFT: Title & Status */}
@@ -2505,10 +2659,11 @@ export default function ThermalPage() {
           </div>
         </div>
       ) : (
-        !simStats.loading && (
+        !simStats.loading &&
+        introFinished && (
           // Placeholder Bar when not running
           <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
-            <div className="px-6 py-2 bg-neutral-900/80 backdrop-blur border border-white/10 rounded-full shadow-2xl text-xs text-gray-400 italic">
+            <div className="px-6 py-2 bg-neutral-900/80 border border-white/10 rounded-full shadow-2xl text-xs text-gray-400 italic">
               {hasPendingChanges
                 ? "⚠️ Paràmetres modificats. Executeu la simulació."
                 : "ℹ️ Inicieu la simulació per veure dades."}
