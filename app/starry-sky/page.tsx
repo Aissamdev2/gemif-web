@@ -1370,12 +1370,12 @@ const SystemStatusBar = memo(({ status, loading }: { status: string; loading: bo
           <div className={`relative w-2 h-2 rounded-full ${loading ? "bg-yellow-500" : "bg-emerald-500"}`}></div>
         </div>
         <span className={`text-[10px] font-black tracking-widest uppercase ${statusColor}`}>
-          {loading ? "COMPUTING" : status === "Stopped" ? "IDLE" : "ACTIVE"}
+          { status.toUpperCase()}
         </span>
       </div>
 
       {/* SECTION 2: REAL BROWSER TELEMETRY */}
-      <div className="flex items-center px-4 gap-4 text-[9px] font-mono text-gray-400">
+      <div className="flex items-center px-4 gap-4 text-[10px] font-mono text-gray-400">
         
         {/* Latency */}
         <div className="flex flex-col items-start leading-none gap-0.5 w-14">
@@ -2201,7 +2201,7 @@ STARRY SKY ENGINEERING GROUP
           panSpeed={1.0}
         />
         {/* ENGINEERING COORDINATE SYSTEM (Bottom-Right) */}
-        <GizmoHelper alignment="bottom-right" margin={[430, 530]}>
+        <GizmoHelper alignment="bottom-left" margin={[150, 130]}>
           <GizmoViewport
             axisColors={["#ff3653", "#0adb50", "#2c8fdf"]}
             labelColor="white"
