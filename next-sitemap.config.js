@@ -5,4 +5,5 @@ module.exports = {
   sitemapSize: 5000, // Optional, limits number of URLs per sitemap file
   changefreq: 'weekly',
   priority: 0.7,
+  exclude: ['/initial-setup/*', '/logout', '/playground/*', '/starry-sky/*'],
 };
