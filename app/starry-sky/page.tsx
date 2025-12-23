@@ -17,6 +17,8 @@ import {
   Grid,
   Stars,
   Sparkles,
+  GizmoHelper, // <--- Add this
+  GizmoViewport, // <--- Add this
 } from "@react-three/drei";
 import * as THREE from "three";
 import Link from "next/link";
@@ -925,9 +927,9 @@ const ThermalBox = memo(
       // Explode if we have results (textures) AND we are not loading/changing
       const isVisualizing =
         texSink !== null && !status.loading && !hasPendingChanges;
-      
+
       const targetExpansion = isVisualizing ? 1 : 0;
-      
+
       currentExpansion.current = THREE.MathUtils.damp(
         currentExpansion.current,
         targetExpansion,
@@ -1010,9 +1012,7 @@ const ThermalBox = memo(
           roughness: baseMatDef.roughness,
         }),
         cpvSubstrate: new THREE.MeshStandardMaterial({
-          color: visUseReflector
-            ? REFELCTIVE_MATERIAL.color
-            : baseMatDef.color,
+          color: visUseReflector ? REFELCTIVE_MATERIAL.color : baseMatDef.color,
           emissive: visUseReflector
             ? REFELCTIVE_MATERIAL.color
             : baseMatDef.color,
@@ -1062,8 +1062,7 @@ const ThermalBox = memo(
       !status.loading && !hasPendingChanges && !showAdvanced;
 
     return (
-      <group rotation={[Math.PI / 6, Math.PI / 4, 0]} position={[0, 0, 0]}>
-        
+      <group rotation={[0, 0, 0]} position={[0, 0.1, 0]}>
         {/* --- SINK GROUP (Bottom) --- */}
         {/* Render only if thickness > 0 to avoid errors/artifacts */}
         {visSinkThick > 0.0001 && (
@@ -1103,7 +1102,7 @@ const ThermalBox = memo(
                     // Spread fins across the width
                     const spacing = PLATE_WIDTH / 50;
                     const xPos = -PLATE_WIDTH / 2 + spacing / 2 + i * spacing;
-                    
+
                     // Y Position: Relative to Sink Center (0).
                     // Bottom of sink is -visSinkThick/2.
                     // Center of Fin is -visSinkThick/2 - FIN_HEIGHT/2.
@@ -1250,7 +1249,7 @@ const ThermalBox = memo(
                 }
                 return cells;
               })()}
-              
+
               {/* Gaussian Heat Distribution Overlay */}
               {showGaussian && (
                 <GaussianOverlay
@@ -1279,6 +1278,154 @@ const ThermalBox = memo(
 );
 ThermalBox.displayName = "ThermalBox";
 
+// --- REAL TELEMETRY STATUS BAR ---
+const SystemStatusBar = memo(({ status, loading }: { status: string; loading: boolean }) => {
+  const [telemetry, setTelemetry] = useState({
+    fps: 0,
+    latency: 0,
+    memory: 0,
+    uptime: 0,
+    netType: 'UNKNOWN'
+  });
+
+  // 1. Frame Rate (FPS) Loop
+  useEffect(() => {
+    let frameCount = 0;
+    let lastTime = performance.now();
+    let animationFrameId: number;
+
+    const measureStats = () => {
+      const now = performance.now();
+      frameCount++;
+
+      if (now - lastTime >= 1000) {
+        // Update state every second
+        const currentFps = frameCount;
+        
+        // Memory (Chrome/Edge only property)
+        // @ts-ignore - performance.memory is non-standard but works in Chromium
+        const memUsed = (performance.memory?.usedJSHeapSize / 1048576) || 0;
+
+        // Network Type
+        // @ts-ignore
+        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        const netType = connection ? connection.effectiveType.toUpperCase() : 'LAN';
+
+        setTelemetry(prev => ({
+          ...prev,
+          fps: currentFps,
+          memory: memUsed,
+          uptime: prev.uptime + 1,
+          netType: netType
+        }));
+
+        frameCount = 0;
+        lastTime = now;
+      }
+      animationFrameId = requestAnimationFrame(measureStats);
+    };
+
+    measureStats();
+    return () => cancelAnimationFrame(animationFrameId);
+  }, []);
+
+  // 2. Latency "Ping" (runs every 5 seconds)
+  useEffect(() => {
+    const checkPing = async () => {
+      const start = Date.now();
+      try {
+        // Ping the current server to see app latency
+        await fetch(window.location.href, { method: 'HEAD', cache: 'no-cache' });
+        const end = Date.now();
+        setTelemetry(prev => ({ ...prev, latency: end - start }));
+      } catch (e) {
+        setTelemetry(prev => ({ ...prev, latency: -1 }));
+      }
+    };
+
+    checkPing(); // Initial
+    const interval = setInterval(checkPing, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Format Uptime (MM:SS)
+  const formatTime = (secs: number) => {
+    const m = Math.floor(secs / 60).toString().padStart(2, '0');
+    const s = (secs % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
+
+  // Color logic
+  const statusColor = loading ? "text-yellow-400" : status === "Error" ? "text-red-500" : "text-emerald-400";
+  const latencyColor = telemetry.latency > 200 ? "text-red-400" : telemetry.latency > 100 ? "text-yellow-400" : "text-white";
+  const fpsColor = telemetry.fps < 30 ? "text-red-400" : "text-white";
+
+  return (
+    <div className="hidden xl:flex items-center gap-0 bg-neutral-950/80 border border-white/10 rounded-md overflow-hidden shadow-2xl backdrop-blur-md h-10 select-none">
+      
+      {/* SECTION 1: SYSTEM STATE (Based on your simulation prop) */}
+      <div className="px-3 py-1 flex items-center gap-2 border-r border-white/10">
+        <div className="relative w-2 h-2">
+          <div className={`absolute inset-0 rounded-full ${loading ? "bg-yellow-500 animate-ping" : "bg-emerald-500"} opacity-75`}></div>
+          <div className={`relative w-2 h-2 rounded-full ${loading ? "bg-yellow-500" : "bg-emerald-500"}`}></div>
+        </div>
+        <span className={`text-[10px] font-black tracking-widest uppercase ${statusColor}`}>
+          {loading ? "COMPUTING" : status === "Stopped" ? "IDLE" : "ACTIVE"}
+        </span>
+      </div>
+
+      {/* SECTION 2: REAL BROWSER TELEMETRY */}
+      <div className="flex items-center px-4 gap-4 text-[9px] font-mono text-gray-400">
+        
+        {/* Latency */}
+        <div className="flex flex-col items-start leading-none gap-0.5 w-14">
+          <span className="uppercase">LATENCY</span>
+          <span className={latencyColor}>
+            {telemetry.latency === -1 ? "OFF" : `${telemetry.latency} ms`}
+          </span>
+        </div>
+
+        <div className="w-px h-4 bg-white/10" />
+
+        {/* FPS Counter */}
+        <div className="flex flex-col items-start leading-none gap-0.5 w-12">
+          <span className="uppercase">FPS</span>
+          <span className={fpsColor}>
+            {telemetry.fps}
+          </span>
+        </div>
+
+        <div className="w-px h-4 bg-white/10" />
+
+        {/* Memory (JS Heap) - Only works in Chromium, shows 0 otherwise */}
+        <div className="flex flex-col items-start leading-none gap-0.5 w-16">
+          <span className="uppercase">HEAP MEM.</span>
+          <span className="text-white">
+            {telemetry.memory > 0 ? `${telemetry.memory.toFixed(0)} MB` : "N/A"}
+          </span>
+        </div>
+
+        <div className="w-px h-4 bg-white/10" />
+
+        {/* Connection Type */}
+        <div className="flex flex-col items-start leading-none gap-0.5 w-12">
+          <span className="uppercase">NET</span>
+          <span className="text-cyan-400">
+            {telemetry.netType}
+          </span>
+        </div>
+      </div>
+
+      {/* SECTION 3: SESSION TIMER */}
+      <div className="px-3 py-1.5 bg-black/40 border-l border-white/10 text-[12px] font-mono text-gray-300">
+        T+{formatTime(telemetry.uptime)}
+      </div>
+    </div>
+  );
+});
+SystemStatusBar.displayName = "SystemStatusBar";
+
+
 function SceneReady({ onReady }: { onReady: () => void }) {
   useEffect(() => {
     onReady();
@@ -1286,36 +1433,53 @@ function SceneReady({ onReady }: { onReady: () => void }) {
   return null;
 }
 
-// --- COST CONSTANTS (AJUSTADOS PARA NO-GRUA, INSTRUMENTO CIENTIFICO) ---
+// --- COST CONSTANTS (STRICT SCIENTIFIC / HIGH RISK REALITY) ---
 const PROJECT_COSTS = {
-  CPV_PRICE_PER_M2: 2500,
+  // CPV: Custom populated PCBs with Triple-Junction cells.
+  // This is not a solar farm panel; it is a precision sensor array.
+  CPV_PRICE_PER_M2: 8500,
+
+  // Silver Sintering (Ag) - Process cost is higher than material cost
   AG_THICKNESS: 0.00005,
-  AG_DENSITY: 10490,
-  AG_COST_PER_KG: 1200,
+  AG_DENSITY: 8500,
+  AG_COST_PER_KG: 2200, // Includes specialized application/curing process
 
-  CNC_BASE_RATE_M2: 3500,
-  SURFACE_TREAT_M2: 300, // ajustado (no dorado espacial por defecto)
+  // FABRICATION (One-off Prototype pricing)
+  MATERIAL_WASTE_FACTOR: 1.6, // High waste for precision milling
+  CNC_SETUP_FEE: 4500, // Complex jigging for large thin plates (prevent warping)
+  CNC_MACHINING_RATE_M2: 6000, // Slow feed rates for high tolerance flatness
+  CNC_FINS_MULTIPLIER: 3.5, // Fins are a nightmare on large plates; high risk of chatter
+  SURFACE_TREAT_M2: 600, // Space-grade low-outgassing anodization (prevents fogging mirrors)
 
-  ASSEMBLY_HOURLY_RATE: 120, // €/h para técnico especializado
-  HOURS_PER_M2: 12, // h/m2 (ajustable: 8-20 realista)
+  // ASSEMBLY (Clean Room Environment)
+  ASSEMBLY_HOURLY_RATE: 110, // Specialist rate (Clean room technician)
+  ASSEMBLY_hours_BASE: 24, // Cleaning, priming, slow curing
+  ASSEMBLY_MINS_PER_CELL: 45, // Precision placement + wire bonding check
 
-  ELEC_COST_PER_WATT: 2.5,
+  // ELECTRONICS (Industrial/Scientific Grade)
+  // Needs to be weatherproof (IP67) and noise-shielded (EMC) to not affect PMTs
+  ELEC_BASE_FEE: 5000, // cRIO or PLC based controller + Enclosure
+  ELEC_COST_PER_WATT: 4.0, // High grade power supplies/loads
 
-  NRE_FLAT_FEE: 15000,
-  QUALIFICATION_FEE: 8000,
+  // ENGINEERING & COMPLIANCE (The hidden killer costs)
+  NRE_DESIGN: 18000, // Mechanical/Thermal design iterations
+  NRE_FEA_SIMULATION: 12000, // Structural analysis (Wind load survival @ 2400m)
+  SAFETY_REVIEW_MEETINGS: 6000, // Preparing/Presenting TDR to Collaboration
+  QUALIFICATION_TESTING: 8000, // Thermal cycling + Vibration test
 
-  // LOGISTICA REVISADA (no-grúa por defecto)
-  INSTALL_BASE_FEE: 5000, // coordinación observatorio + supervisión
-  TRANSPORT_COST_PER_KG: 8, // €/kg (transporte a La Palma + embalaje)
-  INSTALL_COST_PER_KG: 10, // €/kg por manipulación especializada (solo > threshold)
-  WEIGHT_FREE_THRESHOLD_KG: 25, // kg no penalizados (pequeñas piezas)
-  NEEDS_CRANE: false, // sin grúa externa por defecto
-  CRANE_DAY_RATE: 0, // 0 si NEEDS_CRANE == false
-  CRANE_DAYS: 0,
+  // LOGISTICS (Roque de los Muchachos)
+  PACKAGING_CRATE: 2000, // Shock-proof crate
+  TRANSPORT_INTL: 3500, // Air freight + Customs + Insurance
+  LAST_MILE_MOUNTAIN: 1500, // Specialized transport up the winding road
 
-  INSURANCE_PCT: 0.01, // 1% de coste físico (material+manufactura)
+  // INSTALLATION (High Altitude / High Risk)
+  INSTALL_TEAM_DAILY_RATE: 2200, // 2 Senior Engineers + Travel + Residencia costs
+  INSTALL_DAYS: 5, // Includes acclimatization, safety briefing, slow install
+  CRANE_RENTAL_DAY: 1200, // Cherry picker or crane often needed for telescope access
 
-  CONTINGENCY_PCT: 0.25, // 25% para prototipo científico
+  // RISK PREMIUM
+  LIABILITY_INSURANCE: 5000, // Specific rider for working near optics
+  CONTINGENCY_PCT: 0.35, // 35% Contingency for scientific prototypes
 };
 
 // --- ROI CONSTANTS (La Palma, Canary Islands) ---
@@ -1572,7 +1736,6 @@ export default function ThermalPage() {
     uiSinkMatKey,
   ]);
 
-  // Update Weight Calculation (Handle 0 thickness sink volume)
   const structureWeight = useMemo(() => {
     const baseRho = MATERIALS[uiBaseMatKey].rho;
     const sinkRho = MATERIALS[uiSinkMatKey].rho;
@@ -1587,7 +1750,6 @@ export default function ThermalPage() {
     const FIN_SPACING = 0.005;
 
     const nFins = Math.floor(uiPlateDim / (FIN_SPACING + FIN_THICKNESS));
-    console.log("Number of fins for weight calc:", nFins);
     const volSink =
       Math.pow(uiPlateDim, 2) * uiSinkThick +
       FIN_HEIGHT * FIN_THICKNESS * uiPlateDim * (uiUseFins ? nFins : 0);
@@ -1602,81 +1764,123 @@ export default function ThermalPage() {
     uiUseFins,
   ]);
 
-  // 1. Calculate Scientific Project Cost
+  // 1. Calculate Scientific Project Cost (Middle Case / Realistic)
   const projectCost = useMemo(() => {
-    // ... (keep existing calculation logic variables: area, baseMat, etc.) ...
     const area = Math.pow(uiPlateDim, 2);
     const baseMat = MATERIALS[uiBaseMatKey];
     const sinkMat = MATERIALS[uiSinkMatKey];
 
-    // --- A. VARIABLE COSTS (Depend on Size/Weight) ---
-    // Materials
-    const volBase = area * uiLayerThick;
-    const volSink = area * uiSinkThick;
+    // --- A. RAW MATERIALS ---
+    const wasteFactor = PROJECT_COSTS.MATERIAL_WASTE_FACTOR;
+    const volBaseRaw = area * uiLayerThick * wasteFactor;
+    const finHeight = uiUseFins ? 0.04 : 0;
+    const volSinkRaw = area * (uiSinkThick + finHeight) * wasteFactor;
+
+    const costMatBase = volBaseRaw * baseMat.rho * baseMat.cost;
+    const costMatSink = volSinkRaw * sinkMat.rho * sinkMat.cost;
+
     const volAg = area * PROJECT_COSTS.AG_THICKNESS;
-
-    // Add 20% material waste factor for machining
-    const costMatBase = volBase * baseMat.rho * baseMat.cost * 1.2;
-    const costMatSink = volSink * sinkMat.rho * sinkMat.cost * 1.2;
-    const costMatAg =
-      volAg * PROJECT_COSTS.AG_DENSITY * PROJECT_COSTS.AG_COST_PER_KG;
-    const costMatCPV = area * PROJECT_COSTS.CPV_PRICE_PER_M2;
-    const totalMaterials = costMatBase + costMatSink + costMatAg + costMatCPV;
-
-    // Manufacturing
-    const machiningCost =
-      area * PROJECT_COSTS.CNC_BASE_RATE_M2 * sinkMat.machiningFactor +
-      area * PROJECT_COSTS.SURFACE_TREAT_M2;
-
-    // Assembly
-    const assemblyCost =
-      area * PROJECT_COSTS.HOURS_PER_M2 * PROJECT_COSTS.ASSEMBLY_HOURLY_RATE;
-
-    // Electronics
-    const estimatedWatts = area * 1000 * 0.4;
-    const electronicsCost = estimatedWatts * PROJECT_COSTS.ELEC_COST_PER_WATT;
-
-    // Installation
-    const totalWeight = structureWeight;
-    const transportCost = PROJECT_COSTS.TRANSPORT_COST_PER_KG * totalWeight;
-    const weightPenalty =
-      Math.max(0, totalWeight - PROJECT_COSTS.WEIGHT_FREE_THRESHOLD_KG) *
-      PROJECT_COSTS.INSTALL_COST_PER_KG;
-    const craneCost = PROJECT_COSTS.NEEDS_CRANE
-      ? PROJECT_COSTS.CRANE_DAY_RATE * PROJECT_COSTS.CRANE_DAYS
+    const costMatAg = uiUseReflector
+      ? volAg * PROJECT_COSTS.AG_DENSITY * PROJECT_COSTS.AG_COST_PER_KG
       : 0;
-    const installationCost =
-      PROJECT_COSTS.INSTALL_BASE_FEE +
-      transportCost +
-      weightPenalty +
+
+    const cpvAreaCost = uiUsePv
+      ? area * PROJECT_COSTS.CPV_PRICE_PER_M2
+      : area * 500;
+
+    const totalMaterials = costMatBase + costMatSink + costMatAg + cpvAreaCost;
+
+    // --- B. FABRICATION & MACHINING ---
+    let machiningCost = PROJECT_COSTS.CNC_SETUP_FEE;
+    machiningCost +=
+      area * PROJECT_COSTS.CNC_MACHINING_RATE_M2 * baseMat.machiningFactor;
+
+    const sinkComplexity = uiUseFins ? PROJECT_COSTS.CNC_FINS_MULTIPLIER : 1.0;
+    // Penalty for large plates (difficult to fixture/anodize)
+    const sizePenalty = uiPlateDim > 1.0 ? 1.5 : 1.0;
+
+    machiningCost +=
+      area *
+      PROJECT_COSTS.CNC_MACHINING_RATE_M2 *
+      sinkMat.machiningFactor *
+      sinkComplexity *
+      sizePenalty;
+    machiningCost += area * PROJECT_COSTS.SURFACE_TREAT_M2 * 2;
+
+    // --- C. ASSEMBLY ---
+    const totalCells = Math.pow(uiMatrixSize, 2);
+    const assemblyHours =
+      PROJECT_COSTS.ASSEMBLY_hours_BASE +
+      (totalCells * PROJECT_COSTS.ASSEMBLY_MINS_PER_CELL) / 60;
+    const assemblyCost = assemblyHours * PROJECT_COSTS.ASSEMBLY_HOURLY_RATE;
+
+    // --- D. ELECTRONICS ---
+    const pwrElectric = area * 1000 * 0.35;
+    const electronicsCost =
+      PROJECT_COSTS.ELEC_BASE_FEE +
+      pwrElectric * PROJECT_COSTS.ELEC_COST_PER_WATT;
+
+    // --- E. ENGINEERING (NRE) ---
+    const nreCost =
+      PROJECT_COSTS.NRE_DESIGN +
+      PROJECT_COSTS.NRE_FEA_SIMULATION +
+      PROJECT_COSTS.SAFETY_REVIEW_MEETINGS +
+      PROJECT_COSTS.QUALIFICATION_TESTING;
+
+    // --- F. LOGISTICS & INSTALLATION (SMART LOGIC) ---
+    const logisticsCost =
+      PROJECT_COSTS.PACKAGING_CRATE +
+      PROJECT_COSTS.TRANSPORT_INTL +
+      PROJECT_COSTS.LAST_MILE_MOUNTAIN;
+
+    // 1. Is it too big for the stairs? (Stairs are approx 80cm-1m wide with cages)
+    const isTooBigForStairs = uiPlateDim > 0.8;
+
+    // 2. Is it too heavy for a 2-person manual carry up 20m of stairs?
+    // Limit is typically 25kg per person. 50kg total.
+    const isTooHeavy = structureWeight > 45;
+
+    const needsCrane = isTooBigForStairs || isTooHeavy;
+
+    // Crane Cost: If needed, we pay per day.
+    const craneCost = needsCrane
+      ? PROJECT_COSTS.CRANE_RENTAL_DAY * PROJECT_COSTS.INSTALL_DAYS
+      : 0;
+
+    // Install difficulty multiplier
+    let installRiskMult = 1.0;
+    if (needsCrane) installRiskMult += 0.5; // Coordination is harder with crane
+    if (uiPlateDim > 1.2) installRiskMult += 0.3; // Wind risk
+
+    const installCost =
+      PROJECT_COSTS.INSTALL_DAYS *
+        PROJECT_COSTS.INSTALL_TEAM_DAILY_RATE *
+        installRiskMult +
       craneCost;
 
-    const totalVariable =
+    const totalLogistics =
+      logisticsCost + installCost + PROJECT_COSTS.LIABILITY_INSURANCE;
+
+    // --- TOTALS ---
+    const subTotal =
       totalMaterials +
       machiningCost +
       assemblyCost +
       electronicsCost +
-      installationCost;
-
-    // --- B. FIXED COSTS ---
-    const fixedCosts =
-      PROJECT_COSTS.NRE_FLAT_FEE + PROJECT_COSTS.QUALIFICATION_FEE;
-
-    // --- C. TOTAL ---
-    const subTotal = totalVariable + fixedCosts;
+      nreCost +
+      totalLogistics;
     const contingency = subTotal * PROJECT_COSTS.CONTINGENCY_PCT;
     const calculatedTotal = subTotal + contingency;
 
-    // RETURN OBJECT (Now supports Manual Override)
     return {
       total: useManualCost ? manualCostInput : calculatedTotal,
       isManual: useManualCost,
       breakdown: {
         materials: totalMaterials,
         manufacturing: machiningCost,
-        assembly: assemblyCost,
-        engineering: fixedCosts,
-        logistics: installationCost + contingency,
+        assembly: assemblyCost + electronicsCost,
+        engineering: nreCost,
+        logistics: totalLogistics + contingency,
       },
     };
   }, [
@@ -1685,9 +1889,13 @@ export default function ThermalPage() {
     uiSinkThick,
     uiBaseMatKey,
     uiSinkMatKey,
+    uiMatrixSize,
+    uiUseFins,
+    uiUsePv,
+    uiUseReflector,
     structureWeight,
-    useManualCost, // Added dependency
-    manualCostInput, // Added dependency
+    useManualCost,
+    manualCostInput,
   ]);
 
   // 2. Calculate ROI / Payback Period
@@ -1714,6 +1922,115 @@ export default function ThermalPage() {
     };
   }, [simStats.pElectric, projectCost, maxRoi]);
 
+  // --- EXPORT REPORT HANDLER ---
+  const handleExportReport = useCallback(() => {
+    if (!activeParams || !projectCost || !paybackPeriod) return;
+
+    const date = new Date().toLocaleString("es-ES");
+    const filename = `StarrySky_Report_${
+      new Date().toISOString().split("T")[0]
+    }.txt`;
+
+    const content = `
+===================================================================
+STARRY SKY - ENGINEERING FEASIBILITY REPORT
+MAGIC TELESCOPE THERMAL MANAGEMENT SYSTEM
+Generated: ${date}
+Version: 1.2.4-RC
+===================================================================
+
+[1] PROJECT TEAM
+-------------------------------------------------------------------
+Project Manager:   Aissam Khadraoui
+Lead Engineer:     Candela García
+Systems Architect: Filip Denis
+
+[2] SYSTEM CONFIGURATION (INPUTS)
+-------------------------------------------------------------------
+FWHM (Focus Quality):     ${activeParams.focusOffset.toFixed(3)} m
+Magic Area (Optical Eff): ${activeParams.magicArea.toFixed(1)} m²
+Matrix Resolution:        ${activeParams.matrixSize}x${activeParams.matrixSize}
+Plate Dimensions:         ${activeParams.plateDim}m x ${activeParams.plateDim}m
+
+-- LAYER GEOMETRY --
+Conductor Thickness:      ${(activeParams.layerThick * 1000).toFixed(2)} mm
+Heatsink Thickness:       ${(activeParams.sinkThick * 1000).toFixed(2)} mm
+(C)PV Thickness:          ${activeParams.pvThick.toFixed(2)} mm
+Active Features:          [${activeParams.useFins ? "X" : " "}] Fins  [${
+      activeParams.useReflector ? "X" : " "
+    }] Reflector  [${activeParams.usePv ? "X" : " "}] PV Cells
+
+-- MATERIALS --
+Base Material:            ${MATERIALS[activeParams.baseMatKey].name}
+                          (k=${MATERIALS[activeParams.baseMatKey].kt}, rho=${
+      MATERIALS[activeParams.baseMatKey].rho
+    })
+Sink Material:            ${MATERIALS[activeParams.sinkMatKey].name}
+
+[3] THERMAL & ELECTRICAL PERFORMANCE
+-------------------------------------------------------------------
+Status:                   ${simStats.status.toUpperCase()}
+Max Temperature:          ${simStats.maxTemp.toFixed(2)} °C
+Min Temperature:          ${simStats.minTemp.toFixed(2)} °C
+Electrical Output:        ${simStats.pElectric.toFixed(2)} W
+
+[4] STRUCTURAL ANALYSIS
+-------------------------------------------------------------------
+Total Mass:               ${structureWeight.toFixed(2)} kg
+Lifting Requirement:      ${
+      structureWeight > 50 ? "CRANE / HOIST REQUIRED" : "MANUAL LIFT OK"
+    }
+Wind Load Risk:           ${
+      activeParams.plateDim > 1.2 ? "HIGH (Sail Effect)" : "NOMINAL"
+    }
+
+[5] ECONOMIC BREAKDOWN (Estimate)
+-------------------------------------------------------------------
+Calculation Mode:         ${
+      useManualCost ? "MANUAL OVERRIDE" : "AUTOMATIC ESTIMATION"
+    }
+-------------------------------------------------------------------
+> Raw Materials:          € ${projectCost.breakdown.materials.toFixed(2)}
+> Manufacturing (CNC):    € ${projectCost.breakdown.manufacturing.toFixed(2)}
+> Assembly & Elec:        € ${projectCost.breakdown.assembly.toFixed(2)}
+> Engineering (NRE):      € ${projectCost.breakdown.engineering.toFixed(2)}
+> Logistics & Install:    € ${projectCost.breakdown.logistics.toFixed(2)}
+-------------------------------------------------------------------
+TOTAL CAPEX:              € ${projectCost.total.toFixed(2)}
+
+[6] ROI PROJECTION
+-------------------------------------------------------------------
+Annual Savings:           € ${paybackPeriod.annualSavings.toFixed(2)} / yr
+Payback Period:           ${paybackPeriod.years.toFixed(1)} Years
+Viability (${maxRoi}yr limit):    ${
+      paybackPeriod.isViable ? "VIABLE" : "NOT VIABLE"
+    }
+
+===================================================================
+CONFIDENTIAL - INTERNAL USE ONLY
+STARRY SKY ENGINEERING GROUP
+===================================================================
+`;
+
+    const blob = new Blob([content], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [
+    activeParams,
+    projectCost,
+    paybackPeriod,
+    simStats,
+    structureWeight,
+    useManualCost,
+    maxRoi,
+  ]);
+
   return (
     <div className="relative w-full h-full bg-black overflow-hidden rounded-2xl">
       {/* HEADER */}
@@ -1724,17 +2041,37 @@ export default function ThermalPage() {
             : "opacity-0 -translate-y-8"
         }`}
       >
-        <div className="flex gap-5">
-          <h1 className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-indigo-200 via-purple-200 to-white drop-shadow-[0_0_25px_rgba(255,255,255,0.6)]">
-            STARRY SKY
-          </h1>
-          <div className="h-9 border-r border-cyan-700" />
-          <div className="flex items-center gap-2 text-[10px] md:text-xs font-medium text-cyan-400 uppercase tracking-widest">
-            <span className="opacity-80">Aissam Khadraoui</span>
-            <span className="text-white/20">•</span>
-            <span className="opacity-80">Candela García</span>
-            <span className="text-white/20">•</span>
-            <span className="opacity-80">Filip Denis</span>
+        <div className="flex justify-between w-full">
+          <div className="flex gap-5">
+            <h1 className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-indigo-200 via-purple-200 to-white drop-shadow-[0_0_25px_rgba(255,255,255,0.6)]">
+              STARRY SKY
+            </h1>
+            <div className="h-9 border-r border-cyan-700" />
+            <div className="flex items-center gap-4 text-[10px] md:text-xs font-medium text-cyan-400 uppercase tracking-widest">
+              <div className="flex flex-col items-end leading-none">
+                <span className="text-white font-bold">Aissam Khadraoui</span>
+                <span className="text-[8px] text-gray-500">Plant</span>
+              </div>
+              <div className="h-6 w-px bg-white/10" />
+              <div className="flex flex-col items-end leading-none">
+                <span className="text-white font-bold">Candela García</span>
+                <span className="text-[8px] text-gray-500">
+                  Completer Finisher
+                </span>
+              </div>
+              <div className="h-6 w-px bg-white/10" />
+              <div className="flex flex-col items-end leading-none">
+                <span className="text-white font-bold">Filip Denis</span>
+                <span className="text-[8px] text-gray-500">Coordinator</span>
+              </div>
+            </div>
+          </div>
+          {/* NEW SYSTEM STATUS BAR (IN HEADER) */}
+          <div className="ml-4 pointer-events-auto">
+            <SystemStatusBar
+              status={simStats.status}
+              loading={simStats.loading}
+            />
           </div>
         </div>
 
@@ -1854,7 +2191,7 @@ export default function ThermalPage() {
           color="#88ccff"
           noise={0.5}
         />
-        <PerspectiveCamera makeDefault position={[3, 0, 1]} fov={40} />
+        <PerspectiveCamera makeDefault position={[2, 0, 2]} fov={40} />
         <OrbitControls
           makeDefault
           minDistance={2}
@@ -1863,6 +2200,14 @@ export default function ThermalPage() {
           enablePan={true}
           panSpeed={1.0}
         />
+        {/* ENGINEERING COORDINATE SYSTEM (Bottom-Right) */}
+        <GizmoHelper alignment="bottom-right" margin={[430, 530]}>
+          <GizmoViewport
+            axisColors={["#ff3653", "#0adb50", "#2c8fdf"]}
+            labelColor="white"
+            hideNegativeAxes={true}
+          />
+        </GizmoHelper>
         <ambientLight intensity={5} /> {/* Increased from 0.5 */}
         <directionalLight
           shadow-mapSize={[512, 512]}
@@ -1948,13 +2293,13 @@ export default function ThermalPage() {
           </div>
         )}
         <div className="w-full">
-            <ToggleRow
-              label="Escala Realista"
-              colorClass="text-cyan-400"
-              checked={realScale}
-              onChange={setRealScale}
-            />
-          </div>
+          <ToggleRow
+            label="Escala Realista"
+            colorClass="text-cyan-400"
+            checked={realScale}
+            onChange={setRealScale}
+          />
+        </div>
 
         <button
           onClick={() => setShowAdvanced(true)}
@@ -2391,7 +2736,7 @@ export default function ThermalPage() {
       </div>
       {/* RIGHT STATS PANEL */}
       <div
-        className={`absolute top-28 right-8 w-[320px] pointer-events-auto bg-neutral-900/95 p-5 rounded-2xl border border-white/20 shadow-2xl transition-all duration-1000 hover:border-cyan-500/30 ${
+        className={`absolute top-22 right-8 w-[320px] pointer-events-auto bg-neutral-900/95 p-5 rounded-2xl border border-white/20 shadow-2xl transition-all duration-1000 hover:border-cyan-500/30 ${
           introFinished
             ? "opacity-100 translate-x-0"
             : "opacity-0 translate-x-10"
@@ -2405,7 +2750,11 @@ export default function ThermalPage() {
 
         {/* ALWAYS SHOW STRUCTURAL WEIGHT */}
         <div className="flex justify-between items-center mb-4">
-          <p className={`text-[11px] uppercase tracking-wider ${structureWeight > 200 ? "text-red-400" : "text-white"}`}>
+          <p
+            className={`text-[11px] uppercase tracking-wider ${
+              structureWeight > 200 ? "text-red-400" : "text-white"
+            }`}
+          >
             Pes Estructural
           </p>
           <p
@@ -2416,143 +2765,182 @@ export default function ThermalPage() {
             {structureWeight.toFixed(1)} kg
           </p>
         </div>
-          <div className="flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-300">
-            {/* COST INPUT / TOGGLE SECTION */}
-            <div className="flex flex-col gap-2 bg-neutral-800/50 rounded-lg p-3 border border-white/10">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] uppercase text-gray-300 font-bold">
-                  Mode de Cost
-                </span>
-                <div className="flex bg-black/40 rounded-lg p-0.5 border border-white/5">
-                  <button
-                    onClick={() => setUseManualCost(false)}
-                    className={`px-2 py-1 text-[9px] font-bold uppercase rounded-md transition-all ${
-                      !useManualCost
-                        ? "bg-cyan-600 text-white shadow-sm"
-                        : "text-gray-500 hover:text-white"
-                    }`}
-                  >
-                    Auto
-                  </button>
-                  <button
-                    onClick={() => setUseManualCost(true)}
-                    className={`px-2 py-1 text-[9px] font-bold uppercase rounded-md transition-all ${
-                      useManualCost
-                        ? "bg-cyan-600 text-white shadow-sm"
-                        : "text-gray-500 hover:text-white"
-                    }`}
-                  >
-                    Manual
-                  </button>
-                </div>
+        <div className="flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-300">
+          {/* COST INPUT / TOGGLE SECTION */}
+          <div className="flex flex-col gap-2 bg-neutral-800/50 rounded-lg p-3 border border-white/10">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] uppercase text-gray-300 font-bold">
+                Mode de Cost
+              </span>
+              <div className="flex bg-black/40 rounded-lg p-0.5 border border-white/5">
+                <button
+                  onClick={() => setUseManualCost(false)}
+                  className={`px-2 py-1 text-[9px] font-bold uppercase rounded-md transition-all ${
+                    !useManualCost
+                      ? "bg-cyan-600 text-white shadow-sm"
+                      : "text-gray-500 hover:text-white"
+                  }`}
+                >
+                  Auto
+                </button>
+                <button
+                  onClick={() => setUseManualCost(true)}
+                  className={`px-2 py-1 text-[9px] font-bold uppercase rounded-md transition-all ${
+                    useManualCost
+                      ? "bg-cyan-600 text-white shadow-sm"
+                      : "text-gray-500 hover:text-white"
+                  }`}
+                >
+                  Manual
+                </button>
               </div>
-
-              {useManualCost ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-white font-mono text-sm">€</span>
-                  <input
-                    type="number"
-                    value={manualCostInput}
-                    onChange={(e) => setManualCostInput(Number(e.target.value))}
-                    className="w-full bg-black/40 border border-white/10 rounded px-2 py-1 text-right font-mono text-white text-sm focus:border-cyan-500 focus:outline-none"
-                  />
-                </div>
-              ) : (
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] text-yellow-500/80">
-                    Estimat (Mat + Fab + Log)
-                  </span>
-                  <span className="font-mono font-bold text-lg text-yellow-400">
-                    {projectCost.total.toLocaleString("es-ES", {
-                      style: "currency",
-                      currency: "EUR",
-                      maximumFractionDigits: 0,
-                    })}
-                  </span>
-                </div>
-              )}
             </div>
 
-            {/* ROI RESULTS BLOCK */}
-            {paybackPeriod && (
-              <div
-                className={`rounded-lg p-3 border flex flex-col gap-3 ${
-                  paybackPeriod.isViable
-                    ? "bg-green-900/10 border-green-500/30"
-                    : "bg-red-900/10 border-red-300/30"
-                }`}
-              >
-                {/* 1. Annual Savings */}
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] uppercase tracking-wider text-gray-300">
-                    Beneficis anuals
-                  </span>
-                  <span className="font-mono font-bold text-white">
-                    {paybackPeriod.annualSavings.toLocaleString("es-ES", {
-                      style: "currency",
-                      currency: "EUR",
-                      maximumFractionDigits: 0,
-                    })}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] uppercase tracking-wider text-gray-300">
-                    Beneficis bruts ({maxRoi}a)
-                  </span>
-                  <span className="font-mono font-bold text-white">
-                    {(maxRoi * paybackPeriod.annualSavings).toLocaleString("es-ES", {
-                      style: "currency",
-                      currency: "EUR",
-                      maximumFractionDigits: 0,
-                    })}
-                  </span>
-                </div>
-                <div className="border-t border-white/10 my-1"></div>
-
-                {/* 2. ROI Years */}
-                <div className="flex justify-between items-center">
-                  <span className={`text-[10px] uppercase tracking-wider ${paybackPeriod.isViable ? "text-green-300" : "text-red-300"}`}>
-                    Retorn Inversió
-                  </span>
-                  <span
-                    className={`font-mono font-bold text-lg ${
-                      paybackPeriod.isViable ? "text-green-400" : "text-red-400"
-                    }`}
-                  >
-                    {paybackPeriod.years.toFixed(1)} Anys
-                  </span>
-                </div>
-
-                <div className="border-t border-white/10 my-1"></div>
-
-                {/* 3. Total Profit (Projected) */}
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] uppercase tracking-wider text-blue-300">
-                    Benefici Net ({maxRoi}a)
-                  </span>
-                  <span className="font-mono font-bold text-lg text-blue-400">
-                    {(
-                      (maxRoi - paybackPeriod.years) *
-                      paybackPeriod.annualSavings
-                    ).toLocaleString("es-ES", {
-                      style: "currency",
-                      currency: "EUR",
-                      maximumFractionDigits: 0,
-                    })}
-                  </span>
-                </div>
+            {useManualCost ? (
+              <div className="flex items-center gap-2">
+                <span className="text-white font-mono text-sm">€</span>
+                <input
+                  type="number"
+                  value={manualCostInput}
+                  onChange={(e) => setManualCostInput(Number(e.target.value))}
+                  className="w-full bg-black/40 border border-white/10 rounded px-2 py-1 text-right font-mono text-white text-sm focus:border-cyan-500 focus:outline-none"
+                />
               </div>
-            )}
-
-            {!paybackPeriod && (
-              <div className="p-4 text-center border border-dashed border-white/10 rounded-lg">
-                <p className="text-[10px] text-gray-500 uppercase tracking-widest">
-                  Dades de viabilitat no disponibles
-                </p>
+            ) : (
+              <div className="flex justify-between items-center">
+                <span className="text-[10px] text-yellow-500/80">Estimat</span>
+                <span className="font-mono font-bold text-lg text-yellow-400">
+                  {projectCost.total.toLocaleString("es-ES", {
+                    style: "currency",
+                    currency: "EUR",
+                    maximumFractionDigits: 0,
+                  })}
+                </span>
               </div>
             )}
           </div>
+
+          {/* ROI RESULTS BLOCK */}
+          {paybackPeriod && (
+            <div
+              className={`rounded-lg p-3 border flex flex-col gap-3 ${
+                paybackPeriod.isViable
+                  ? "bg-green-900/10 border-green-500/30"
+                  : "bg-red-900/10 border-red-300/30"
+              }`}
+            >
+              {/* 1. Annual Savings */}
+              <div className="flex justify-between items-center">
+                <span className="text-[10px] uppercase tracking-wider text-gray-300">
+                  Beneficis anuals
+                </span>
+                <span className="font-mono font-bold text-white">
+                  {paybackPeriod.annualSavings.toLocaleString("es-ES", {
+                    style: "currency",
+                    currency: "EUR",
+                    maximumFractionDigits: 0,
+                  })}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-[10px] uppercase tracking-wider text-gray-300">
+                  Beneficis bruts ({maxRoi}a)
+                </span>
+                <span className="font-mono font-bold text-white">
+                  {(maxRoi * paybackPeriod.annualSavings).toLocaleString(
+                    "es-ES",
+                    {
+                      style: "currency",
+                      currency: "EUR",
+                      maximumFractionDigits: 0,
+                    }
+                  )}
+                </span>
+              </div>
+              <div className="border-t border-white/10 my-1"></div>
+
+              {/* 2. ROI Years */}
+              <div className="flex justify-between items-center">
+                <span
+                  className={`text-[10px] uppercase tracking-wider ${
+                    paybackPeriod.isViable ? "text-green-300" : "text-red-300"
+                  }`}
+                >
+                  Retorn Inversió
+                </span>
+                <span
+                  className={`font-mono font-bold text-lg ${
+                    paybackPeriod.isViable ? "text-green-400" : "text-red-400"
+                  }`}
+                >
+                  {paybackPeriod.years.toFixed(1)} Anys
+                </span>
+              </div>
+
+              <div className="border-t border-white/10 my-1"></div>
+
+              {/* 3. Total Profit (Projected) */}
+              <div className="flex justify-between items-center">
+                <span className={`text-[10px] uppercase tracking-wider ${paybackPeriod.isViable ? "text-green-300" : "text-red-300"}`}>
+                  Benefici Net ({maxRoi}a)
+                </span>
+                <span className={`font-mono font-bold text-lg ${paybackPeriod.isViable ? "text-green-400" : "text-red-400"}`}>
+                  {(
+                    (maxRoi - paybackPeriod.years) *
+                    paybackPeriod.annualSavings
+                  ).toLocaleString("es-ES", {
+                    style: "currency",
+                    currency: "EUR",
+                    maximumFractionDigits: 0,
+                  })}
+                </span>
+              </div>
+            </div>
+          )}
+          {!paybackPeriod && (
+            <div className="p-4 text-center border border-dashed border-white/10 rounded-lg">
+              <p className="text-[10px] text-gray-500 uppercase tracking-widest">
+                Dades de viabilitat no disponibles
+              </p>
+            </div>
+          )}
+          {/* EXPORT BUTTON - ONLY VISIBLE WHEN RESULTS EXIST */}
+          {activeParams && !simStats.loading && !hasPendingChanges && (
+            <div className="animate-in fade-in slide-in-from-top-2 duration-500">
+              <button
+                onClick={handleExportReport}
+                className="group w-full relative overflow-hidden rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all duration-300 active:scale-95"
+              >
+                <div className="absolute inset-0 bg-cyan-500/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                <div className="relative flex items-center justify-center gap-3 py-3">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                    className="w-4 h-4 text-cyan-400 group-hover:text-white transition-colors"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
+                    />
+                  </svg>
+                  <div className="flex flex-col items-start leading-none">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-white">
+                      Exportar Informe
+                    </span>
+                    <span className="text-[8px] font-mono text-cyan-400/80 mt-0.5">
+                      .TXT
+                    </span>
+                  </div>
+                </div>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* BOTTOM HUD BAR */}
@@ -2563,7 +2951,7 @@ export default function ThermalPage() {
       !hasPendingChanges ? (
         <div className="absolute bottom-0 left-0 z-50 w-full bg-neutral-900 border-t border-white/20 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
           {/* Flex Container: Single Horizontal Line */}
-          <div className="flex items-center justify-between px-4 py-2 gap-6 overflow-x-auto no-scrollbar h-20">
+          <div className="flex items-center justify-between px-4 py-1 gap-6 overflow-x-auto no-scrollbar h-16">
             {/* LEFT: Title & Status */}
             <div className="flex items-center gap-4 shrink-0 border-r border-white/10 pr-6 h-full">
               <h3 className="text-xs font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-white leading-tight">
