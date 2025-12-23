@@ -4,7 +4,6 @@ export const metadata: Metadata = {
   title: "Starry Sky",
   description:
     "Pàgina del projecte Starry Sky",
-  authors: [{ name: "Aissam Khadraoui" }],
   openGraph: {
     title: "Starry Sky",
     description:
