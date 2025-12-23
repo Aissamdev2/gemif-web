@@ -102,6 +102,8 @@ type Props = {
   searchParams: Record<string, any> | Promise<Record<string, any>>;
 };
 
+export 
+
 export default async function ErrorPage({ searchParams }: any) {
   // Accept either a plain object or a promise (defensive). Matches the user's original usage
   const params = await Promise.resolve(searchParams as Record<string, any>);
