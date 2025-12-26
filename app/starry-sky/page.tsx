@@ -11,6 +11,7 @@ import React, {
 } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import {
+  useTexture,
   OrbitControls,
   PerspectiveCamera,
   Html,
@@ -113,7 +114,6 @@ const REFELCTIVE_MATERIAL = {
 };
 
 // --- PRESET CONFIGURATIONS ---
-// Changed to Partial to allow modular stacking
 type PresetDef = Partial<{
   name: string;
   fwhm: number;
@@ -125,13 +125,18 @@ type PresetDef = Partial<{
   plateDim: number;
   cpvScale: number;
   nx: number;
-  nz: number;
+  layerNz: number;
+  sinkNz: number;
   useCircle: boolean;
   usePv: boolean;
   useFins: boolean;
   useReflector: boolean;
   baseMatKey: string;
   sinkMatKey: string;
+  // NEW: Environmental Presets
+  windSpeed: number;
+  ambientTemp: number;
+  qSolar: number;
 }>;
 
 // Modular presets designed for stacking
@@ -147,7 +152,8 @@ const PRESETS: Record<string, PresetDef> = {
     plateDim: 1.5,
     cpvScale: 0.7,
     nx: 40,
-    nz: 9,
+    layerNz: 9,
+    sinkNz: 3,
     useCircle: false,
     usePv: false,
     useFins: false,
@@ -194,7 +200,8 @@ const PRESETS: Record<string, PresetDef> = {
     plateDim: 1.5,
     cpvScale: 0.7,
     nx: 40,
-    nz: 9,
+    layerNz: 10,
+    sinkNz: 5,
     useCircle: false,
     usePv: false,
     useFins: true,
@@ -532,7 +539,7 @@ const PresetSelector = memo(
         <span
           className={`text-[10px] uppercase tracking-widest font-bold text-cyan-400 transition-colors`}
         >
-          Paràmteres ràpids
+          Paràmetres ràpids
         </span>
         <div className="flex-1 overflow-x-auto no-scrollbar grid grid-cols-2 gap-1 pr-2 mask-linear-fade">
           {Object.entries(PRESETS).map(([key, def]) => {
@@ -541,7 +548,7 @@ const PresetSelector = memo(
               <button
                 key={key}
                 onClick={() => onToggle(key)}
-                className={`shrink-0 px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider transition-all duration-200 border whitespace-nowrap ${
+                className={`shrink-0 cursor-pointer px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider transition-all duration-200 border whitespace-nowrap ${
                   isActive
                     ? "bg-cyan-600 border-cyan-400 text-white shadow-[0_0_8px_rgba(8,145,178,0.4)]"
                     : "bg-white/5 border-transparent text-gray-400 hover:bg-white/10 hover:text-white hover:border-white/10"
@@ -557,6 +564,58 @@ const PresetSelector = memo(
   }
 );
 PresetSelector.displayName = "PresetSelector";
+
+// --- HELPER: MULTI-STATE TOGGLE ---
+const MultiStateToggle = memo(
+  ({
+    label,
+    options,
+    value,
+    onChange,
+    colorClass = "text-blue-400",
+  }: {
+    label: string;
+    options: { label: string; value: string }[];
+    value: string;
+    onChange: (val: string) => void;
+    colorClass?: string;
+  }) => {
+    return (
+      <div className="flex flex-col gap-2 bg-neutral-900 p-3 rounded-xl border border-white/10 shadow-xl col-span-1 md:col-span-2">
+        <span className={`text-[10px] uppercase tracking-widest font-bold ${colorClass}`}>
+          {label}
+        </span>
+        <div className="flex bg-black/40 p-1 rounded-lg border border-white/5 relative">
+          {options.map((opt) => {
+            const isActive = value === opt.value;
+            return (
+              <button
+                key={opt.value}
+                onClick={() => onChange(opt.value)}
+                className={`flex-1 py-1.5 text-[9px] font-bold uppercase rounded-md transition-all z-10 relative ${
+                  isActive
+                    ? "text-white shadow-sm"
+                    : "text-gray-500 hover:text-gray-300"
+                }`}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+          {/* Animated Background Pill */}
+          <div
+            className="absolute top-1 bottom-1 bg-cyan-600/90 rounded-md transition-all duration-300 ease-out shadow-lg"
+            style={{
+              left: `${(options.findIndex((o) => o.value === value) * 100) / options.length + 1}%`,
+              width: `${98 / options.length}%`,
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+);
+MultiStateToggle.displayName = "MultiStateToggle";
 
 const StatItem = memo(
   ({
@@ -596,22 +655,29 @@ const StatItem = memo(
 );
 StatItem.displayName = "StatItem";
 
+
 const GaussianOverlay = memo(
   ({
     fwhm,
     matrixSize,
     magicArea,
+    realScale,
   }: {
     fwhm: number;
     matrixSize: number;
     magicArea: number;
+    realScale: boolean;
   }) => {
-    const geometry = useMemo(() => {
-      const geo = new THREE.PlaneGeometry(PLATE_WIDTH, PLATE_DEPTH, 100, 100);
+    const { geometry } = useMemo(() => {
+      const geo = new THREE.PlaneGeometry(PLATE_WIDTH, PLATE_DEPTH, 140, 140); // Reduced segs slightly for clearer grid
       geo.rotateX(-Math.PI / 2);
 
       const posAttribute = geo.attributes.position;
       const vertex = new THREE.Vector3();
+      const count = posAttribute.count;
+
+      const colors = new Float32Array(count * 3);
+      const color = new THREE.Color();
 
       const sigma = fwhm / 2.355;
       const twoSigmaSq = 2 * sigma * sigma;
@@ -629,43 +695,72 @@ const GaussianOverlay = memo(
         }
       }
 
-      const baseHeight = 0.5;
-      const amplitude =
-        (baseHeight * magicArea) /
-        (twoSigmaSq * Math.PI * matrixSize * matrixSize * 240);
+      // Determine Amplitude
+      let amplitude;
+      if (realScale) {
+        const baseHeight = 0.5;
+        amplitude =
+          (baseHeight * magicArea) /
+          (twoSigmaSq * Math.PI * matrixSize * matrixSize * 240);
+      } else {
+        amplitude = 0.5;
+      }
 
-      for (let i = 0; i < posAttribute.count; i++) {
+      amplitude = amplitude / 10;
+
+      // Deform Mesh & Paint Colors
+      for (let i = 0; i < count; i++) {
         vertex.fromBufferAttribute(posAttribute, i);
         let totalY = 0;
+        
         for (let c = 0; c < centers.length; c++) {
           const dx = vertex.x - centers[c].x;
           const dz = vertex.z - centers[c].z;
           const distSq = dx * dx + dz * dz;
           totalY += amplitude * Math.exp(-distSq / twoSigmaSq);
         }
+
         posAttribute.setXYZ(i, vertex.x, totalY, vertex.z);
+
+        // --- IMPROVED COLOR GRADIENT (Red -> Orange -> Yellow) ---
+        const t = Math.min(totalY / amplitude, 1.0);
+        
+        // HSL: Hue 0.0 (Red) -> 0.15 (Yellow)
+        // Lightness: 0.2 (Dark) -> 0.6 (Bright)
+        color.setHSL(t * 0.15, 1.0, 0.25 + t * 0.35);
+
+        colors[i * 3] = color.r;
+        colors[i * 3 + 1] = color.g;
+        colors[i * 3 + 2] = color.b;
       }
+
+      geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
       geo.computeVertexNormals();
-      return geo;
-    }, [fwhm, matrixSize, magicArea]);
+      
+      return { geometry: geo };
+    }, [fwhm, matrixSize, magicArea, realScale]);
 
     return (
       <group position={[0, 0.03, 0]}>
-        <mesh geometry={geometry}>
-          <meshBasicMaterial
-            color="#eb757d"
-            transparent
-            opacity={0.3}
+        {/* 1. Main Solid Mesh (With Lighting/Shadows) */}
+        <mesh geometry={geometry} receiveShadow castShadow>
+          <meshStandardMaterial
+            vertexColors={true}
+            roughness={0.4}
+            metalness={0.1}
+            transparent={true}
+            opacity={0.75} // High opacity to see the shape clearly
             side={THREE.DoubleSide}
-            depthWrite={false}
-            blending={THREE.AdditiveBlending}
+            depthWrite={true} // Allow self-occlusion so it looks 3D
           />
         </mesh>
-        <mesh geometry={geometry}>
+
+        {/* 2. Distinct White Wireframe */}
+        <mesh geometry={geometry} position={[0, 0.002, 0]}>
           <meshBasicMaterial
-            color="#eb757d"
+            color="#555"
             transparent
-            opacity={0.15}
+            opacity={0.15} // Subtle grid lines
             wireframe
             depthWrite={false}
           />
@@ -675,6 +770,147 @@ const GaussianOverlay = memo(
   }
 );
 GaussianOverlay.displayName = "GaussianOverlay";
+
+// --- HELPER: VOLUME GRID VISUALIZATION (UPDATED) ---
+const VolumeGrid = memo(
+  ({
+    width,
+    depth,
+    thickness,
+    nx,
+    nz,
+    visible,
+  }: {
+    width: number;
+    depth: number;
+    thickness: number;
+    nx: number;
+    nz: number;
+    visible: boolean;
+  }) => {
+    // 2. Side Slices (Subtle)
+    const SideLines = useMemo(() => {
+      if (nz <= 1) return null;
+      const vertices = [];
+      const step = thickness / nz;
+      const halfW = width / 2;
+      const halfD = depth / 2;
+
+      for (let i = 1; i < nz; i++) {
+        const y = -thickness / 2 + i * step;
+        vertices.push(-halfW, y, -halfD, halfW, y, -halfD);
+        vertices.push(halfW, y, -halfD, halfW, y, halfD);
+        vertices.push(halfW, y, halfD, -halfW, y, halfD);
+        vertices.push(-halfW, y, halfD, -halfW, y, -halfD);
+      }
+
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute(
+        "position",
+        new THREE.Float32BufferAttribute(vertices, 3)
+      );
+      return geo;
+    }, [width, depth, thickness, nz]);
+
+    if (!visible) return null;
+
+    // 1. Top Grid (Subtle)
+    const TopGrid = () => (
+      <gridHelper
+        args={[width, nx, 0xffffff, 0xffffff]} // White for better contrast on dark/metal
+        position={[0, thickness / 2 + 0.0005, 0]}
+        rotation={[0, 0, 0]}
+      >
+        <meshBasicMaterial
+          attach="material"
+          color="#ffffff"
+          transparent
+          opacity={0.5} // Very subtle
+          depthTest={true} // Allow depth occlusion so it looks "painted on"
+        />
+      </gridHelper>
+    );
+
+    return (
+      <group>
+        <TopGrid />
+        {SideLines && (
+          <lineSegments geometry={SideLines}>
+            <lineBasicMaterial
+              color="#ffffff"
+              transparent
+              opacity={0.3}
+              depthTest={true}
+            />
+          </lineSegments>
+        )}
+      </group>
+    );
+  }
+);
+VolumeGrid.displayName = "VolumeGrid";
+
+// --- HELPER: TECH ANNOTATION LABEL (FIXED ALIGNMENT) ---
+const TechLabel = memo(
+  ({
+    position = [0, 0, 0],
+    label,
+    desc,
+    visible,
+  }: {
+    position?: [number, number, number];
+    label: string;
+    desc: string;
+    visible: boolean;
+  }) => {
+    const [hidden, setHidden] = useState(false);
+
+    return (
+      <Html
+        position={position}
+        zIndexRange={[100, 0]}
+        // Hides label if geometry blocks the view (standard raycast)
+        style={{
+          transition: "opacity 0.2s",
+          opacity: visible && !hidden ? 1 : 0,
+          pointerEvents: "none",
+          // Shift entire block up so the bottom edge sits on the 3D point
+          transform: "translate3d(-50%, -100%, 0)",
+        }}
+      >
+        <div
+          className={`flex flex-col items-center transition-transform duration-300 ease-out origin-bottom ${
+            visible && !hidden
+              ? "scale-100 translate-y-0"
+              : "scale-50 translate-y-10"
+          }`}
+          style={{ position: "relative" }}
+        >
+          {/* 1. Text Card */}
+          <div className="bg-black/80 border border-cyan-500/50 p-2.5 rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.5)] min-w-[120px] text-center mb-0">
+            <span className="block text-[12px] font-black uppercase tracking-widest text-cyan-400 mb-1 border-b border-white/10 pb-1">
+              {label}
+            </span>
+            <span className="block text-[11px] font-mono text-gray-300 leading-tight whitespace-pre-wrap">
+              {desc}
+            </span>
+          </div>
+
+          {/* 2. Connector Line */}
+          <div className="w-1 h-8 bg-gradient-to-b from-cyan-500 to-cyan-400 opacity-80"></div>
+
+          {/* 3. Target Dot (Aligned to Center Bottom) */}
+          {/* left-1/2 centers it horizontally relative to the line */}
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 flex items-center justify-center">
+            <div className="w-2 h-2 bg-white rounded-full shadow-[0_0_8px_#22d3ee] relative z-10"></div>
+            <div className="absolute w-3 h-3 border border-cyan-400/80 rounded-full animate-ping"></div>
+          </div>
+        </div>
+      </Html>
+    );
+  }
+);
+TechLabel.displayName = "TechLabel";
 
 // --- 3D COMPONENT: THERMAL BOX ---
 const ThermalBox = memo(
@@ -688,14 +924,19 @@ const ThermalBox = memo(
     simPlateDim,
     simCpvScale,
     simNx,
-    simNz,
+    simLayerNz,
+    simSinkNz,
     simUseCircle,
     simUsePv,
+    simUseSolarCell,
     simBaseMatKey,
     simSinkMatKey,
     // NEW: Sim Props
     simUseFins,
     simUseReflector,
+    simWindSpeed,
+    simAmbientTemp,
+    simQSolar,
     visMatrixSize,
     visFwhm,
     visMagicArea,
@@ -708,11 +949,18 @@ const ThermalBox = memo(
     // NEW: Vis Props
     visUseFins,
     visUseReflector,
+    visSolarMode,
     status,
     realScale,
     showGaussian,
-    showAdvanced,
     hasPendingChanges,
+    showGrid,
+    explodedView,
+    // NEW PROPS
+    visNx, // Visual Control for Nx
+    visLayerNz, // Visual Control for Nz
+    visSinkNz, // Visual Control for Sink Nz
+    showLabels,
     onUpdateStats,
   }: {
     simMatrixSize: number | null;
@@ -724,13 +972,18 @@ const ThermalBox = memo(
     simPlateDim: number | null;
     simCpvScale: number | null;
     simNx: number | null;
-    simNz: number | null;
+    simLayerNz: number | null;
+    simSinkNz: number | null;
     simUseCircle: boolean | null;
     simUsePv: boolean | null;
+    simUseSolarCell: boolean | null;
     simUseFins: boolean | null;
     simUseReflector: boolean | null;
     simBaseMatKey: string | null;
     simSinkMatKey: string | null;
+    simWindSpeed: number | null;
+    simAmbientTemp: number | null;
+    simQSolar: number | null;
     visMatrixSize: number;
     visFwhm: number;
     visMagicArea: number;
@@ -740,19 +993,27 @@ const ThermalBox = memo(
     visSinkThick: number;
     visUseFins: boolean;
     visUseReflector: boolean;
+    visSolarMode: "none" | "pv" | "cpv";
     visBaseMatKey: string;
     visSinkMatKey: string;
     status: SimStats;
     realScale: boolean;
     showGaussian: boolean;
-    showAdvanced: boolean;
     hasPendingChanges: boolean;
+    showGrid: boolean;
+    explodedView: boolean;
+    visNx: number;
+    visLayerNz: number;
+    visSinkNz: number;
+    showLabels: number;
     onUpdateStats: (stats: Partial<SimStats>) => void;
   }) => {
     const [texSink, setTexSink] = useState<LayerTextures | null>(null);
     const [texBase, setTexBase] = useState<LayerTextures | null>(null);
     const [texCPV, setTexCPV] = useState<LayerTextures | null>(null);
     const [tempRange, setTempRange] = useState({ min: 0, max: 100 });
+
+    const [hoveredPart, setHoveredPart] = useState<string | null>(null);
 
     const sinkRef = useRef<THREE.Group>(null);
     const baseRef = useRef<THREE.Group>(null);
@@ -790,7 +1051,10 @@ const ThermalBox = memo(
         simMagicArea === null ||
         simFwhm === null ||
         !simBaseMatKey ||
-        !simSinkMatKey
+        !simSinkMatKey ||
+        simWindSpeed === null ||
+        simAmbientTemp === null ||
+        simQSolar === null
       ) {
         setTexSink(null);
         setTexBase(null);
@@ -838,7 +1102,7 @@ const ThermalBox = memo(
       };
 
       const relativePath = new URL(
-        "./wasm-embeddings/vc8/solar_bg.wasm",
+        "./wasm-embeddings/vc11/solar_bg.wasm",
         import.meta.url
       ).toString();
       const wasmUrl = new URL(relativePath, window.location.origin).href;
@@ -857,21 +1121,26 @@ const ThermalBox = memo(
         plateDim: simPlateDim,
         cpvScale: simCpvScale,
         nXy: simNx,
-        nZLayer: simNz,
+        nZLayer: simLayerNz,
+        nZSink: simSinkNz,
         useCircle: simUseCircle,
         usePv: simUsePv,
+        useSolarCell: simUseSolarCell,
         // Material props
         baseKt: baseMat.kt,
         baseEmi: baseMat.emi,
         sinkKt: sinkMat.kt,
         sinkEmi: sinkMat.emi,
-        // NEW: Boolean Toggles
+        // Boolean Toggles
         useFins: simUseFins,
         useReflector: simUseReflector,
+        // NEW: Environmental Params
+        windSpeed: simWindSpeed,
+        ambientTemp: simAmbientTemp,
+        qSolar: simQSolar,
         wasmUrl,
       };
 
-      console.log("Starting worker with params:", payload);
       workerRef.current.postMessage(payload);
 
       return () => {
@@ -890,257 +1159,241 @@ const ThermalBox = memo(
       simPlateDim,
       simCpvScale,
       simNx,
-      simNz,
+      simLayerNz,
+      simSinkNz,
       simUseCircle,
       simUsePv,
+      simUseSolarCell,
       simUseFins,
       simUseReflector,
       simBaseMatKey,
       simSinkMatKey,
+      simWindSpeed,
+      simAmbientTemp,
+      simQSolar,
       onUpdateStats,
     ]);
 
-    // --- DYNAMIC POSITIONING LOGIC ---
-    // We treat the BASE as the anchor at Y=0.
-    // Dimensions are "Thickness" (Heights).
-    // BoxGeometries are drawn from the center.
+    // --- STATE DETERMINATION ---
+    // The "Simulation Mode" is active if we have textures AND no pending changes AND not loading
+    const isSimulationActive =
+      texSink !== null && !status.loading && !hasPendingChanges;
 
-    // 1. Base Layer (Center at 0)
+    // --- DYNAMIC POSITIONING ---
     const BASE_REST_Y = 0;
-
-    // 2. Sink Layer (Below Base)
-    // Position = Base Bottom - Sink Half Height
     const SINK_REST_Y = -(visLayerThick / 2 + visSinkThick / 2);
-    // Expansion target (move down)
-    const SINK_EXPANDED_Y = SINK_REST_Y - 0.2;
-
-    // 3. CPV Layer (Above Base)
-    // Position = Base Top + Substrate Half Height
+    const SINK_EXPANDED_Y = SINK_REST_Y - 0.15;
     const CPV_REST_Y = visLayerThick / 2 + CPV_SUBSTRATE_THICK / 2;
-    // Expansion target (move up)
-    const CPV_EXPANDED_Y = CPV_REST_Y + 0.2;
+    const CPV_EXPANDED_Y = CPV_REST_Y + 0.15;
 
-    const SPEED = 2.0;
+    useFrame((state, delta) => {
+      // Logic: Explode if explicitly requested (explodedView) OR if Simulation Results are active (Original Behavior)
+      const shouldExplode = explodedView || isSimulationActive;
 
-    useFrame((_, delta) => {
-      // Determine if we should be in "Exploded View"
-      // Explode if we have results (textures) AND we are not loading/changing
-      const isVisualizing =
-        texSink !== null && !status.loading && !hasPendingChanges;
-
-      const targetExpansion = isVisualizing ? 1 : 0;
+      const targetExpansion = shouldExplode ? 1 : 0;
 
       currentExpansion.current = THREE.MathUtils.damp(
         currentExpansion.current,
         targetExpansion,
         3.0,
-        delta * SPEED
+        delta * 2.0
       );
 
       const t = currentExpansion.current;
 
-      // Animate Groups
-      if (sinkRef.current) {
+      if (sinkRef.current)
         sinkRef.current.position.y = THREE.MathUtils.lerp(
           SINK_REST_Y,
           SINK_EXPANDED_Y,
           t
         );
-      }
-      if (baseRef.current) {
-        baseRef.current.position.y = BASE_REST_Y; // Base stays anchored
-      }
-      if (cpvRef.current) {
-        // Only float up if we are visualizing, otherwise stay flush
+      if (baseRef.current) baseRef.current.position.y = BASE_REST_Y;
+      if (cpvRef.current)
         cpvRef.current.position.y = THREE.MathUtils.lerp(
           CPV_REST_Y,
           CPV_EXPANDED_Y,
           t
         );
-      }
     });
 
-    // --- HOVER HANDLERS ---
+    // --- INTERACTION ---
     const handlePointerMove = useCallback(
-      (e: any, textures: LayerTextures | null) => {
-        if (!textures || status.loading || hasPendingChanges) return;
+      (e: any, layerName: string, textures: LayerTextures | null) => {
         e.stopPropagation();
-        const matIndex = e.face?.materialIndex;
-        if (matIndex === undefined) return;
-        const texture = textures[matIndex];
-        const image = texture.image;
-        if (!e.uv || !image) return;
-        const x = Math.floor(e.uv.x * image.width);
-        const y = Math.floor(e.uv.y * image.height);
-        const index = (y * image.width + x) * 4;
-        const r = image.data[index];
-        const g = image.data[index + 1];
-        let normVal = 0;
-        const rn = r / 255;
-        const gn = g / 255;
-        if (gn > 0.05) normVal = gn / 2.0 + 0.5;
-        else normVal = rn / 2.0;
-        const actualTemp =
-          normVal * (tempRange.max - tempRange.min) + tempRange.min;
-        onUpdateStats({ hoverTemp: actualTemp });
+
+        // If Simulating -> Show Temp
+        if (isSimulationActive && textures) {
+          const matIndex = e.face?.materialIndex;
+          if (matIndex === undefined) return;
+          const texture = textures[matIndex];
+          const image = texture.image;
+          if (!e.uv || !image) return;
+
+          const x = Math.floor(e.uv.x * image.width);
+          const y = Math.floor(e.uv.y * image.height);
+          const index = (y * image.width + x) * 4;
+          const r = image.data[index]; // Red channel
+          const g = image.data[index + 1]; // Green channel
+
+          let normVal = 0;
+          // Decode heatmap color logic (approximate reverse of shader)
+          if (g > 5) normVal = g / 255 / 2.0 + 0.5;
+          else normVal = r / 255 / 2.0;
+
+          const actualTemp =
+            normVal * (tempRange.max - tempRange.min) + tempRange.min;
+          onUpdateStats({ hoverTemp: actualTemp });
+          return;
+        }
+
+        // If Not Simulating -> Show Label
+        if (showLabels !== 0) {
+          setHoveredPart(layerName);
+        }
       },
-      [status.loading, hasPendingChanges, tempRange, onUpdateStats]
+      [isSimulationActive, showLabels, tempRange, onUpdateStats]
     );
 
     const handlePointerOut = useCallback(() => {
       onUpdateStats({ hoverTemp: null });
+      setHoveredPart(null);
     }, [onUpdateStats]);
 
-    // --- MATERIALS & GEOMETRIES ---
-    const visualMaterials = useMemo(() => {
-      const baseMatDef = MATERIALS[visBaseMatKey];
-      const sinkMatDef = MATERIALS[visSinkMatKey];
+    const cpvTexture = useTexture("/textures/cpv-cell-2.jpg");
+    cpvTexture.wrapS = cpvTexture.wrapT = THREE.RepeatWrapping;
+
+    const materials = useMemo(() => {
+      // Realistic PBR Materials (For Setup Mode)
+      const base = MATERIALS[visBaseMatKey];
+      const sink = MATERIALS[visSinkMatKey];
 
       return {
         sink: new THREE.MeshStandardMaterial({
-          color: sinkMatDef.color,
-          emissive: sinkMatDef.color,
-          emissiveIntensity: 0.25,
-          metalness: 0.3,
-          roughness: sinkMatDef.roughness,
+          color: sink.color,
+          metalness: 0.5,
+          roughness: 0.6,
+          transparent: false,
+          opacity: 1.0,
+          side: THREE.FrontSide,
         }),
         base: new THREE.MeshStandardMaterial({
-          color: baseMatDef.color,
-          emissive: baseMatDef.color,
-          emissiveIntensity: 0.25,
-          metalness: 0.3,
-          roughness: baseMatDef.roughness,
+          color: base.color,
+          metalness: 0.6,
+          roughness: 0.5,
+          transparent: false,
+          opacity: 1.0,
+          side: THREE.FrontSide,
         }),
-        cpvSubstrate: new THREE.MeshStandardMaterial({
-          color: visUseReflector ? REFELCTIVE_MATERIAL.color : baseMatDef.color,
-          emissive: visUseReflector
-            ? REFELCTIVE_MATERIAL.color
-            : baseMatDef.color,
-          emissiveIntensity: 0.35,
-          roughness: visUseReflector
-            ? REFELCTIVE_MATERIAL.roughness
-            : baseMatDef.roughness,
-          metalness: 0.3,
+        cpvSub: new THREE.MeshStandardMaterial({
+          color: visUseReflector ? "#eeeeee" : base.color,
+          metalness: visUseReflector ? 0.9 : 0.5,
+          roughness: visUseReflector ? 0.2 : 0.6,
+          transparent: false,
+          opacity: 1.0,
         }),
         cpvCell: new THREE.MeshStandardMaterial({
-          color: "#1a237e",
-          emissive: "#1a237e",
-          emissiveIntensity: 0.4,
-          roughness: 0.2,
-          metalness: 0.1,
+          color: "#aaa", // White base so texture shows true colors
+          map: cpvTexture, // <--- Apply Texture Here
+          emissive: "#00b", // No emissive in structural mode
+          metalness: 0.9,
+          roughness: 0.3,
+          transparent: false,
+          opacity: 1.0,
         }),
       };
-    }, [visBaseMatKey, visSinkMatKey, visUseReflector]);
+    }, [visBaseMatKey, visSinkMatKey, visUseReflector, cpvTexture]);
 
-    const geometries = useMemo(() => {
-      return {
-        sinkMain: new THREE.BoxGeometry(PLATE_WIDTH, visSinkThick, PLATE_DEPTH),
-        // Fin height is fixed visually, attached to bottom
+    const geometries = useMemo(
+      () => ({
+        sink: new THREE.BoxGeometry(PLATE_WIDTH, visSinkThick, PLATE_DEPTH),
         sinkFin: new THREE.BoxGeometry(FIN_THICKNESS, FIN_HEIGHT, PLATE_DEPTH),
         base: new THREE.BoxGeometry(PLATE_WIDTH, visLayerThick, PLATE_DEPTH),
-        cpvSubstrate: new THREE.BoxGeometry(
+        cpvSub: new THREE.BoxGeometry(
           PLATE_WIDTH,
           CPV_SUBSTRATE_THICK,
           PLATE_DEPTH
         ),
-      };
-    }, [visLayerThick, visSinkThick]);
+      }),
+      [visLayerThick, visSinkThick, FIN_HEIGHT, FIN_THICKNESS]
+    );
 
-    const annotationStyle = {
-      color: "white",
-      background: "rgba(0,0,0,0.7)",
-      padding: "2px 6px",
-      borderRadius: "4px",
-      fontSize: "10px",
-      fontFamily: "monospace",
-      border: "1px solid rgba(255,255,255,0.2)",
-      fontWeight: "bold",
-      pointerEvents: "none" as const,
-    };
-
-    const areLabelsVisible =
-      !status.loading && !hasPendingChanges && !showAdvanced;
-
+    // --- RENDER ---
     return (
       <group rotation={[0, 0, 0]} position={[0, 0.1, 0]}>
-        {/* --- SINK GROUP (Bottom) --- */}
-        {/* Render only if thickness > 0 to avoid errors/artifacts */}
+        {/* SINK LAYER */}
         {visSinkThick > 0.0001 && (
           <group ref={sinkRef}>
-            {texSink && !hasPendingChanges && !status.loading ? (
-              // Texture Mode (Heatmap)
-              <mesh
-                onPointerMove={(e) => handlePointerMove(e, texSink)}
-                onPointerOut={handlePointerOut}
-                geometry={geometries.sinkMain}
-              >
-                {texSink.map((tex, i) => (
+            <mesh
+              onPointerMove={(e) => handlePointerMove(e, "Dissipador", texSink)}
+              onPointerOut={handlePointerOut}
+              geometry={geometries.sink}
+              material={!isSimulationActive ? materials.sink : undefined}
+            >
+              {isSimulationActive &&
+                texSink &&
+                texSink.map((tex, i) => (
                   <meshStandardMaterial
                     key={i}
                     attach={`material-${i}`}
                     emissiveMap={tex}
                     emissiveIntensity={2.5}
                     emissive="white"
-                    roughness={0.9}
-                    metalness={0.1}
-                    color="#000"
+                    color="black"
                   />
                 ))}
-              </mesh>
-            ) : (
-              // Geometry Mode (Solid Material)
-              <group>
-                {/* Main Plate */}
-                <mesh
-                  geometry={geometries.sinkMain}
-                  material={visualMaterials.sink}
-                />
+            </mesh>
+            {/* Fins (Only show in Setup Mode OR if explicit) */}
+            {!isSimulationActive &&
+              visUseFins &&
+              Array.from({ length: 50 }).map((_, i) => {
+                const spacing = PLATE_WIDTH / 50;
+                const xPos = -PLATE_WIDTH / 2 + spacing / 2 + i * spacing;
+                return (
+                  <mesh
+                    key={i}
+                    position={[xPos, -visSinkThick / 2 - FIN_HEIGHT / 2, 0]}
+                    geometry={geometries.sinkFin}
+                    material={materials.sink}
+                  />
+                );
+              })}
 
-                {/* Fins (Attached to bottom of Sink Plate) */}
-                {visUseFins &&
-                  Array.from({ length: 50 }).map((_, i) => {
-                    // Spread fins across the width
-                    const spacing = PLATE_WIDTH / 50;
-                    const xPos = -PLATE_WIDTH / 2 + spacing / 2 + i * spacing;
-
-                    // Y Position: Relative to Sink Center (0).
-                    // Bottom of sink is -visSinkThick/2.
-                    // Center of Fin is -visSinkThick/2 - FIN_HEIGHT/2.
-                    const yPos = -visSinkThick / 2 - FIN_HEIGHT / 2;
-
-                    return (
-                      <mesh
-                        key={i}
-                        position={[xPos, yPos, 0]}
-                        geometry={geometries.sinkFin}
-                        material={visualMaterials.sink}
-                      />
-                    );
-                  })}
-              </group>
+            {/* Volume Grid (Only in Setup Mode) */}
+            {!isSimulationActive && showGrid && (
+              <VolumeGrid
+                width={PLATE_WIDTH}
+                depth={PLATE_DEPTH}
+                thickness={visSinkThick}
+                nx={visNx || 40}
+                nz={visSinkNz || 4}
+                visible={true}
+              />
             )}
-            <Html position={[0.8, 0, 0]} center zIndexRange={[10, 0]}>
-              <div
-                style={{
-                  ...annotationStyle,
-                  opacity: areLabelsVisible ? "1" : "0",
-                  transition: "opacity 0.2s ease-in-out",
-                }}
-              >
-                {MATERIALS[visSinkMatKey].name.split(" ")[0]}
-              </div>
-            </Html>
+
+            <TechLabel
+              visible={
+                showLabels === 2 ||
+                (showLabels === 1 && hoveredPart === "Dissipador")
+              }
+              position={[PLATE_WIDTH / 2, 0, PLATE_DEPTH / 2]}
+              label="Dissipador"
+              desc={`${MATERIALS[visSinkMatKey].name}\nEspessor: ${(
+                visSinkThick * 1000
+              ).toFixed(1)}mm`}
+            />
           </group>
         )}
 
-        {/* --- BASE GROUP (Middle - Anchor) --- */}
+        {/* BASE LAYER */}
         <group ref={baseRef}>
           <mesh
-            onPointerMove={(e) => handlePointerMove(e, texBase)}
+            onPointerMove={(e) => handlePointerMove(e, "Placa Base", texBase)}
             onPointerOut={handlePointerOut}
             geometry={geometries.base}
+            material={!isSimulationActive ? materials.base : undefined}
           >
-            {texBase && !hasPendingChanges && !status.loading ? (
+            {isSimulationActive &&
+              texBase &&
               texBase.map((tex, i) => (
                 <meshStandardMaterial
                   key={i}
@@ -1148,129 +1401,128 @@ const ThermalBox = memo(
                   emissiveMap={tex}
                   emissiveIntensity={2.5}
                   emissive="white"
-                  roughness={0.9}
-                  metalness={0.1}
-                  color="#000"
+                  color="black"
                 />
-              ))
-            ) : (
-              <primitive object={visualMaterials.base} />
-            )}
+              ))}
           </mesh>
-          <Html position={[0.8, 0, 0]} center zIndexRange={[10, 0]}>
-            <div
-              style={{
-                ...annotationStyle,
-                opacity: areLabelsVisible ? "1" : "0",
-                transition: "opacity 0.2s ease-in-out",
-              }}
-            >
-              {MATERIALS[visBaseMatKey].name.split(" ")[0]}
-            </div>
-          </Html>
+
+          {!isSimulationActive && showGrid && (
+            <VolumeGrid
+              width={PLATE_WIDTH}
+              depth={PLATE_DEPTH}
+              thickness={visLayerThick}
+              nx={visNx || 40}
+              nz={visLayerNz || 9}
+              visible={true}
+            />
+          )}
+          <TechLabel
+            visible={
+              showLabels === 2 ||
+              (showLabels === 1 && hoveredPart === "Placa Base")
+            }
+            position={[-PLATE_WIDTH / 2, 0, PLATE_DEPTH / 2]}
+            label="Placa Conductora"
+            desc={`${MATERIALS[visBaseMatKey].name}`}
+          />
         </group>
 
-        {/* --- CPV GROUP (Top) --- */}
+        {/* CPV LAYER */}
         <group ref={cpvRef}>
-          {texCPV && !hasPendingChanges && !status.loading ? (
-            <mesh
-              onPointerMove={(e) => handlePointerMove(e, texCPV)}
-              onPointerOut={handlePointerOut}
-              geometry={geometries.cpvSubstrate}
-            >
-              {texCPV.map((tex, i) => (
+          <mesh
+            onPointerMove={(e) => handlePointerMove(e, "Substrat CPV", texCPV)}
+            onPointerOut={handlePointerOut}
+            geometry={geometries.cpvSub}
+            material={!isSimulationActive ? materials.cpvSub : undefined}
+          >
+            {isSimulationActive &&
+              texCPV &&
+              texCPV.map((tex, i) => (
                 <meshStandardMaterial
                   key={i}
                   attach={`material-${i}`}
                   emissiveMap={tex}
                   emissiveIntensity={2.5}
                   emissive="white"
-                  roughness={0.9}
-                  metalness={0.1}
-                  color={"#000"}
+                  color="black"
                 />
               ))}
-            </mesh>
-          ) : (
+          </mesh>
+
+          {/* CPV Cells (Only Setup Mode) */}
+          {visSolarMode !== "none" && !isSimulationActive && (
             <group>
-              {/* CPV Substrate Wafer */}
-              <mesh
-                geometry={geometries.cpvSubstrate}
-                material={
-                  visUseReflector
-                    ? visualMaterials.cpvSubstrate
-                    : visualMaterials.base
-                }
-              />
-              {/* PV Cells (Sitting on top of Substrate) */}
               {(() => {
                 const n = visMatrixSize;
-                const cellSpacing = (PLATE_WIDTH * 0.9) / n;
-                const startOffset = -((n - 1) * cellSpacing) / 2;
-                const cellSize = cellSpacing * visCpvScale;
-
-                let cellGeo;
-                if (visUseCircle) {
-                  cellGeo = new THREE.CylinderGeometry(
-                    cellSize / 2,
-                    cellSize / 2,
-                    CPV_CELL_HEIGHT,
-                    32
-                  );
-                } else {
-                  cellGeo = new THREE.BoxGeometry(
-                    cellSize,
-                    CPV_CELL_HEIGHT,
-                    cellSize
-                  );
-                }
-
-                // Y Position: Relative to CPV Group Center (0)
-                // Substrate Top is +CPV_SUBSTRATE_THICK/2
-                // Cell Center is +CPV_SUBSTRATE_THICK/2 + CPV_CELL_HEIGHT/2
-                const cellY = CPV_SUBSTRATE_THICK / 2 + CPV_CELL_HEIGHT / 2;
-
-                const cells = [];
-                for (let x = 0; x < n; x++) {
-                  for (let z = 0; z < n; z++) {
-                    cells.push(
-                      <mesh
-                        key={`${x}-${z}`}
-                        position={[
-                          startOffset + x * cellSpacing,
-                          cellY,
-                          startOffset + z * cellSpacing,
-                        ]}
-                        geometry={cellGeo}
-                        material={visualMaterials.cpvCell}
-                      />
-                    );
-                  }
-                }
-                return cells;
+                const spacing = (PLATE_WIDTH * 0.9) / n;
+                const start = -((n - 1) * spacing) / 2;
+                const size = spacing * visCpvScale;
+                const geo = visUseCircle
+                  ? new THREE.CylinderGeometry(
+                      size / 2,
+                      size / 2,
+                      CPV_CELL_HEIGHT,
+                      32
+                    )
+                  : new THREE.BoxGeometry(size, CPV_CELL_HEIGHT, size);
+                const y = CPV_SUBSTRATE_THICK / 2 + CPV_CELL_HEIGHT / 2;
+                return Array.from({ length: n }).map((_, x) =>
+                  Array.from({ length: n }).map((_, z) => (
+                    <mesh
+                      key={`${x}-${z}`}
+                      position={[start + x * spacing, y, start + z * spacing]}
+                      geometry={geo}
+                      material={materials.cpvCell}
+                      onPointerMove={(e) => {
+                        e.stopPropagation();
+                        if (showLabels !== 0) setHoveredPart("CPV Cell");
+                      }}
+                      onPointerOut={handlePointerOut}
+                    />
+                  ))
+                );
               })()}
-
-              {/* Gaussian Heat Distribution Overlay */}
-              {showGaussian && (
-                <GaussianOverlay
-                  fwhm={visFwhm}
-                  matrixSize={visMatrixSize}
-                  magicArea={visMagicArea}
-                />
-              )}
             </group>
           )}
-          <Html position={[0.8, 0, 0]} center zIndexRange={[20, 0]}>
-            <div
-              style={{
-                ...annotationStyle,
-                opacity: areLabelsVisible ? "1" : "0",
-                transition: "opacity 0.2s ease-in-out",
-              }}
-            >
-              {visUseReflector ? "Si+Ag" : "Si"}
-            </div>
-          </Html>
+
+          {!isSimulationActive && showGrid && (
+            <VolumeGrid
+              width={PLATE_WIDTH}
+              depth={PLATE_DEPTH}
+              thickness={CPV_SUBSTRATE_THICK}
+              nx={visNx || 40}
+              nz={2}
+              visible={true}
+            />
+          )}
+
+          {showGaussian && (
+            <GaussianOverlay
+              fwhm={visFwhm}
+              matrixSize={visMatrixSize}
+              magicArea={visMagicArea}
+              realScale={realScale} // <--- Pass the prop here
+            />
+          )}
+          <TechLabel
+            visible={
+              (showLabels === 2 ||
+                (showLabels == 1 && hoveredPart === "Substrat CPV")) &&
+              visUseReflector
+            }
+            position={[0, visLayerThick / 2 + CPV_SUBSTRATE_THICK, 0]}
+            label={"Mirall Ag"}
+            desc={"Reflectivitat: 95%"}
+          />
+          <TechLabel
+            visible={
+              showLabels === 2 ||
+              (showLabels === 1 && hoveredPart === "CPV Cell")
+            }
+            position={[0, CPV_CELL_HEIGHT / 2, 0]}
+            label={visSolarMode === "cpv" ? "Cèl·lula CPV" : "Panell PV"} 
+            desc={visSolarMode === "cpv" ? "Triple Unió" : "Silici Monocristal·lí"}
+          />
         </group>
       </group>
     );
@@ -1279,152 +1531,177 @@ const ThermalBox = memo(
 ThermalBox.displayName = "ThermalBox";
 
 // --- REAL TELEMETRY STATUS BAR ---
-const SystemStatusBar = memo(({ status, loading }: { status: string; loading: boolean }) => {
-  const [telemetry, setTelemetry] = useState({
-    fps: 0,
-    latency: 0,
-    memory: 0,
-    uptime: 0,
-    netType: 'UNKNOWN'
-  });
+const SystemStatusBar = memo(
+  ({ status, loading }: { status: string; loading: boolean }) => {
+    const [telemetry, setTelemetry] = useState({
+      fps: 0,
+      latency: 0,
+      memory: 0,
+      uptime: 0,
+      netType: "UNKNOWN",
+    });
 
-  // 1. Frame Rate (FPS) Loop
-  useEffect(() => {
-    let frameCount = 0;
-    let lastTime = performance.now();
-    let animationFrameId: number;
+    // 1. Frame Rate (FPS) Loop
+    useEffect(() => {
+      let frameCount = 0;
+      let lastTime = performance.now();
+      let animationFrameId: number;
 
-    const measureStats = () => {
-      const now = performance.now();
-      frameCount++;
+      const measureStats = () => {
+        const now = performance.now();
+        frameCount++;
 
-      if (now - lastTime >= 1000) {
-        // Update state every second
-        const currentFps = frameCount;
-        
-        // Memory (Chrome/Edge only property)
-        // @ts-ignore - performance.memory is non-standard but works in Chromium
-        const memUsed = (performance.memory?.usedJSHeapSize / 1048576) || 0;
+        if (now - lastTime >= 1000) {
+          // Update state every second
+          const currentFps = frameCount;
 
-        // Network Type
-        // @ts-ignore
-        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-        const netType = connection ? connection.effectiveType.toUpperCase() : 'LAN';
+          // Memory (Chrome/Edge only property)
+          // @ts-ignore - performance.memory is non-standard but works in Chromium
+          const memUsed = performance.memory?.usedJSHeapSize / 1048576 || 0;
 
-        setTelemetry(prev => ({
-          ...prev,
-          fps: currentFps,
-          memory: memUsed,
-          uptime: prev.uptime + 1,
-          netType: netType
-        }));
+          // Network Type
+          const connection =
+            (navigator as any).connection ||
+            (navigator as any).mozConnection ||
+            (navigator as any).webkitConnection;
+          const netType = connection
+            ? connection.effectiveType.toUpperCase()
+            : "LAN";
 
-        frameCount = 0;
-        lastTime = now;
-      }
-      animationFrameId = requestAnimationFrame(measureStats);
+          setTelemetry((prev) => ({
+            ...prev,
+            fps: currentFps,
+            memory: memUsed,
+            uptime: prev.uptime + 1,
+            netType: netType,
+          }));
+
+          frameCount = 0;
+          lastTime = now;
+        }
+        animationFrameId = requestAnimationFrame(measureStats);
+      };
+
+      measureStats();
+      return () => cancelAnimationFrame(animationFrameId);
+    }, []);
+
+    // 2. Latency "Ping" (runs every 5 seconds)
+    useEffect(() => {
+      const checkPing = async () => {
+        const start = Date.now();
+        try {
+          // Ping the current server to see app latency
+          await fetch(window.location.href, {
+            method: "HEAD",
+            cache: "no-cache",
+          });
+          const end = Date.now();
+          setTelemetry((prev) => ({ ...prev, latency: end - start }));
+        } catch (e) {
+          setTelemetry((prev) => ({ ...prev, latency: -1 }));
+        }
+      };
+
+      checkPing(); // Initial
+      const interval = setInterval(checkPing, 5000);
+      return () => clearInterval(interval);
+    }, []);
+
+    // Format Uptime (MM:SS)
+    const formatTime = (secs: number) => {
+      const m = Math.floor(secs / 60)
+        .toString()
+        .padStart(2, "0");
+      const s = (secs % 60).toString().padStart(2, "0");
+      return `${m}:${s}`;
     };
 
-    measureStats();
-    return () => cancelAnimationFrame(animationFrameId);
-  }, []);
+    // Color logic
+    const statusColor = loading
+      ? "text-yellow-400"
+      : status === "Error"
+      ? "text-red-500"
+      : "text-emerald-400";
+    const latencyColor =
+      telemetry.latency > 200
+        ? "text-red-400"
+        : telemetry.latency > 100
+        ? "text-yellow-400"
+        : "text-white";
+    const fpsColor = telemetry.fps < 30 ? "text-red-400" : "text-white";
 
-  // 2. Latency "Ping" (runs every 5 seconds)
-  useEffect(() => {
-    const checkPing = async () => {
-      const start = Date.now();
-      try {
-        // Ping the current server to see app latency
-        await fetch(window.location.href, { method: 'HEAD', cache: 'no-cache' });
-        const end = Date.now();
-        setTelemetry(prev => ({ ...prev, latency: end - start }));
-      } catch (e) {
-        setTelemetry(prev => ({ ...prev, latency: -1 }));
-      }
-    };
-
-    checkPing(); // Initial
-    const interval = setInterval(checkPing, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Format Uptime (MM:SS)
-  const formatTime = (secs: number) => {
-    const m = Math.floor(secs / 60).toString().padStart(2, '0');
-    const s = (secs % 60).toString().padStart(2, '0');
-    return `${m}:${s}`;
-  };
-
-  // Color logic
-  const statusColor = loading ? "text-yellow-400" : status === "Error" ? "text-red-500" : "text-emerald-400";
-  const latencyColor = telemetry.latency > 200 ? "text-red-400" : telemetry.latency > 100 ? "text-yellow-400" : "text-white";
-  const fpsColor = telemetry.fps < 30 ? "text-red-400" : "text-white";
-
-  return (
-    <div className="hidden xl:flex items-center gap-0 bg-neutral-950/80 border border-white/10 rounded-md overflow-hidden shadow-2xl backdrop-blur-md h-10 select-none">
-      
-      {/* SECTION 1: SYSTEM STATE (Based on your simulation prop) */}
-      <div className="px-3 py-1 flex items-center gap-2 border-r border-white/10">
-        <div className="relative w-2 h-2">
-          <div className={`absolute inset-0 rounded-full ${loading ? "bg-yellow-500 animate-ping" : "bg-emerald-500"} opacity-75`}></div>
-          <div className={`relative w-2 h-2 rounded-full ${loading ? "bg-yellow-500" : "bg-emerald-500"}`}></div>
-        </div>
-        <span className={`text-[10px] font-black tracking-widest uppercase ${statusColor}`}>
-          { status.toUpperCase()}
-        </span>
-      </div>
-
-      {/* SECTION 2: REAL BROWSER TELEMETRY */}
-      <div className="flex items-center px-4 gap-4 text-[10px] font-mono text-gray-400">
-        
-        {/* Latency */}
-        <div className="flex flex-col items-start leading-none gap-0.5 w-14">
-          <span className="uppercase">LATENCY</span>
-          <span className={latencyColor}>
-            {telemetry.latency === -1 ? "OFF" : `${telemetry.latency} ms`}
+    return (
+      <div className="hidden xl:flex items-center gap-0 bg-neutral-950/80 border border-white/10 rounded-md overflow-hidden shadow-2xl h-10 select-none">
+        {/* SECTION 1: SYSTEM STATE (Based on your simulation prop) */}
+        <div className="px-3 py-1 flex items-center gap-2 border-r border-white/10">
+          <div className="relative w-2 h-2">
+            <div
+              className={`absolute inset-0 rounded-full ${
+                loading ? "bg-yellow-500 animate-ping" : "bg-emerald-500"
+              } opacity-75`}
+            ></div>
+            <div
+              className={`relative w-2 h-2 rounded-full ${
+                loading ? "bg-yellow-500" : "bg-emerald-500"
+              }`}
+            ></div>
+          </div>
+          <span
+            className={`text-[10px] font-black tracking-widest uppercase ${statusColor}`}
+          >
+            {status.toUpperCase()}
           </span>
         </div>
 
-        <div className="w-px h-4 bg-white/10" />
+        {/* SECTION 2: REAL BROWSER TELEMETRY */}
+        <div className="flex items-center px-4 gap-4 text-[10px] font-mono text-gray-400">
+          {/* Latency */}
+          <div className="flex flex-col items-start leading-none gap-0.5 w-14">
+            <span className="uppercase">LATENCY</span>
+            <span className={latencyColor}>
+              {telemetry.latency === -1 ? "OFF" : `${telemetry.latency} ms`}
+            </span>
+          </div>
 
-        {/* FPS Counter */}
-        <div className="flex flex-col items-start leading-none gap-0.5 w-12">
-          <span className="uppercase">FPS</span>
-          <span className={fpsColor}>
-            {telemetry.fps}
-          </span>
+          <div className="w-px h-4 bg-white/10" />
+
+          {/* FPS Counter */}
+          <div className="flex flex-col items-start leading-none gap-0.5 w-12">
+            <span className="uppercase">FPS</span>
+            <span className={fpsColor}>{telemetry.fps}</span>
+          </div>
+
+          <div className="w-px h-4 bg-white/10" />
+
+          {/* Memory (JS Heap) - Only works in Chromium, shows 0 otherwise */}
+          <div className="flex flex-col items-start leading-none gap-0.5 w-16">
+            <span className="uppercase">HEAP MEM.</span>
+            <span className="text-white">
+              {telemetry.memory > 0
+                ? `${telemetry.memory.toFixed(0)} MB`
+                : "N/A"}
+            </span>
+          </div>
+
+          <div className="w-px h-4 bg-white/10" />
+
+          {/* Connection Type */}
+          <div className="flex flex-col items-start leading-none gap-0.5 w-12">
+            <span className="uppercase">NET</span>
+            <span className="text-cyan-400">{telemetry.netType}</span>
+          </div>
         </div>
 
-        <div className="w-px h-4 bg-white/10" />
-
-        {/* Memory (JS Heap) - Only works in Chromium, shows 0 otherwise */}
-        <div className="flex flex-col items-start leading-none gap-0.5 w-16">
-          <span className="uppercase">HEAP MEM.</span>
-          <span className="text-white">
-            {telemetry.memory > 0 ? `${telemetry.memory.toFixed(0)} MB` : "N/A"}
-          </span>
-        </div>
-
-        <div className="w-px h-4 bg-white/10" />
-
-        {/* Connection Type */}
-        <div className="flex flex-col items-start leading-none gap-0.5 w-12">
-          <span className="uppercase">NET</span>
-          <span className="text-cyan-400">
-            {telemetry.netType}
-          </span>
+        {/* SECTION 3: SESSION TIMER */}
+        <div className="px-3 py-1.5 bg-black/40 border-l border-white/10 text-[12px] font-mono text-gray-300">
+          T+{formatTime(telemetry.uptime)}
         </div>
       </div>
-
-      {/* SECTION 3: SESSION TIMER */}
-      <div className="px-3 py-1.5 bg-black/40 border-l border-white/10 text-[12px] font-mono text-gray-300">
-        T+{formatTime(telemetry.uptime)}
-      </div>
-    </div>
-  );
-});
+    );
+  }
+);
 SystemStatusBar.displayName = "SystemStatusBar";
-
 
 function SceneReady({ onReady }: { onReady: () => void }) {
   useEffect(() => {
@@ -1510,18 +1787,24 @@ export default function ThermalPage() {
   const [showGaussian, setShowGaussian] = useState(false);
   const [realScale, setRealScale] = useState(false);
 
+  const [hideUI, setHideUI] = useState(false);
+
+  const [explodedView, setExplodedView] = useState(false);
+  const [showGrid, setShowGrid] = useState(false);
+  const [showLabels, setShowLabels] = useState(1);
+
   // ADVANCED UI STATE
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [showFeasibility, setShowFeasibility] = useState(false);
   const [uiLayerThick, setUiLayerThick] = useState(0.0189);
   const [uiSinkThick, setUiSinkThick] = useState(0.0106);
   const [uiPvThick, setUiPvThick] = useState(0.2);
   const [uiPlateDim, setUiPlateDim] = useState(1.5);
   const [uiCpvScale, setUiCpvScale] = useState(0.7);
   const [uiNx, setUiNx] = useState(40);
-  const [uiNz, setUiNz] = useState(9);
+  const [uiLayerNz, setUiLayerNz] = useState(9);
+  const [uiSinkNz, setUiSinkNz] = useState(3);
   const [uiUseCircle, setUiUseCircle] = useState(false);
-  const [uiUsePv, setUiUsePv] = useState(false);
+  const [uiSolarMode, setUiSolarMode] = useState<"none" | "pv" | "cpv">("cpv");
 
   // NEW: Boolean Toggles State
   const [uiUseFins, setUiUseFins] = useState(true);
@@ -1531,7 +1814,11 @@ export default function ThermalPage() {
   const [uiBaseMatKey, setUiBaseMatKey] = useState("Al-1050A (Anodized)");
   const [uiSinkMatKey, setUiSinkMatKey] = useState("Al-1050A (Anodized)");
 
-  const [selectedPreset, setSelectedPreset] = useState<string>("");
+  // NEW: Environmental UI State
+  const [uiWindSpeed, setUiWindSpeed] = useState(4.0); // m/s
+  const [uiAmbientTemp, setUiAmbientTemp] = useState(25.0); // °C
+  const [uiQSolar, setUiQSolar] = useState(1000.0); // W/m²
+
   const [activePresetKeys, setActivePresetKeys] = useState<string[]>([]);
 
   const [maxRoi, setMaxRoi] = useState(15);
@@ -1552,14 +1839,19 @@ export default function ThermalPage() {
     plateDim: number;
     cpvScale: number;
     nx: number;
-    nz: number;
+    layerNz: number;
+    sinkNz: number;
     useCircle: boolean;
     usePv: boolean;
-    // NEW Params
+    useSolarCell: boolean;
     useFins: boolean;
     useReflector: boolean;
     baseMatKey: string;
     sinkMatKey: string;
+    // NEW Params
+    windSpeed: number;
+    ambientTemp: number;
+    qSolar: number;
   } | null>(null);
 
   const [hasPendingChanges, setHasPendingChanges] = useState(false);
@@ -1616,10 +1908,11 @@ export default function ThermalPage() {
     if (targetPreset.cpvScale !== undefined)
       setUiCpvScale(targetPreset.cpvScale);
     if (targetPreset.nx !== undefined) setUiNx(targetPreset.nx);
-    if (targetPreset.nz !== undefined) setUiNz(targetPreset.nz);
+    if (targetPreset.layerNz !== undefined) setUiLayerNz(targetPreset.layerNz);
+    if (targetPreset.sinkNz !== undefined) setUiSinkNz(targetPreset.sinkNz);
     if (targetPreset.useCircle !== undefined)
       setUiUseCircle(targetPreset.useCircle);
-    if (targetPreset.usePv !== undefined) setUiUsePv(targetPreset.usePv);
+    if (targetPreset.usePv !== undefined) setUiSolarMode(targetPreset.usePv ? "pv" : "cpv");
     if (targetPreset.useFins !== undefined) setUiUseFins(targetPreset.useFins);
     if (targetPreset.useReflector !== undefined)
       setUiUseReflector(targetPreset.useReflector);
@@ -1627,6 +1920,12 @@ export default function ThermalPage() {
       setUiBaseMatKey(targetPreset.baseMatKey);
     if (targetPreset.sinkMatKey !== undefined)
       setUiSinkMatKey(targetPreset.sinkMatKey);
+    // NEW: Apply Environmental Presets
+    if (targetPreset.windSpeed !== undefined)
+      setUiWindSpeed(targetPreset.windSpeed);
+    if (targetPreset.ambientTemp !== undefined)
+      setUiAmbientTemp(targetPreset.ambientTemp);
+    if (targetPreset.qSolar !== undefined) setUiQSolar(targetPreset.qSolar);
   }, []);
 
   // --- NEW: GRANULAR MANUAL CHANGE HANDLER ---
@@ -1673,14 +1972,19 @@ export default function ThermalPage() {
       plateDim: uiPlateDim,
       cpvScale: uiCpvScale,
       nx: uiNx,
-      nz: uiNz,
+      layerNz: uiLayerNz,
+      sinkNz: uiSinkNz,
       useCircle: uiUseCircle,
-      usePv: uiUsePv,
+      useSolarCell: uiSolarMode !== "none", // True if PV or CPV
+      usePv: uiSolarMode === "pv",          // True only if PV mode
       // Pass new params
       useFins: uiUseFins,
       useReflector: uiUseReflector,
       baseMatKey: uiBaseMatKey,
       sinkMatKey: uiSinkMatKey,
+      windSpeed: uiWindSpeed,
+      ambientTemp: uiAmbientTemp,
+      qSolar: uiQSolar,
     });
   };
 
@@ -1698,6 +2002,11 @@ export default function ThermalPage() {
       setHasPendingChanges(false);
       return;
     }
+
+    const currentMode = activeParams.useSolarCell 
+        ? (activeParams.usePv ? "pv" : "cpv") 
+        : "none";
+    
     setHasPendingChanges(
       uiFwhm !== activeParams.focusOffset ||
         uiMatrixSize !== activeParams.matrixSize ||
@@ -1708,13 +2017,17 @@ export default function ThermalPage() {
         uiPlateDim !== activeParams.plateDim ||
         uiCpvScale !== activeParams.cpvScale ||
         uiNx !== activeParams.nx ||
-        uiNz !== activeParams.nz ||
+        uiLayerNz !== activeParams.layerNz ||
+        uiSinkNz !== activeParams.sinkNz ||
         uiUseCircle !== activeParams.useCircle ||
-        uiUsePv !== activeParams.usePv ||
+        uiSolarMode !== currentMode || // Check change
         uiUseFins !== activeParams.useFins || // Check change
         uiUseReflector !== activeParams.useReflector || // Check change
         uiBaseMatKey !== activeParams.baseMatKey ||
-        uiSinkMatKey !== activeParams.sinkMatKey
+        uiSinkMatKey !== activeParams.sinkMatKey ||
+        uiWindSpeed !== activeParams.windSpeed ||
+        uiAmbientTemp !== activeParams.ambientTemp ||
+        uiQSolar !== activeParams.qSolar
     );
   }, [
     uiFwhm,
@@ -1727,13 +2040,17 @@ export default function ThermalPage() {
     uiPlateDim,
     uiCpvScale,
     uiNx,
-    uiNz,
+    uiLayerNz,
+    uiSinkNz,
     uiUseCircle,
-    uiUsePv,
+    uiSolarMode,
     uiUseFins,
     uiUseReflector,
     uiBaseMatKey,
     uiSinkMatKey,
+    uiWindSpeed,
+    uiAmbientTemp,
+    uiQSolar,
   ]);
 
   const structureWeight = useMemo(() => {
@@ -1784,9 +2101,9 @@ export default function ThermalPage() {
       ? volAg * PROJECT_COSTS.AG_DENSITY * PROJECT_COSTS.AG_COST_PER_KG
       : 0;
 
-    const cpvAreaCost = uiUsePv
-      ? area * PROJECT_COSTS.CPV_PRICE_PER_M2
-      : area * 500;
+    const cpvAreaCost = (uiSolarMode !== "none") 
+        ? (uiSolarMode === "cpv" ? area * PROJECT_COSTS.CPV_PRICE_PER_M2 : area * 500) // 500 for standard PV
+        : 0;
 
     const totalMaterials = costMatBase + costMatSink + costMatAg + cpvAreaCost;
 
@@ -1891,7 +2208,7 @@ export default function ThermalPage() {
     uiSinkMatKey,
     uiMatrixSize,
     uiUseFins,
-    uiUsePv,
+    uiSolarMode,
     uiUseReflector,
     structureWeight,
     useManualCost,
@@ -2036,7 +2353,7 @@ STARRY SKY ENGINEERING GROUP
       {/* HEADER */}
       <div
         className={`absolute w-full top-0 left-0 px-8 py-3 z-50 pointer-events-none select-none flex justify-between items-center transition-all duration-1000 ease-out border-b border-white/20 bg-neutral-900 shadow-2xl ${
-          introFinished
+          introFinished && !hideUI
             ? "opacity-100 translate-y-0"
             : "opacity-0 -translate-y-8"
         }`}
@@ -2093,8 +2410,8 @@ STARRY SKY ENGINEERING GROUP
       <div
         className={`absolute inset-0 bg-black z-40 flex items-center justify-center pointer-events-none transition-all duration-1000 ease-in-out ${
           !introFinished
-            ? "opacity-100 blur-0 scale-100"
-            : "opacity-0 blur-xl scale-110"
+            ? "opacity-100 scale-100"
+            : "opacity-0  scale-110"
         }`}
       >
         <div className="text-center">
@@ -2182,15 +2499,6 @@ STARRY SKY ENGINEERING GROUP
           fade
           speed={0.3}
         />
-        <Sparkles
-          count={30}
-          scale={3}
-          size={2}
-          speed={0.3}
-          opacity={0.5}
-          color="#88ccff"
-          noise={0.5}
-        />
         <PerspectiveCamera makeDefault position={[2, 0, 2]} fov={40} />
         <OrbitControls
           makeDefault
@@ -2237,14 +2545,19 @@ STARRY SKY ENGINEERING GROUP
             simPlateDim={activeParams?.plateDim ?? null}
             simCpvScale={activeParams?.cpvScale ?? null}
             simNx={activeParams?.nx ?? null}
-            simNz={activeParams?.nz ?? null}
+            simLayerNz={activeParams?.layerNz ?? null}
+            simSinkNz={activeParams?.sinkNz ?? null}
             simUseCircle={activeParams?.useCircle ?? null}
             simUsePv={activeParams?.usePv ?? null}
+            simUseSolarCell={activeParams?.useSolarCell ?? null}
             // Pass new sim params
             simUseFins={activeParams?.useFins ?? null}
             simUseReflector={activeParams?.useReflector ?? null}
             simBaseMatKey={activeParams?.baseMatKey ?? null}
             simSinkMatKey={activeParams?.sinkMatKey ?? null}
+            simWindSpeed={activeParams?.windSpeed ?? null}
+            simAmbientTemp={activeParams?.ambientTemp ?? null}
+            simQSolar={activeParams?.qSolar ?? null}
             visMatrixSize={uiMatrixSize}
             visFwhm={uiFwhm}
             visMagicArea={uiMagicArea}
@@ -2254,13 +2567,19 @@ STARRY SKY ENGINEERING GROUP
             visSinkThick={realScale ? uiSinkThick : uiSinkThick * 5}
             visUseFins={uiUseFins}
             visUseReflector={uiUseReflector}
+            visSolarMode={uiSolarMode}
             visBaseMatKey={uiBaseMatKey}
             visSinkMatKey={uiSinkMatKey}
             hasPendingChanges={hasPendingChanges}
             status={simStats}
             realScale={realScale}
             showGaussian={showGaussian}
-            showAdvanced={showAdvanced}
+            explodedView={explodedView}
+            showGrid={showGrid}
+            showLabels={showLabels}
+            visNx={uiNx} // Controlling grid visually via same variable
+            visLayerNz={uiLayerNz}
+            visSinkNz={uiSinkNz}
             onUpdateStats={onUpdateStats}
           />
         </Suspense>
@@ -2269,9 +2588,9 @@ STARRY SKY ENGINEERING GROUP
       {/* LEFT CONTROL PANEL */}
       <div
         className={`absolute z-30 top-22 left-8 flex flex-col items-start gap-4 pointer-events-auto transition-all duration-1000 ${
-          introFinished
+          introFinished && !hideUI
             ? "opacity-100 translate-x-0"
-            : "opacity-0 -translate-x-10"
+            : "opacity-0 -translate-x-10 pointer-events-none"
         }`}
       >
         {/* UPDATED MULTI-SELECTOR */}
@@ -2282,23 +2601,177 @@ STARRY SKY ENGINEERING GROUP
           />
         </div>
 
-        {!simStats.loading && (!activeParams || hasPendingChanges) && (
-          <div className="w-full">
-            <ToggleRow
-              label="Veure Calor Incident"
-              colorClass="text-cyan-400"
-              checked={showGaussian}
-              onChange={setShowGaussian}
-            />
+        {/* UNIFIED COMPACT INPUT */}
+        <div className="w-full bg-neutral-900 p-2 rounded-xl border border-white/10 shadow-xl">
+          {/* Header with Status Indicator */}
+          <div className="flex items-center justify-between mb-2 px-1">
+            <span className="text-[10px] uppercase tracking-widest font-bold text-gray-400">
+              Visualització
+            </span>
+
+            {/* Logic: If results exist and not loading -> Visualization Mode */}
+            {activeParams && !simStats.loading && !hasPendingChanges ? (
+              <div className="flex items-center gap-1.5 bg-gradient-to-r from-red-500/10 to-orange-500/10 px-2 py-0.5 rounded border border-red-500/20">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500"></span>
+                </span>
+                <span className="text-[7px] font-bold uppercase text-red-400 tracking-wide">
+                  Temp. Activa
+                </span>
+              </div>
+            ) : (
+              <div className="h-1 w-1 bg-gray-600 rounded-full"></div>
+            )}
           </div>
-        )}
-        <div className="w-full">
-          <ToggleRow
-            label="Escala Realista"
-            colorClass="text-cyan-400"
-            checked={realScale}
-            onChange={setRealScale}
-          />
+
+          <div className="grid grid-cols-5 gap-1.5">
+            {/* 1. HEAT (Flux) */}
+            <button
+              onClick={() => setShowGaussian(!showGaussian)}
+              title="Veure Distribució de Calor Incident"
+              className={`aspect-square cursor-pointer flex flex-col items-center justify-center rounded-md border transition-all duration-200 active:scale-95 group ${
+                showGaussian
+                  ? "bg-red-500/20 border-red-500/50 text-red-400"
+                  : "bg-white/5 border-transparent text-gray-500 hover:bg-white/10 hover:text-gray-300"
+              }`}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 mb-0.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                />
+              </svg>
+              <span className="text-[6px] font-black uppercase">Flux</span>
+            </button>
+
+            {/* 2. SCALE (Real) */}
+            <button
+              onClick={() => setRealScale(!realScale)}
+              title="Escala Z Real (1:1)"
+              className={`aspect-square cursor-pointer flex flex-col items-center justify-center rounded-md border transition-all duration-200 active:scale-95 group ${
+                realScale
+                  ? "bg-green-500/20 border-green-500/50 text-green-400"
+                  : "bg-white/5 border-transparent text-gray-500 hover:bg-white/10 hover:text-gray-300"
+              }`}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 mb-0.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m8-2a2 2 0 100-4 2 2 0 000 4z"
+                />
+              </svg>
+              <span className="text-[6px] font-black uppercase">Real</span>
+            </button>
+
+            {/* 3. GRID (Malla) */}
+            <button
+              onClick={() => setShowGrid(!showGrid)}
+              title="Veure Malla de Càlcul"
+              className={`aspect-square flex flex-col items-center justify-center rounded-md border transition-all duration-200 active:scale-95 group ${
+                activeParams && !simStats.loading && !hasPendingChanges
+                  ? "opacity-30 cursor-not-allowed bg-black/20 border-transparent text-gray-600"
+                  : showGrid
+                  ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-400 cursor-pointer"
+                  : "bg-white/5 border-transparent text-gray-500 hover:bg-white/10 hover:text-gray-300 cursor-pointer"
+              }`}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 mb-0.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                />
+              </svg>
+              <span className="text-[6px] font-black uppercase">Malla</span>
+            </button>
+
+            {/* 4. LAYERS (Capes) - Disabled if Simulating */}
+            <button
+              onClick={() => setExplodedView(!explodedView)}
+              title="Obrir/Tancar Capes"
+              className={`aspect-square flex flex-col items-center justify-center rounded-md border transition-all duration-200 group ${
+                activeParams && !simStats.loading && !hasPendingChanges
+                  ? "opacity-30 cursor-not-allowed bg-black/20 border-transparent text-gray-600"
+                  : explodedView
+                  ? "bg-purple-500/20 border-purple-500/50 text-purple-400 active:scale-95 cursor-pointer"
+                  : "bg-white/5 border-transparent text-gray-500 hover:bg-white/10 hover:text-gray-300 active:scale-95 cursor-pointer"
+              }`}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 mb-0.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                />
+              </svg>
+              <span className="text-[6px] font-black uppercase">Capes</span>
+            </button>
+
+            {/* 5. LABELS (Info) - Disabled if Simulating */}
+            <button
+              onClick={() => setShowLabels((prev) => (prev + 1) % 3)}
+              disabled={
+                !!(activeParams && !simStats.loading && !hasPendingChanges)
+              }
+              title="Mostrar Etiquetes (Desactivat durant simulació)"
+              className={`aspect-square flex flex-col items-center justify-center rounded-md border transition-all duration-200 group ${
+                activeParams && !simStats.loading && !hasPendingChanges
+                  ? "opacity-30 cursor-not-allowed bg-black/20 border-transparent text-gray-600"
+                  : showLabels === 1
+                  ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-300 active:scale-95 cursor-pointer"
+                  : showLabels === 2
+                  ? "bg-yellow-500/30 border-yellow-500/70 text-yellow-400 active:scale-95 cursor-pointer"
+                  : "bg-white/5 border-transparent text-gray-500 hover:bg-white/10 hover:text-gray-300 active:scale-95 cursor-pointer"
+              }`}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 mb-0.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <span className="text-[6px] font-black uppercase">Info</span>
+            </button>
+          </div>
         </div>
 
         <button
@@ -2423,7 +2896,7 @@ STARRY SKY ENGINEERING GROUP
                 value={uiFwhm.toFixed(3)}
                 colorClass="text-cyan-400"
                 onDec={() => {
-                  setUiFwhm((p) => Math.max(p - 0.01, FWHM_MIN));
+                  setUiFwhm((p) => Math.max(p - 0.01, 0));
                   handleManualChange("fwhm");
                 }}
                 onInc={() => {
@@ -2431,7 +2904,7 @@ STARRY SKY ENGINEERING GROUP
                   handleManualChange("fwhm");
                 }}
                 onSet={(n) => {
-                  setUiFwhm((p) => Math.min(Math.max(n, FWHM_MIN), FWHM_MAX));
+                  setUiFwhm((p) => Math.min(Math.max(n, 0), FWHM_MAX));
                   handleManualChange("fwhm");
                 }}
                 showMax
@@ -2459,6 +2932,10 @@ STARRY SKY ENGINEERING GROUP
                   setUiMagicArea((p) => Math.min(p + 1, 236));
                   handleManualChange("magicArea");
                 }}
+                onSet={(n) => {
+                  setUiMagicArea(Math.max(Math.min(n, 236), 0));
+                  handleManualChange("magicArea");
+                }}
                 onMax={() => {
                   setUiMagicArea(236);
                   handleManualChange("magicArea");
@@ -2469,6 +2946,72 @@ STARRY SKY ENGINEERING GROUP
                 }}
                 showMax
                 showMin
+              />
+            </div>
+          </div>
+
+          <div className="border-t border-white/5" />
+
+          {/* NEW SECTION: ENTORN I AMBIENT */}
+          <div>
+            <h3 className="text-[12px] font-bold uppercase tracking-widest text-emerald-500/80 mb-4 flex items-center gap-2">
+              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+              Entorn i Ambient
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <ControlRow
+                label="Irradiància"
+                value={uiQSolar.toFixed(0)}
+                unit="W/m²"
+                colorClass="text-emerald-400"
+                onDec={() => {
+                  setUiQSolar((p) => Math.max(p - 50, 0));
+                  handleManualChange("qSolar");
+                }}
+                onInc={() => {
+                  setUiQSolar((p) => Math.min(p + 50, 2000));
+                  handleManualChange("qSolar");
+                }}
+                onSet={(n) => {
+                  setUiQSolar(Math.max(Math.min(n, 2000), 0));
+                  handleManualChange("qSolar");
+                }}
+              />
+              <ControlRow
+                label="Temp. Ambient"
+                value={uiAmbientTemp.toFixed(1)}
+                unit="°C"
+                colorClass="text-emerald-400"
+                onDec={() => {
+                  setUiAmbientTemp((p) => Math.max(p - 1, -50));
+                  handleManualChange("ambientTemp");
+                }}
+                onInc={() => {
+                  setUiAmbientTemp((p) => Math.min(p + 1, 80));
+                  handleManualChange("ambientTemp");
+                }}
+                onSet={(n) => {
+                  setUiAmbientTemp(Math.max(Math.min(n, 80), -50));
+                  handleManualChange("ambientTemp");
+                }}
+              />
+              <ControlRow
+                label="Vel. Vent"
+                value={uiWindSpeed.toFixed(1)}
+                unit="m/s"
+                colorClass="text-emerald-400"
+                onDec={() => {
+                  setUiWindSpeed((p) => Math.max(p - 0.5, 0));
+                  handleManualChange("windSpeed");
+                }}
+                onInc={() => {
+                  setUiWindSpeed((p) => Math.min(p + 0.5, 50));
+                  handleManualChange("windSpeed");
+                }}
+                onSet={(n) => {
+                  setUiWindSpeed(Math.max(Math.min(n, 50), 0));
+                  handleManualChange("windSpeed");
+                }}
               />
             </div>
           </div>
@@ -2500,7 +3043,7 @@ STARRY SKY ENGINEERING GROUP
                 unit="m"
                 colorClass="text-purple-400"
                 onDec={() => {
-                  setUiPlateDim((p) => Math.max(p - 0.1, 0.5));
+                  setUiPlateDim((p) => Math.max(p - 0.1, 0.01));
                   handleManualChange("plateDim");
                 }}
                 onInc={() => {
@@ -2651,17 +3194,20 @@ STARRY SKY ENGINEERING GROUP
                     }}
                   />
                 </div>
-                <div className="col-span-1 sm:col-span-2">
-                  <ToggleRow
-                    label="Fer servir PV"
-                    colorClass="text-blue-400"
-                    checked={uiUsePv}
-                    onChange={(v) => {
-                      setUiUsePv(v);
-                      handleManualChange("usePv");
-                    }}
-                  />
-                </div>
+                <MultiStateToggle
+                  label="Tipus de Captació Solar"
+                  value={uiSolarMode}
+                  options={[
+                    { label: "Cap (Tèrmic)", value: "none" },
+                    { label: "PV Estàndard", value: "pv" },
+                    { label: "CPV (High Tech)", value: "cpv" },
+                  ]}
+                  onChange={(val) => {
+                    setUiSolarMode(val as any);
+                    handleManualChange("usePv"); // Reuse existing key or add new one
+                  }}
+                  colorClass="text-blue-400"
+                />
               </div>
             </div>
           </div>
@@ -2689,18 +3235,39 @@ STARRY SKY ENGINEERING GROUP
                 }}
               />
               <ControlRow
-                label="Resolució Z"
-                value={uiNz}
+                label="Resolució Z Conductor"
+                value={uiLayerNz}
                 colorClass="text-pink-400"
                 onDec={() => {
-                  setUiNz((p) => Math.max(p - 1, 3));
-                  handleManualChange("nz");
+                  setUiLayerNz((p) => Math.max(p - 1, 3));
+                  handleManualChange("layerNz");
                 }}
                 onInc={() => {
-                  setUiNz((p) => Math.min(p + 1, 20));
-                  handleManualChange("nz");
+                  setUiLayerNz((p) => Math.min(p + 1, 20));
+                  handleManualChange("layerNz");
                 }}
               />
+              <div
+                className={` ${
+                  uiSinkThick < 0.001
+                    ? "opacity-50 pointer-events-none grayscale"
+                    : ""
+                }`}
+              >
+                <ControlRow
+                  label="Resolució Z Dissipador"
+                  value={uiSinkNz}
+                  colorClass="text-pink-400"
+                  onDec={() => {
+                    setUiSinkNz((p) => Math.max(p - 1, 3));
+                    handleManualChange("sinkNz");
+                  }}
+                  onInc={() => {
+                    setUiSinkNz((p) => Math.min(p + 1, 20));
+                    handleManualChange("sinkNz");
+                  }}
+                />
+              </div>
               <ControlRow
                 label="ROI Màxim"
                 value={maxRoi.toFixed(0)}
@@ -2737,7 +3304,7 @@ STARRY SKY ENGINEERING GROUP
       {/* RIGHT STATS PANEL */}
       <div
         className={`absolute top-22 right-8 w-[320px] pointer-events-auto bg-neutral-900/95 p-5 rounded-2xl border border-white/20 shadow-2xl transition-all duration-1000 hover:border-cyan-500/30 ${
-          introFinished
+          introFinished && !hideUI
             ? "opacity-100 translate-x-0"
             : "opacity-0 translate-x-10"
         }`}
@@ -2882,10 +3449,18 @@ STARRY SKY ENGINEERING GROUP
 
               {/* 3. Total Profit (Projected) */}
               <div className="flex justify-between items-center">
-                <span className={`text-[10px] uppercase tracking-wider ${paybackPeriod.isViable ? "text-green-300" : "text-red-300"}`}>
+                <span
+                  className={`text-[10px] uppercase tracking-wider ${
+                    paybackPeriod.isViable ? "text-green-300" : "text-red-300"
+                  }`}
+                >
                   Benefici Net ({maxRoi}a)
                 </span>
-                <span className={`font-mono font-bold text-lg ${paybackPeriod.isViable ? "text-green-400" : "text-red-400"}`}>
+                <span
+                  className={`font-mono font-bold text-lg ${
+                    paybackPeriod.isViable ? "text-green-400" : "text-red-400"
+                  }`}
+                >
                   {(
                     (maxRoi - paybackPeriod.years) *
                     paybackPeriod.annualSavings
@@ -2945,6 +3520,7 @@ STARRY SKY ENGINEERING GROUP
 
       {/* BOTTOM HUD BAR */}
       {activeParams &&
+      !hideUI &&
       simStats.maxTemp > 0 &&
       simStats.status !== "Stopped" &&
       !simStats.loading &&
@@ -3048,6 +3624,7 @@ STARRY SKY ENGINEERING GROUP
         </div>
       ) : (
         !simStats.loading &&
+        !hideUI &&
         introFinished && (
           // Placeholder Bar when not running
           <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
@@ -3058,6 +3635,59 @@ STARRY SKY ENGINEERING GROUP
             </div>
           </div>
         )
+      )}
+      {/* FLOATING HIDE/SHOW UI BUTTON (Bottom Right Corner) */}
+      {introFinished && (
+        <div className="absolute bottom-6 right-6 z-[60] pointer-events-auto">
+          <button
+            onClick={() => setHideUI(!hideUI)}
+            className={`group relative flex items-center justify-center w-12 h-12 rounded-full border shadow-2xl transition-all duration-300 ${
+              hideUI
+                ? "bg-cyan-600/80 border-cyan-400 text-white hover:bg-cyan-500"
+                : "bg-black/40 border-white/10 text-gray-400 hover:text-white hover:bg-white/10"
+            }`}
+            title={hideUI ? "Mostrar UI" : "Amagar UI"}
+          >
+            {hideUI ? (
+              // Eye Open Icon
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+                className="w-5 h-5"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+            ) : (
+              // Eye Slash Icon
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+                className="w-5 h-5"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"
+                />
+              </svg>
+            )}
+          </button>
+        </div>
       )}
     </div>
   );

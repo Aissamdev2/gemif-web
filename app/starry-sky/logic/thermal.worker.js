@@ -1,5 +1,5 @@
 // thermal.worker.js
-import init, { run_thermal_simulation } from "../wasm-embeddings/vc8/solar.js";
+import init, { run_thermal_simulation } from "../wasm-embeddings/vc11/solar.js";
 
 const tempColor = { r: 0, g: 0, b: 0 };
 
@@ -36,20 +36,26 @@ self.onmessage = async ({ data }) => {
     cpvScale,
     nXy,
     nZLayer,
+    nZSink,
     useCircle,
     usePv,
+    useSolarCell,
     // Material Properties
     baseKt,
     baseEmi,
     sinkKt,
     sinkEmi,
-    // NEW: Logic Toggles
+    // Logic Toggles
     useFins,
     useReflector,
+    // NEW: Environment Parameters
+    windSpeed,
+    ambientTemp,
+    qSolar,
+    
     wasmUrl
   } = data;
 
-  console.log(data)
   try {
     await init(wasmUrl);
 
@@ -65,15 +71,20 @@ self.onmessage = async ({ data }) => {
         cpvScale,
         nXy,
         nZLayer,
+        nZSink,
         useCircle,
         usePv,
+        useSolarCell,
         baseKt,
         baseEmi,
         sinkKt,
         sinkEmi,
-        // NEW: Pass booleans
         useFins,
-        useReflector
+        useReflector,
+        // NEW: Pass Environment Parameters
+        windSpeed,
+        ambientTemp,
+        qSolar
     );
 
     const nx = result.get_nx();
@@ -185,6 +196,28 @@ self.onmessage = async ({ data }) => {
     let sinkStart = 0;
     let sinkEnd = -1; // Default to invalid
     let baseStart = 0;
+
+    // Use the passed nZSink parameter for logic consistency
+    // Note: Rust code ensures at least 2 points if sinkThickness > 0
+    // So the sink layer count in the array will be approx nZSink (or 2)
+    
+    if (sinkThickness > 1e-6) {
+        sinkStart = 0;
+        // The number of Z points allocated to sink is roughly nZSink
+        // We use the param to estimate the slice index
+        // (In strict mode, we might want to return the exact layer indices from Rust, 
+        //  but for now we assume nZSink corresponds to the allocated points)
+        const actualSinkLayers = nZSink < 2 ? 2 : nZSink; 
+        sinkEnd = actualSinkLayers - 1; 
+        baseStart = actualSinkLayers;
+    } else {
+        // No sink layers generated (only 1 point at 0.0 usually)
+        sinkStart = 0;
+        sinkEnd = -1; 
+        baseStart = 0; 
+        // If sinkThickness is 0, Rust might put 1 dummy point or start base at 0.
+        // Adjust logic if needed based on exact Rust grid construction.
+    }
 
     // Rust logic: if sink_thickness > 1e-9, it adds 5 sink layers (indices 0-4)
     if (sinkThickness > 1e-6) {
