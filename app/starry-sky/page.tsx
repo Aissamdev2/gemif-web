@@ -698,12 +698,12 @@ const GaussianOverlay = memo(
       // Determine Amplitude
       let amplitude;
       if (realScale) {
-        const baseHeight = 0.5;
+        const baseHeight = 1;
         amplitude =
           (baseHeight * magicArea) /
           (twoSigmaSq * Math.PI * matrixSize * matrixSize * 240);
       } else {
-        amplitude = 0.5;
+        amplitude = 5;
       }
 
       amplitude = amplitude / 10;
@@ -1377,9 +1377,7 @@ const ThermalBox = memo(
               }
               position={[PLATE_WIDTH / 2, 0, PLATE_DEPTH / 2]}
               label="Dissipador"
-              desc={`${MATERIALS[visSinkMatKey].name}\nEspessor: ${(
-                visSinkThick * 1000
-              ).toFixed(1)}mm`}
+              desc={`${MATERIALS[visSinkMatKey].name}`}
             />
           </group>
         )}
@@ -1430,7 +1428,7 @@ const ThermalBox = memo(
         {/* CPV LAYER */}
         <group ref={cpvRef}>
           <mesh
-            onPointerMove={(e) => handlePointerMove(e, "Substrat CPV", texCPV)}
+            onPointerMove={(e) => handlePointerMove(e, visUseReflector ? "Substrat CPV" : "Placa Base", texCPV)}
             onPointerOut={handlePointerOut}
             geometry={geometries.cpvSub}
             material={!isSimulationActive ? materials.cpvSub : undefined}
@@ -1510,7 +1508,7 @@ const ThermalBox = memo(
                 (showLabels == 1 && hoveredPart === "Substrat CPV")) &&
               visUseReflector
             }
-            position={[0, visLayerThick / 2 + CPV_SUBSTRATE_THICK, 0]}
+            position={[PLATE_WIDTH / 2 - 0.05, CPV_SUBSTRATE_THICK / 2, 0]}
             label={"Mirall Ag"}
             desc={"Reflectivitat: 95%"}
           />
@@ -2779,7 +2777,7 @@ STARRY SKY ENGINEERING GROUP
           className="group cursor-pointer w-full flex items-center justify-between px-4 py-3 bg-neutral-900 border border-white/10 rounded-xl transition-all duration-300"
         >
           <span className="text-[10px] uppercase tracking-widest font-bold text-cyan-400 transition-colors">
-            Configuració Paràmteres
+            Configurar Paràmteres
           </span>
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -3342,7 +3340,7 @@ STARRY SKY ENGINEERING GROUP
               <div className="flex bg-black/40 rounded-lg p-0.5 border border-white/5">
                 <button
                   onClick={() => setUseManualCost(false)}
-                  className={`px-2 py-1 text-[9px] font-bold uppercase rounded-md transition-all ${
+                  className={`px-2 py-1 cursor-pointer text-[9px] font-bold uppercase rounded-md transition-all ${
                     !useManualCost
                       ? "bg-cyan-600 text-white shadow-sm"
                       : "text-gray-500 hover:text-white"
@@ -3352,7 +3350,7 @@ STARRY SKY ENGINEERING GROUP
                 </button>
                 <button
                   onClick={() => setUseManualCost(true)}
-                  className={`px-2 py-1 text-[9px] font-bold uppercase rounded-md transition-all ${
+                  className={`px-2 py-1 cursor-pointer text-[9px] font-bold uppercase rounded-md transition-all ${
                     useManualCost
                       ? "bg-cyan-600 text-white shadow-sm"
                       : "text-gray-500 hover:text-white"
@@ -3631,7 +3629,7 @@ STARRY SKY ENGINEERING GROUP
             <div className="px-6 py-2 bg-neutral-900/80 border border-white/10 rounded-full shadow-2xl text-xs text-gray-400 italic">
               {hasPendingChanges
                 ? "⚠️ Paràmetres modificats. Executeu la simulació."
-                : "ℹ️ Inicieu la simulació per veure dades."}
+                : "ℹ️ Inicieu la simulació per veure resultats."}
             </div>
           </div>
         )
@@ -3641,7 +3639,7 @@ STARRY SKY ENGINEERING GROUP
         <div className="absolute bottom-6 right-6 z-[60] pointer-events-auto">
           <button
             onClick={() => setHideUI(!hideUI)}
-            className={`group relative flex items-center justify-center w-12 h-12 rounded-full border shadow-2xl transition-all duration-300 ${
+            className={`group cursor-pointer relative flex items-center justify-center w-12 h-12 rounded-full border shadow-2xl transition-all duration-300 ${
               hideUI
                 ? "bg-cyan-600/80 border-cyan-400 text-white hover:bg-cyan-500"
                 : "bg-black/40 border-white/10 text-gray-400 hover:text-white hover:bg-white/10"
