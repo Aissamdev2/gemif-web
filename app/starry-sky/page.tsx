@@ -698,15 +698,13 @@ const GaussianOverlay = memo(
       // Determine Amplitude
       let amplitude;
       if (realScale) {
-        const baseHeight = 1;
+        const baseHeight = 0.5;
         amplitude =
           (baseHeight * magicArea) /
           (twoSigmaSq * Math.PI * matrixSize * matrixSize * 240);
       } else {
-        amplitude = 5;
+        amplitude = 0.5;
       }
-
-      amplitude = amplitude / 10;
 
       // Deform Mesh & Paint Colors
       for (let i = 0; i < count; i++) {
@@ -998,7 +996,7 @@ const ThermalBox = memo(
     visSinkMatKey: string;
     status: SimStats;
     realScale: boolean;
-    showGaussian: boolean;
+    showGaussian: number;
     hasPendingChanges: boolean;
     showGrid: boolean;
     explodedView: boolean;
@@ -1494,12 +1492,12 @@ const ThermalBox = memo(
             />
           )}
 
-          {showGaussian && (
+          {showGaussian !== 0 && (
             <GaussianOverlay
               fwhm={visFwhm}
               matrixSize={visMatrixSize}
               magicArea={visMagicArea}
-              realScale={realScale} // <--- Pass the prop here
+              realScale={showGaussian === 2}
             />
           )}
           <TechLabel
@@ -1782,7 +1780,7 @@ export default function ThermalPage() {
   const [uiFwhm, setUiFwhm] = useState(0.267);
   const [uiMatrixSize, setUiMatrixSize] = useState(5);
   const [uiMagicArea, setUiMagicArea] = useState(45);
-  const [showGaussian, setShowGaussian] = useState(false);
+  const [showGaussian, setShowGaussian] = useState(0);
   const [realScale, setRealScale] = useState(false);
 
   const [hideUI, setHideUI] = useState(false);
@@ -2626,10 +2624,12 @@ STARRY SKY ENGINEERING GROUP
           <div className="grid grid-cols-5 gap-1.5">
             {/* 1. HEAT (Flux) */}
             <button
-              onClick={() => setShowGaussian(!showGaussian)}
+              onClick={() => setShowGaussian((prev) => (prev + 1) % 3)}
               title="Veure Distribució de Calor Incident"
               className={`aspect-square cursor-pointer flex flex-col items-center justify-center rounded-md border transition-all duration-200 active:scale-95 group ${
-                showGaussian
+                showGaussian === 1
+                  ? "bg-orange-500/20 border-orange-500/50 text-orange-400"
+                  : showGaussian === 2
                   ? "bg-red-500/20 border-red-500/50 text-red-400"
                   : "bg-white/5 border-transparent text-gray-500 hover:bg-white/10 hover:text-gray-300"
               }`}
