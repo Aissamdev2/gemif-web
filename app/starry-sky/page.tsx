@@ -191,9 +191,9 @@ const PRESETS: Record<string, PresetDef> = {
   },
   SL: {
     name: "Sota límits",
-    fwhm: 0.267,
-    matrixSize: 5,
-    magicArea: 45,
+    fwhm: 0.186,
+    matrixSize: 6,
+    magicArea: 42,
     layerThick: 0.0189,
     sinkThick: 0.0106,
     pvThick: 0.2,
@@ -2151,7 +2151,7 @@ export default function ThermalPage() {
 
     // 2. Is it too heavy for a 2-person manual carry up 20m of stairs?
     // Limit is typically 25kg per person. 50kg total.
-    const isTooHeavy = structureWeight > 45;
+    const isTooHeavy = structureWeight > 33;
 
     const needsCrane = isTooBigForStairs || isTooHeavy;
 
