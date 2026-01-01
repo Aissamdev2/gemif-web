@@ -1100,7 +1100,7 @@ const ThermalBox = memo(
       };
 
       const relativePath = new URL(
-        "./wasm-embeddings/vc11/solar_bg.wasm",
+        "./wasm-embeddings/vc14/solar_bg.wasm",
         import.meta.url
       ).toString();
       const wasmUrl = new URL(relativePath, window.location.origin).href;
