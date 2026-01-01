@@ -2260,41 +2260,52 @@ Systems Architect: Filip Denis
 
 [2] SYSTEM CONFIGURATION (INPUTS)
 -------------------------------------------------------------------
-FWHM (Focus Quality):     ${activeParams.focusOffset.toFixed(3)} m
-Magic Area (Optical Eff): ${activeParams.magicArea.toFixed(1)} m²
+FWHM:                     ${activeParams.focusOffset.toFixed(3)} m
+Magic Reflective Area:    ${activeParams.magicArea.toFixed(1)} m²
 Matrix Resolution:        ${activeParams.matrixSize}x${activeParams.matrixSize}
 Plate Dimensions:         ${activeParams.plateDim}m x ${activeParams.plateDim}m
+
+-- ENVIRONMENT --
+Base Solar Irradiance:    ${activeParams.qSolar.toFixed(0)} W/m²
+Ambient Temperature:      ${activeParams.ambientTemp.toFixed(1)} °C
+Wind Speed:               ${activeParams.windSpeed.toFixed(1)} m/s
 
 -- LAYER GEOMETRY --
 Conductor Thickness:      ${(activeParams.layerThick * 1000).toFixed(2)} mm
 Heatsink Thickness:       ${(activeParams.sinkThick * 1000).toFixed(2)} mm
 (C)PV Thickness:          ${activeParams.pvThick.toFixed(2)} mm
+Cell Scale Factor:        ${(activeParams.cpvScale * 100).toFixed(1)} %
+Cell Shape:               ${
+      activeParams.useCircle ? "Circular Array" : "Square Array"
+    }
+Electric Generation Mode: ${
+      activeParams.usePv
+        ? "Photovoltaic Cells"
+        : activeParams.useSolarCell
+        ? "Concentrated PV Cells"
+        : "No Solar Cells"
+    }
+
+-- ADD-ONS --
 Active Features:          [${activeParams.useFins ? "X" : " "}] Fins  [${
       activeParams.useReflector ? "X" : " "
-    }] Reflector  [${activeParams.usePv ? "X" : " "}] PV Cells
+    }] Reflector
 
 -- MATERIALS --
-Base Material:            ${MATERIALS[activeParams.baseMatKey].name}
-                          (k=${MATERIALS[activeParams.baseMatKey].kt}, rho=${
-      MATERIALS[activeParams.baseMatKey].rho
-    })
-Sink Material:            ${MATERIALS[activeParams.sinkMatKey].name}
+Base Material:            ${MATERIALS[activeParams.baseMatKey].name} (k=${MATERIALS[activeParams.baseMatKey].kt} W/(m·K), rho=${MATERIALS[activeParams.baseMatKey].rho} kg/m³)
+Sink Material:            ${MATERIALS[activeParams.sinkMatKey].name} (k=${MATERIALS[activeParams.sinkMatKey].kt} W/(m·K), rho=${MATERIALS[activeParams.sinkMatKey].rho} kg/m³)
 
 [3] THERMAL & ELECTRICAL PERFORMANCE
 -------------------------------------------------------------------
 Status:                   ${simStats.status.toUpperCase()}
 Max Temperature:          ${simStats.maxTemp.toFixed(2)} °C
-Min Temperature:          ${simStats.minTemp.toFixed(2)} °C
 Electrical Output:        ${simStats.pElectric.toFixed(2)} W
 
 [4] STRUCTURAL ANALYSIS
 -------------------------------------------------------------------
 Total Mass:               ${structureWeight.toFixed(2)} kg
 Lifting Requirement:      ${
-      structureWeight > 50 ? "CRANE / HOIST REQUIRED" : "MANUAL LIFT OK"
-    }
-Wind Load Risk:           ${
-      activeParams.plateDim > 1.2 ? "HIGH (Sail Effect)" : "NOMINAL"
+      structureWeight > 50 ? "CRANE REQUIRED" : "MANUAL LIFT OK"
     }
 
 [5] ECONOMIC BREAKDOWN (Estimate)
@@ -2304,7 +2315,7 @@ Calculation Mode:         ${
     }
 -------------------------------------------------------------------
 > Raw Materials:          € ${projectCost.breakdown.materials.toFixed(2)}
-> Manufacturing (CNC):    € ${projectCost.breakdown.manufacturing.toFixed(2)}
+> Manufacturing:          € ${projectCost.breakdown.manufacturing.toFixed(2)}
 > Assembly & Elec:        € ${projectCost.breakdown.assembly.toFixed(2)}
 > Engineering (NRE):      € ${projectCost.breakdown.engineering.toFixed(2)}
 > Logistics & Install:    € ${projectCost.breakdown.logistics.toFixed(2)}
@@ -2315,7 +2326,7 @@ TOTAL CAPEX:              € ${projectCost.total.toFixed(2)}
 -------------------------------------------------------------------
 Annual Savings:           € ${paybackPeriod.annualSavings.toFixed(2)} / yr
 Payback Period:           ${paybackPeriod.years.toFixed(1)} Years
-Viability (${maxRoi}yr limit):    ${
+Viability (${maxRoi}yr max):     ${
       paybackPeriod.isViable ? "VIABLE" : "NOT VIABLE"
     }
 
@@ -2815,7 +2826,7 @@ STARRY SKY ENGINEERING GROUP
               viewBox="0 0 24 24"
               strokeWidth={2.5}
               stroke="currentColor"
-              className="w-5 h-5 text-cyan-400 animate-spin"
+              className="w-4 h-4 text-cyan-400 animate-spin"
             >
               <path
                 strokeLinecap="round"
@@ -3483,7 +3494,7 @@ STARRY SKY ENGINEERING GROUP
             <div className="animate-in fade-in slide-in-from-top-2 duration-500">
               <button
                 onClick={handleExportReport}
-                className="group w-full relative overflow-hidden rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all duration-300 active:scale-95"
+                className="group cursor-pointer w-full relative overflow-hidden rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all duration-300 active:scale-95"
               >
                 <div className="absolute inset-0 bg-cyan-500/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
                 <div className="relative flex items-center justify-center gap-3 py-3">
@@ -3636,7 +3647,7 @@ STARRY SKY ENGINEERING GROUP
       )}
       {/* FLOATING HIDE/SHOW UI BUTTON (Bottom Right Corner) */}
       {introFinished && (
-        <div className="absolute bottom-6 right-6 z-[60] pointer-events-auto">
+        <div className="absolute bottom-12 right-6 z-[60] pointer-events-auto">
           <button
             onClick={() => setHideUI(!hideUI)}
             className={`group cursor-pointer relative flex items-center justify-center w-12 h-12 rounded-full border shadow-2xl transition-all duration-300 ${
