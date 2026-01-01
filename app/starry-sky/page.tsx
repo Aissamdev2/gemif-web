@@ -347,7 +347,7 @@ const ControlRow = memo(
           {/* Label + Value */}
           <div className="flex flex-col items-center min-w-[90px]">
             <span
-              className={`text-[9px] uppercase tracking-widest font-bold mb-0.5 ${colorClass}`}
+              className={`text-[9px] uppercase text-center tracking-widest font-bold mb-0.5 ${colorClass}`}
             >
               {label}
             </span>
