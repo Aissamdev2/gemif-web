@@ -2298,12 +2298,12 @@ Sink Material:            ${MATERIALS[activeParams.sinkMatKey].name} (k=${MATERI
 [3] THERMAL & ELECTRICAL PERFORMANCE
 -------------------------------------------------------------------
 Status:                   ${simStats.status.toUpperCase()}
-Max Temperature:          ${simStats.maxTemp.toFixed(2)} °C
+Max Temperature:          ${simStats.maxTemp.toFixed(2) + " °C" + (simStats.maxTemp < maxTemp && " LIMIT EXCEEDED! THERMAL RISK!!")}
 Electrical Output:        ${simStats.pElectric.toFixed(2)} W
 
 [4] STRUCTURAL ANALYSIS
 -------------------------------------------------------------------
-Total Mass:               ${structureWeight.toFixed(2)} kg
+Total Mass:               ${structureWeight.toFixed(2) + " kg" + (structureWeight > 50 && " LIMIT EXCEEDED! STRUCTURAL RISK!!")}
 Lifting Requirement:      ${
       structureWeight > 50 ? "CRANE REQUIRED" : "MANUAL LIFT OK"
     }
