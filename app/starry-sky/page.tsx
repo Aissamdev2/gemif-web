@@ -2249,14 +2249,14 @@ export default function ThermalPage() {
 STARRY SKY - ENGINEERING FEASIBILITY REPORT
 MAGIC TELESCOPE THERMAL MANAGEMENT SYSTEM
 Generated: ${date}
-Version: 1.2.4-RC
+Version: 14.0.0
 ===================================================================
 
 [1] PROJECT TEAM
 -------------------------------------------------------------------
-Project Manager:   Aissam Khadraoui
-Lead Engineer:     Candela García
-Systems Architect: Filip Denis
+Plant:                Aissam Khadraoui
+Completer Finisher:   Candela García
+Coordinator:          Filip Denis
 
 [2] SYSTEM CONFIGURATION (INPUTS)
 -------------------------------------------------------------------
@@ -2320,9 +2320,9 @@ Calculation Mode:         ${
 > Engineering (NRE):      € ${projectCost.breakdown.engineering.toFixed(2)}
 > Logistics & Install:    € ${projectCost.breakdown.logistics.toFixed(2)}
 -------------------------------------------------------------------
-TOTAL CAPEX:              € ${projectCost.total.toFixed(2)}
+TOTAL CAPEX (COST):       € ${projectCost.total.toFixed(2)}
 
-[6] ROI PROJECTION
+[6] ROI CALCULATION
 -------------------------------------------------------------------
 Annual Savings:           € ${paybackPeriod.annualSavings.toFixed(2)} / yr
 Payback Period:           ${paybackPeriod.years.toFixed(1)} Years
