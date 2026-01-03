@@ -1,5 +1,5 @@
 // thermal.worker.js
-import init, { run_thermal_simulation } from "../wasm-embeddings/vc14/solar.js";
+import init, { run_thermal_simulation } from "../wasm-embeddings/vc15/solar.js";
 
 const tempColor = { r: 0, g: 0, b: 0 };
 
@@ -52,6 +52,13 @@ self.onmessage = async ({ data }) => {
     windSpeed,
     ambientTemp,
     qSolar,
+    // NEW: Customizable Fins & Efficiency
+    finHeight,
+    finSpacing,
+    finThickness,
+    finEfficiencyParam,
+    opticalEfficiency,
+    pvEfficiencyParam,
     
     wasmUrl
   } = data;
@@ -60,6 +67,7 @@ self.onmessage = async ({ data }) => {
     await init(wasmUrl);
 
     // Call the Rust function with the new signature
+    // IMPORTANT: Ensure this order matches the Rust function signature exactly
     const result = run_thermal_simulation(
         fwhm,
         magicArea,
@@ -84,7 +92,14 @@ self.onmessage = async ({ data }) => {
         // NEW: Pass Environment Parameters
         windSpeed,
         ambientTemp,
-        qSolar
+        qSolar,
+        // NEW: Pass Customizable Fins & Efficiency
+        finHeight,
+        finSpacing,
+        finThickness,
+        finEfficiencyParam,
+        opticalEfficiency,
+        pvEfficiencyParam
     );
 
     const nx = result.get_nx();

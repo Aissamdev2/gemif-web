@@ -17,12 +17,10 @@ import {
   Html,
   Grid,
   Stars,
-  Sparkles,
   GizmoHelper, // <--- Add this
   GizmoViewport, // <--- Add this
 } from "@react-three/drei";
 import * as THREE from "three";
-import Link from "next/link";
 
 // --- CONSTANTS & MATERIALS ---
 const PLATE_WIDTH = 1.5;
@@ -59,10 +57,10 @@ const MATERIALS: Record<
     metalness: 0.5,
     roughness: 0.7,
   },
-  "Al-6061 (Anodized)": {
+  "Al-6061": {
     name: "Al-6061",
-    kt: 167.0,
-    emi: 0.85,
+    kt: 190.0,
+    emi: 0.15,
     rho: 2700,
     cost: 5.0,
     machiningFactor: 1.1, // Slightly harder than pure Al
@@ -133,6 +131,14 @@ type PresetDef = Partial<{
   useReflector: boolean;
   baseMatKey: string;
   sinkMatKey: string;
+  // NEW: Fin Parameters
+  finHeight: number;
+  finSpacing: number;
+  finThickness: number;
+  finEfficiency: number;
+  // NEW: Efficiency Parameters
+  opticalEfficiency: number;
+  pvEfficiency: number;
   // NEW: Environmental Presets
   windSpeed: number;
   ambientTemp: number;
@@ -208,6 +214,10 @@ const PRESETS: Record<string, PresetDef> = {
     useReflector: true,
     baseMatKey: "Al-1050A (Anodized)",
     sinkMatKey: "Al-1050A (Anodized)",
+    finHeight: 0.02,
+    finSpacing: 0.005,
+    finThickness: 0.001,
+    finEfficiency: 0.85,
   },
 };
 
@@ -582,7 +592,9 @@ const MultiStateToggle = memo(
   }) => {
     return (
       <div className="flex flex-col gap-2 bg-neutral-900 p-3 rounded-xl border border-white/10 shadow-xl col-span-1 md:col-span-2">
-        <span className={`text-[10px] uppercase tracking-widest font-bold ${colorClass}`}>
+        <span
+          className={`text-[10px] uppercase tracking-widest font-bold ${colorClass}`}
+        >
           {label}
         </span>
         <div className="flex bg-black/40 p-1 rounded-lg border border-white/5 relative">
@@ -606,7 +618,11 @@ const MultiStateToggle = memo(
           <div
             className="absolute top-1 bottom-1 bg-cyan-600/90 rounded-md transition-all duration-300 ease-out shadow-lg"
             style={{
-              left: `${(options.findIndex((o) => o.value === value) * 100) / options.length + 1}%`,
+              left: `${
+                (options.findIndex((o) => o.value === value) * 100) /
+                  options.length +
+                1
+              }%`,
               width: `${98 / options.length}%`,
             }}
           />
@@ -654,7 +670,6 @@ const StatItem = memo(
   )
 );
 StatItem.displayName = "StatItem";
-
 
 const GaussianOverlay = memo(
   ({
@@ -710,7 +725,7 @@ const GaussianOverlay = memo(
       for (let i = 0; i < count; i++) {
         vertex.fromBufferAttribute(posAttribute, i);
         let totalY = 0;
-        
+
         for (let c = 0; c < centers.length; c++) {
           const dx = vertex.x - centers[c].x;
           const dz = vertex.z - centers[c].z;
@@ -722,7 +737,7 @@ const GaussianOverlay = memo(
 
         // --- IMPROVED COLOR GRADIENT (Red -> Orange -> Yellow) ---
         const t = Math.min(totalY / amplitude, 1.0);
-        
+
         // HSL: Hue 0.0 (Red) -> 0.15 (Yellow)
         // Lightness: 0.2 (Dark) -> 0.6 (Bright)
         color.setHSL(t * 0.15, 1.0, 0.25 + t * 0.35);
@@ -732,9 +747,9 @@ const GaussianOverlay = memo(
         colors[i * 3 + 2] = color.b;
       }
 
-      geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
       geo.computeVertexNormals();
-      
+
       return { geometry: geo };
     }, [fwhm, matrixSize, magicArea, realScale]);
 
@@ -935,6 +950,12 @@ const ThermalBox = memo(
     simWindSpeed,
     simAmbientTemp,
     simQSolar,
+    simFinHeight,
+    simFinSpacing,
+    simFinThickness,
+    simFinEfficiency,
+    simOpticalEff,
+    simPvEfficiency,
     visMatrixSize,
     visFwhm,
     visMagicArea,
@@ -946,6 +967,9 @@ const ThermalBox = memo(
     visSinkMatKey,
     // NEW: Vis Props
     visUseFins,
+    visFinHeight,
+    visFinSpacing,
+    visFinThickness,
     visUseReflector,
     visSolarMode,
     status,
@@ -982,6 +1006,12 @@ const ThermalBox = memo(
     simWindSpeed: number | null;
     simAmbientTemp: number | null;
     simQSolar: number | null;
+    simFinHeight: number | null;
+    simFinSpacing: number | null;
+    simFinThickness: number | null;
+    simFinEfficiency: number | null;
+    simOpticalEff: number | null;
+    simPvEfficiency: number | null;
     visMatrixSize: number;
     visFwhm: number;
     visMagicArea: number;
@@ -990,6 +1020,9 @@ const ThermalBox = memo(
     visLayerThick: number;
     visSinkThick: number;
     visUseFins: boolean;
+    visFinHeight: number;
+    visFinSpacing: number;
+    visFinThickness: number;
     visUseReflector: boolean;
     visSolarMode: "none" | "pv" | "cpv";
     visBaseMatKey: string;
@@ -1022,8 +1055,8 @@ const ThermalBox = memo(
     // --- CONSTANTS FOR GEOMETRY ---
     const CPV_SUBSTRATE_THICK = 0.002; // Thin layer for the wafer
     const CPV_CELL_HEIGHT = 0.001; // Height of the actual PV cells
-    const FIN_HEIGHT = realScale ? 0.02 : 0.05; // Height of the cooling fins
-    const FIN_THICKNESS = realScale ? 0.001 : 0.005;
+    const FIN_H = realScale ? visFinHeight : visFinHeight * 2; // Exaggerate slightly if not real scale? Or keep consistent.
+    const FIN_T = realScale ? visFinThickness : visFinThickness * 2;
 
     // Cleanup Textures
     useEffect(() => {
@@ -1052,7 +1085,9 @@ const ThermalBox = memo(
         !simSinkMatKey ||
         simWindSpeed === null ||
         simAmbientTemp === null ||
-        simQSolar === null
+        simQSolar === null ||
+        simFinHeight === null ||
+        simOpticalEff === null
       ) {
         setTexSink(null);
         setTexBase(null);
@@ -1100,7 +1135,7 @@ const ThermalBox = memo(
       };
 
       const relativePath = new URL(
-        "./wasm-embeddings/vc14/solar_bg.wasm",
+        "./wasm-embeddings/vc15/solar_bg.wasm",
         import.meta.url
       ).toString();
       const wasmUrl = new URL(relativePath, window.location.origin).href;
@@ -1136,6 +1171,12 @@ const ThermalBox = memo(
         windSpeed: simWindSpeed,
         ambientTemp: simAmbientTemp,
         qSolar: simQSolar,
+        finHeight: simFinHeight,
+        finSpacing: simFinSpacing,
+        finThickness: simFinThickness,
+        finEfficiencyParam: simFinEfficiency,
+        opticalEfficiency: simOpticalEff,
+        pvEfficiencyParam: simPvEfficiency,
         wasmUrl,
       };
 
@@ -1169,6 +1210,12 @@ const ThermalBox = memo(
       simWindSpeed,
       simAmbientTemp,
       simQSolar,
+      simFinHeight,
+      simFinSpacing,
+      simFinThickness,
+      simFinEfficiency,
+      simOpticalEff,
+      simPvEfficiency,
       onUpdateStats,
     ]);
 
@@ -1304,7 +1351,8 @@ const ThermalBox = memo(
     const geometries = useMemo(
       () => ({
         sink: new THREE.BoxGeometry(PLATE_WIDTH, visSinkThick, PLATE_DEPTH),
-        sinkFin: new THREE.BoxGeometry(FIN_THICKNESS, FIN_HEIGHT, PLATE_DEPTH),
+        // Update Fin Geometry based on props
+        sinkFin: new THREE.BoxGeometry(FIN_T, FIN_H, PLATE_DEPTH),
         base: new THREE.BoxGeometry(PLATE_WIDTH, visLayerThick, PLATE_DEPTH),
         cpvSub: new THREE.BoxGeometry(
           PLATE_WIDTH,
@@ -1312,8 +1360,24 @@ const ThermalBox = memo(
           PLATE_DEPTH
         ),
       }),
-      [visLayerThick, visSinkThick, FIN_HEIGHT, FIN_THICKNESS]
+      [visLayerThick, visSinkThick, FIN_H, FIN_T]
     );
+
+    const finPositions = useMemo(() => {
+      if (!visUseFins) return [];
+
+      // Logic must match Rust/Weight logic approx
+      const count = Math.floor(PLATE_WIDTH / (visFinSpacing + visFinThickness));
+      const totalWidth = count * (visFinSpacing + visFinThickness);
+      const startX = -totalWidth / 2 + (visFinSpacing + visFinThickness) / 2;
+
+      return Array.from({ length: count }).map((_, i) => {
+        // Center the fin in its slot
+        return (
+          startX + i * (visFinSpacing + visFinThickness) - visFinSpacing / 2
+        );
+      });
+    }, [visUseFins, visFinSpacing, visFinThickness]);
 
     // --- RENDER ---
     return (
@@ -1343,18 +1407,14 @@ const ThermalBox = memo(
             {/* Fins (Only show in Setup Mode OR if explicit) */}
             {!isSimulationActive &&
               visUseFins &&
-              Array.from({ length: 50 }).map((_, i) => {
-                const spacing = PLATE_WIDTH / 50;
-                const xPos = -PLATE_WIDTH / 2 + spacing / 2 + i * spacing;
-                return (
-                  <mesh
-                    key={i}
-                    position={[xPos, -visSinkThick / 2 - FIN_HEIGHT / 2, 0]}
-                    geometry={geometries.sinkFin}
-                    material={materials.sink}
-                  />
-                );
-              })}
+              finPositions.map((xPos, i) => (
+                <mesh
+                  key={i}
+                  position={[xPos, -visSinkThick / 2 - FIN_H / 2, 0]}
+                  geometry={geometries.sinkFin}
+                  material={materials.sink}
+                />
+              ))}
 
             {/* Volume Grid (Only in Setup Mode) */}
             {!isSimulationActive && showGrid && (
@@ -1426,7 +1486,13 @@ const ThermalBox = memo(
         {/* CPV LAYER */}
         <group ref={cpvRef}>
           <mesh
-            onPointerMove={(e) => handlePointerMove(e, visUseReflector ? "Substrat CPV" : "Placa Base", texCPV)}
+            onPointerMove={(e) =>
+              handlePointerMove(
+                e,
+                visUseReflector ? "Substrat CPV" : "Placa Base",
+                texCPV
+              )
+            }
             onPointerOut={handlePointerOut}
             geometry={geometries.cpvSub}
             material={!isSimulationActive ? materials.cpvSub : undefined}
@@ -1516,8 +1582,10 @@ const ThermalBox = memo(
               (showLabels === 1 && hoveredPart === "CPV Cell")
             }
             position={[0, CPV_CELL_HEIGHT / 2, 0]}
-            label={visSolarMode === "cpv" ? "Cèl·lula CPV" : "Panell PV"} 
-            desc={visSolarMode === "cpv" ? "Triple Unió" : "Silici Monocristal·lí"}
+            label={visSolarMode === "cpv" ? "Cèl·lula CPV" : "Panell PV"}
+            desc={
+              visSolarMode === "cpv" ? "Triple Unió" : "Silici Monocristal·lí"
+            }
           />
         </group>
       </group>
@@ -1810,6 +1878,16 @@ export default function ThermalPage() {
   const [uiBaseMatKey, setUiBaseMatKey] = useState("Al-1050A (Anodized)");
   const [uiSinkMatKey, setUiSinkMatKey] = useState("Al-1050A (Anodized)");
 
+  // --- NEW: Fin Geometry State ---
+  const [uiFinHeight, setUiFinHeight] = useState(0.02);
+  const [uiFinSpacing, setUiFinSpacing] = useState(0.005);
+  const [uiFinThickness, setUiFinThickness] = useState(0.001);
+  const [uiFinEfficiency, setUiFinEfficiency] = useState(0.85); // Manual factor
+
+  // --- NEW: Efficiency State ---
+  const [uiOpticalEff, setUiOpticalEff] = useState(1); // 90% Optical efficiency
+  const [uiPvEfficiency, setUiPvEfficiency] = useState(0.2); // 20% Standard PV
+
   // NEW: Environmental UI State
   const [uiWindSpeed, setUiWindSpeed] = useState(4.0); // m/s
   const [uiAmbientTemp, setUiAmbientTemp] = useState(25.0); // °C
@@ -1844,6 +1922,13 @@ export default function ThermalPage() {
     useReflector: boolean;
     baseMatKey: string;
     sinkMatKey: string;
+    // NEW Params
+    finHeight: number;
+    finSpacing: number;
+    finThickness: number;
+    finEfficiency: number;
+    opticalEfficiency: number;
+    pvEfficiency: number;
     // NEW Params
     windSpeed: number;
     ambientTemp: number;
@@ -1908,7 +1993,8 @@ export default function ThermalPage() {
     if (targetPreset.sinkNz !== undefined) setUiSinkNz(targetPreset.sinkNz);
     if (targetPreset.useCircle !== undefined)
       setUiUseCircle(targetPreset.useCircle);
-    if (targetPreset.usePv !== undefined) setUiSolarMode(targetPreset.usePv ? "pv" : "cpv");
+    if (targetPreset.usePv !== undefined)
+      setUiSolarMode(targetPreset.usePv ? "pv" : "cpv");
     if (targetPreset.useFins !== undefined) setUiUseFins(targetPreset.useFins);
     if (targetPreset.useReflector !== undefined)
       setUiUseReflector(targetPreset.useReflector);
@@ -1916,6 +2002,18 @@ export default function ThermalPage() {
       setUiBaseMatKey(targetPreset.baseMatKey);
     if (targetPreset.sinkMatKey !== undefined)
       setUiSinkMatKey(targetPreset.sinkMatKey);
+    if (targetPreset.finHeight !== undefined)
+      setUiFinHeight(targetPreset.finHeight);
+    if (targetPreset.finSpacing !== undefined)
+      setUiFinSpacing(targetPreset.finSpacing);
+    if (targetPreset.finThickness !== undefined)
+      setUiFinThickness(targetPreset.finThickness);
+    if (targetPreset.finEfficiency !== undefined)
+      setUiFinEfficiency(targetPreset.finEfficiency);
+    if (targetPreset.opticalEfficiency !== undefined)
+      setUiOpticalEff(targetPreset.opticalEfficiency);
+    if (targetPreset.pvEfficiency !== undefined)
+      setUiPvEfficiency(targetPreset.pvEfficiency);
     // NEW: Apply Environmental Presets
     if (targetPreset.windSpeed !== undefined)
       setUiWindSpeed(targetPreset.windSpeed);
@@ -1972,12 +2070,20 @@ export default function ThermalPage() {
       sinkNz: uiSinkNz,
       useCircle: uiUseCircle,
       useSolarCell: uiSolarMode !== "none", // True if PV or CPV
-      usePv: uiSolarMode === "pv",          // True only if PV mode
+      usePv: uiSolarMode === "pv", // True only if PV mode
       // Pass new params
       useFins: uiUseFins,
       useReflector: uiUseReflector,
       baseMatKey: uiBaseMatKey,
       sinkMatKey: uiSinkMatKey,
+      // NEW Params
+      finHeight: uiFinHeight,
+      finSpacing: uiFinSpacing,
+      finThickness: uiFinThickness,
+      finEfficiency: uiFinEfficiency,
+      opticalEfficiency: uiOpticalEff,
+      pvEfficiency: uiPvEfficiency,
+      // NEW Params
       windSpeed: uiWindSpeed,
       ambientTemp: uiAmbientTemp,
       qSolar: uiQSolar,
@@ -1999,10 +2105,12 @@ export default function ThermalPage() {
       return;
     }
 
-    const currentMode = activeParams.useSolarCell 
-        ? (activeParams.usePv ? "pv" : "cpv") 
-        : "none";
-    
+    const currentMode = activeParams.useSolarCell
+      ? activeParams.usePv
+        ? "pv"
+        : "cpv"
+      : "none";
+
     setHasPendingChanges(
       uiFwhm !== activeParams.focusOffset ||
         uiMatrixSize !== activeParams.matrixSize ||
@@ -2021,6 +2129,12 @@ export default function ThermalPage() {
         uiUseReflector !== activeParams.useReflector || // Check change
         uiBaseMatKey !== activeParams.baseMatKey ||
         uiSinkMatKey !== activeParams.sinkMatKey ||
+        uiFinHeight !== activeParams.finHeight ||
+        uiFinSpacing !== activeParams.finSpacing ||
+        uiFinThickness !== activeParams.finThickness ||
+        uiFinEfficiency !== activeParams.finEfficiency ||
+        uiOpticalEff !== activeParams.opticalEfficiency ||
+        uiPvEfficiency !== activeParams.pvEfficiency ||
         uiWindSpeed !== activeParams.windSpeed ||
         uiAmbientTemp !== activeParams.ambientTemp ||
         uiQSolar !== activeParams.qSolar
@@ -2044,6 +2158,12 @@ export default function ThermalPage() {
     uiUseReflector,
     uiBaseMatKey,
     uiSinkMatKey,
+    uiFinHeight,
+    uiFinSpacing,
+    uiFinThickness,
+    uiFinEfficiency,
+    uiOpticalEff,
+    uiPvEfficiency,
     uiWindSpeed,
     uiAmbientTemp,
     uiQSolar,
@@ -2058,16 +2178,17 @@ export default function ThermalPage() {
     // If fins are on, we assume 50% void, if off (solid block), 100% solid.
     // However, simplified for now: thickness 0 -> 0 volume.
 
-    const FIN_HEIGHT = 0.02;
-    const FIN_THICKNESS = 0.001;
-    const FIN_SPACING = 0.005;
+    const nFins = uiUseFins
+      ? Math.floor(uiPlateDim / (uiFinSpacing + uiFinThickness))
+      : 0;
 
-    const nFins = Math.floor(uiPlateDim / (FIN_SPACING + FIN_THICKNESS));
-    const volSink =
-      Math.pow(uiPlateDim, 2) * uiSinkThick +
-      FIN_HEIGHT * FIN_THICKNESS * uiPlateDim * (uiUseFins ? nFins : 0);
+    // Base sink plate volume + Fins volume
+    const volSinkPlate = Math.pow(uiPlateDim, 2) * uiSinkThick;
+    const volFins = nFins * uiFinHeight * uiFinThickness * uiPlateDim;
 
-    return volBase * baseRho + volSink * sinkRho;
+    const volSinkTotal = volSinkPlate + volFins;
+
+    return volBase * baseRho + volSinkTotal * sinkRho;
   }, [
     uiPlateDim,
     uiLayerThick,
@@ -2075,6 +2196,9 @@ export default function ThermalPage() {
     uiBaseMatKey,
     uiSinkMatKey,
     uiUseFins,
+    uiFinHeight,
+    uiFinSpacing,
+    uiFinThickness,
   ]);
 
   // 1. Calculate Scientific Project Cost (Middle Case / Realistic)
@@ -2097,8 +2221,11 @@ export default function ThermalPage() {
       ? volAg * PROJECT_COSTS.AG_DENSITY * PROJECT_COSTS.AG_COST_PER_KG
       : 0;
 
-    const cpvAreaCost = (uiSolarMode !== "none") 
-        ? (uiSolarMode === "cpv" ? area * PROJECT_COSTS.CPV_PRICE_PER_M2 : area * 500) // 500 for standard PV
+    const cpvAreaCost =
+      uiSolarMode !== "none"
+        ? uiSolarMode === "cpv"
+          ? area * PROJECT_COSTS.CPV_PRICE_PER_M2
+          : area * 500 // 500 for standard PV
         : 0;
 
     const totalMaterials = costMatBase + costMatSink + costMatAg + cpvAreaCost;
@@ -2292,18 +2419,30 @@ Active Features:          [${activeParams.useFins ? "X" : " "}] Fins  [${
     }] Reflector
 
 -- MATERIALS --
-Base Material:            ${MATERIALS[activeParams.baseMatKey].name} (k=${MATERIALS[activeParams.baseMatKey].kt} W/(m·K), rho=${MATERIALS[activeParams.baseMatKey].rho} kg/m³)
-Sink Material:            ${MATERIALS[activeParams.sinkMatKey].name} (k=${MATERIALS[activeParams.sinkMatKey].kt} W/(m·K), rho=${MATERIALS[activeParams.sinkMatKey].rho} kg/m³)
+Base Material:            ${MATERIALS[activeParams.baseMatKey].name} (k=${
+      MATERIALS[activeParams.baseMatKey].kt
+    } W/(m·K), rho=${MATERIALS[activeParams.baseMatKey].rho} kg/m³)
+Sink Material:            ${MATERIALS[activeParams.sinkMatKey].name} (k=${
+      MATERIALS[activeParams.sinkMatKey].kt
+    } W/(m·K), rho=${MATERIALS[activeParams.sinkMatKey].rho} kg/m³)
 
 [3] THERMAL & ELECTRICAL PERFORMANCE
 -------------------------------------------------------------------
 Status:                   ${simStats.status.toUpperCase()}
-Max Temperature:          ${simStats.maxTemp.toFixed(2) + " °C" + (simStats.maxTemp > maxTemp ? " LIMIT EXCEEDED! THERMAL RISK!!" : "")}
+Max Temperature:          ${
+      simStats.maxTemp.toFixed(2) +
+      " °C" +
+      (simStats.maxTemp > maxTemp ? " LIMIT EXCEEDED! THERMAL RISK!!" : "")
+    }
 Electrical Output:        ${simStats.pElectric.toFixed(2)} W
 
 [4] STRUCTURAL ANALYSIS
 -------------------------------------------------------------------
-Total Mass:               ${structureWeight.toFixed(2) + " kg" + (structureWeight > 200 ? " LIMIT EXCEEDED! STRUCTURAL RISK!!" : "")}
+Total Mass:               ${
+      structureWeight.toFixed(2) +
+      " kg" +
+      (structureWeight > 200 ? " LIMIT EXCEEDED! STRUCTURAL RISK!!" : "")
+    }
 Lifting Requirement:      ${
       structureWeight > 50 ? "CRANE REQUIRED" : "MANUAL LIFT OK"
     }
@@ -2416,9 +2555,7 @@ STARRY SKY ENGINEERING GROUP
       {/*Initial overlay*/}
       <div
         className={`absolute inset-0 bg-black z-40 flex items-center justify-center pointer-events-none transition-all duration-1000 ease-in-out ${
-          !introFinished
-            ? "opacity-100 scale-100"
-            : "opacity-0  scale-110"
+          !introFinished ? "opacity-100 scale-100" : "opacity-0  scale-110"
         }`}
       >
         <div className="text-center">
@@ -2565,6 +2702,12 @@ STARRY SKY ENGINEERING GROUP
             simWindSpeed={activeParams?.windSpeed ?? null}
             simAmbientTemp={activeParams?.ambientTemp ?? null}
             simQSolar={activeParams?.qSolar ?? null}
+            simFinHeight={activeParams?.finHeight ?? null}
+            simFinSpacing={activeParams?.finSpacing ?? null}
+            simFinThickness={activeParams?.finThickness ?? null}
+            simFinEfficiency={activeParams?.finEfficiency ?? null}
+            simOpticalEff={activeParams?.opticalEfficiency ?? null}
+            simPvEfficiency={activeParams?.pvEfficiency ?? null}
             visMatrixSize={uiMatrixSize}
             visFwhm={uiFwhm}
             visMagicArea={uiMagicArea}
@@ -2573,6 +2716,9 @@ STARRY SKY ENGINEERING GROUP
             visLayerThick={realScale ? uiLayerThick : uiLayerThick * 5}
             visSinkThick={realScale ? uiSinkThick : uiSinkThick * 5}
             visUseFins={uiUseFins}
+            visFinHeight={uiFinHeight}
+            visFinSpacing={uiFinSpacing}
+            visFinThickness={uiFinThickness}
             visUseReflector={uiUseReflector}
             visSolarMode={uiSolarMode}
             visBaseMatKey={uiBaseMatKey}
@@ -2956,6 +3102,18 @@ STARRY SKY ENGINEERING GROUP
                 showMax
                 showMin
               />
+              <ControlRow
+                label="Efic. Òptica"
+                value={(uiOpticalEff * 100).toFixed(0)}
+                unit="%"
+                colorClass="text-cyan-400"
+                onDec={() => setUiOpticalEff((p) => Math.max(0, p - 0.05))}
+                onInc={() => setUiOpticalEff((p) => Math.min(1, p + 0.05))}
+                onSet={(n) => {
+                  setUiOpticalEff(n);
+                  handleManualChange("opticalEfficiency");
+                }}
+              />
             </div>
           </div>
 
@@ -3030,25 +3188,12 @@ STARRY SKY ENGINEERING GROUP
           <div>
             <h3 className="text-[12px] font-bold uppercase tracking-widest text-purple-500/80 mb-4 flex items-center gap-2">
               <span className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></span>
-              Geometria i Dimensions
+              Geometria i Dimensions Placa
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <ControlRow
-                label="Matriu NxN"
-                value={`${uiMatrixSize}x${uiMatrixSize}`}
-                colorClass="text-purple-400"
-                onDec={() => {
-                  setUiMatrixSize((p) => Math.max(p - 1, MATRIX_SIZE_MIN));
-                  handleManualChange("matrixSize");
-                }}
-                onInc={() => {
-                  setUiMatrixSize((p) => Math.min(p + 1, MATRIX_SIZE_MAX));
-                  handleManualChange("matrixSize");
-                }}
-              />
-              <ControlRow
                 label="Mida Placa"
-                value={uiPlateDim.toFixed(1)}
+                value={uiPlateDim.toFixed(2)}
                 unit="m"
                 colorClass="text-purple-400"
                 onDec={() => {
@@ -3059,6 +3204,10 @@ STARRY SKY ENGINEERING GROUP
                   setUiPlateDim((p) => Math.min(p + 0.1, 3.0));
                   handleManualChange("plateDim");
                 }}
+                onSet={(n) => {
+                  setUiPlateDim(Math.max(Math.min(n, 3.0), 0.01));
+                  handleManualChange("plateDim");
+                }}
               />
               <ControlRow
                 label="Gruix Conductor"
@@ -3066,15 +3215,15 @@ STARRY SKY ENGINEERING GROUP
                 unit="m"
                 colorClass="text-purple-400"
                 onDec={() => {
-                  setUiLayerThick((p) => Math.max(p - 0.005, 0.005));
+                  setUiLayerThick((p) => Math.max(p - 0.005, 0.001));
                   handleManualChange("layerThick");
                 }}
                 onInc={() => {
-                  setUiLayerThick((p) => Math.min(p + 0.005, 0.1));
+                  setUiLayerThick((p) => Math.min(p + 0.005, 0.2));
                   handleManualChange("layerThick");
                 }}
                 onSet={(n) => {
-                  setUiLayerThick(Math.max(Math.min(n, 0.1), 0.005));
+                  setUiLayerThick(Math.max(Math.min(n, 0.2), 0.001));
                   handleManualChange("layerThick");
                 }}
               />
@@ -3096,17 +3245,67 @@ STARRY SKY ENGINEERING GROUP
                   handleManualChange("sinkThick");
                 }}
                 onSet={(n) => {
-                  setUiSinkThick(Math.max(Math.min(n, 0.1), 0.005));
+                  setUiSinkThick(Math.max(Math.min(n, 0.1), 0));
                   handleManualChange("sinkThick");
                 }}
               />
+            </div>
+          </div>
+
+          <h3 className="text-[12px] font-bold uppercase tracking-widest text-blue-500/80 mb-4 flex items-center gap-2">
+            <span className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></span>
+            Dispositius de Generació Elèctrica
+          </h3>
+          <div className="grid grid-cols-1 gap-4">
+            <MultiStateToggle
+              label="Tipus de Captació Solar"
+              value={uiSolarMode}
+              options={[
+                { label: "Cap (Tèrmic)", value: "none" },
+                { label: "PV Estàndard", value: "pv" },
+                { label: "CPV (High Tech)", value: "cpv" },
+              ]}
+              onChange={(val) => {
+                setUiSolarMode(val as any);
+                handleManualChange("usePv"); // Reuse existing key or add new one
+              }}
+              colorClass="text-blue-400"
+            />
+            <div
+              className={`col-span-1 sm:col-span-1 ${
+                uiSolarMode === "none"
+                  ? "opacity-50 pointer-events-none grayscale"
+                  : ""
+              }`}
+            >
+              <ControlRow
+                label="Matriu NxN"
+                value={`${uiMatrixSize}x${uiMatrixSize}`}
+                colorClass="text-blue-400"
+                onDec={() => {
+                  setUiMatrixSize((p) => Math.max(p - 1, MATRIX_SIZE_MIN));
+                  handleManualChange("matrixSize");
+                }}
+                onInc={() => {
+                  setUiMatrixSize((p) => Math.min(p + 1, MATRIX_SIZE_MAX));
+                  handleManualChange("matrixSize");
+                }}
+              />
+            </div>
+            <div
+              className={`col-span-1 sm:col-span-1 ${
+                uiSolarMode === "none"
+                  ? "opacity-50 pointer-events-none grayscale"
+                  : ""
+              }`}
+            >
               <ControlRow
                 label="Gruix (C)PV"
                 value={uiPvThick.toFixed(4)}
                 unit="mm"
-                colorClass="text-purple-400"
+                colorClass="text-blue-400"
                 onDec={() => {
-                  setUiPvThick((p) => Math.max(p - 0.1, 0.2));
+                  setUiPvThick((p) => Math.max(p - 0.1, 0.1));
                   handleManualChange("pvThick");
                 }}
                 onInc={() => {
@@ -3114,15 +3313,39 @@ STARRY SKY ENGINEERING GROUP
                   handleManualChange("pvThick");
                 }}
                 onSet={(n) => {
-                  setUiPvThick(Math.max(Math.min(n, 10), 0.2));
+                  setUiPvThick(Math.max(Math.min(n, 10), 0.1));
                   handleManualChange("pvThick");
                 }}
               />
+            </div>
+            <div
+              className={`col-span-1 ${
+                uiSolarMode !== "pv"
+                  ? "opacity-50 pointer-events-none grayscale"
+                  : ""
+              }`}
+            >
               <ControlRow
-                label="Escala CPV"
+                label="Efic. PV"
+                value={(uiPvEfficiency * 100).toFixed(0)}
+                unit="%"
+                colorClass="text-blue-400"
+                onDec={() => setUiPvEfficiency((p) => Math.max(0, p - 0.01))}
+                onInc={() => setUiPvEfficiency((p) => Math.min(1, p + 0.01))}
+              />
+            </div>
+            <div
+              className={`col-span-1 sm:col-span-1 ${
+                uiSolarMode === "none"
+                  ? "opacity-50 pointer-events-none grayscale"
+                  : ""
+              }`}
+            >
+              <ControlRow
+                label="Escala (C)PV"
                 value={(uiCpvScale * 100).toFixed(0)}
                 unit="%"
-                colorClass="text-purple-400"
+                colorClass="text-blue-400"
                 onDec={() => {
                   setUiCpvScale((p) => Math.max(p - 0.01, 0.1));
                   handleManualChange("cpvScale");
@@ -3132,14 +3355,68 @@ STARRY SKY ENGINEERING GROUP
                   handleManualChange("cpvScale");
                 }}
               />
+            </div>
+            <div
+              className={`col-span-1 sm:col-span-2 ${
+                uiSolarMode === "none"
+                  ? "opacity-50 pointer-events-none grayscale"
+                  : ""
+              }`}
+            >
+              <ToggleRow
+                label="Forma Circular (C)PV"
+                colorClass="text-blue-400"
+                checked={uiUseCircle}
+                onChange={(v) => {
+                  setUiUseCircle(v);
+                  handleManualChange("useCircle");
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="border-t border-white/5" />
+
+          {/* SECTION 2: MATERIALS I COMPONENTS */}
+          <div>
+            <h3 className="text-[12px] font-bold uppercase tracking-widest text-red-500/80 mb-4 flex items-center gap-2">
+              <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+              Materials i Components
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <MaterialSelector
+                label="Material Conductor"
+                selectedKey={uiBaseMatKey}
+                onChange={(v) => {
+                  setUiBaseMatKey(v);
+                  handleManualChange("baseMatKey");
+                }}
+                colorClass="text-red-500"
+              />
+              <div
+                className={`col-span-1 sm:col-span-2 ${
+                  uiSinkThick < 0.0001 ? "opacity-50 pointer-events-none" : ""
+                }`}
+              >
+                <MaterialSelector
+                  label="Material Dissipador"
+                  selectedKey={uiSinkMatKey}
+                  onChange={(v) => {
+                    setUiSinkMatKey(v);
+                    handleManualChange("sinkMatKey");
+                  }}
+                  colorClass="text-red-500"
+                />
+              </div>
+
               <div className="col-span-1 sm:col-span-2">
                 <ToggleRow
-                  label="Forma Circular (C)PV"
-                  colorClass="text-purple-400"
-                  checked={uiUseCircle}
+                  label="Capa reflectora"
+                  colorClass="text-red-500"
+                  checked={uiUseReflector}
                   onChange={(v) => {
-                    setUiUseCircle(v);
-                    handleManualChange("useCircle");
+                    setUiUseReflector(v);
+                    handleManualChange("useReflector");
                   }}
                 />
               </div>
@@ -3148,76 +3425,103 @@ STARRY SKY ENGINEERING GROUP
 
           <div className="border-t border-white/5" />
 
-          {/* SECTION 2: MATERIALS I COMPONENTS */}
-          <div>
-            <h3 className="text-[12px] font-bold uppercase tracking-widest text-blue-500/80 mb-4 flex items-center gap-2">
-              <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-              Materials i Components
-            </h3>
-            <div className="grid grid-cols-1 gap-4">
-              <MaterialSelector
-                label="Material Conductor"
-                selectedKey={uiBaseMatKey}
-                onChange={(v) => {
-                  setUiBaseMatKey(v);
-                  handleManualChange("baseMatKey");
-                }}
-                colorClass="text-blue-400"
-              />
-              <MaterialSelector
-                label="Material Dissipador"
-                selectedKey={uiSinkMatKey}
-                onChange={(v) => {
-                  setUiSinkMatKey(v);
-                  handleManualChange("sinkMatKey");
-                }}
-                colorClass="text-blue-400"
-              />
+          <h3 className="text-[12px] font-bold uppercase tracking-widest text-orange-500/80 mb-4 flex items-center gap-2">
+            <span className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span>
+            Geometria Aletes i Eficiència
+          </h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-                <div
-                  className={`col-span-1 sm:col-span-2 ${
-                    uiSinkThick < 0.001
-                      ? "opacity-50 pointer-events-none grayscale"
-                      : ""
-                  }`}
-                >
-                  <ToggleRow
-                    label="Aletes Dissipació"
-                    colorClass="text-blue-400"
-                    checked={uiUseFins}
-                    onChange={(v) => {
-                      setUiUseFins(v);
-                      handleManualChange("useFins");
-                    }}
-                  />
-                </div>
-                <div className="col-span-1 sm:col-span-2">
-                  <ToggleRow
-                    label="Capa reflectora"
-                    colorClass="text-blue-400"
-                    checked={uiUseReflector}
-                    onChange={(v) => {
-                      setUiUseReflector(v);
-                      handleManualChange("useReflector");
-                    }}
-                  />
-                </div>
-                <MultiStateToggle
-                  label="Tipus de Captació Solar"
-                  value={uiSolarMode}
-                  options={[
-                    { label: "Cap (Tèrmic)", value: "none" },
-                    { label: "PV Estàndard", value: "pv" },
-                    { label: "CPV (High Tech)", value: "cpv" },
-                  ]}
-                  onChange={(val) => {
-                    setUiSolarMode(val as any);
-                    handleManualChange("usePv"); // Reuse existing key or add new one
-                  }}
-                  colorClass="text-blue-400"
-                />
-              </div>
+          {/* FINS GEOMETRY CONTROLS */}
+          <div
+            className={`grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 ${
+              uiSinkThick < 0.0001 ? "opacity-50 pointer-events-none" : ""
+            }`}
+          >
+            <div className="col-span-1 sm:col-span-2">
+              <ToggleRow
+                label="Aletes Dissipació"
+                colorClass="text-blue-400"
+                checked={uiUseFins}
+                onChange={(v) => {
+                  setUiUseFins(v);
+                  handleManualChange("useFins");
+                }}
+              />
+            </div>
+            <div
+              className={`col-span-1 sm:col-span-1 ${
+                !uiUseFins ? "opacity-50 pointer-events-none grayscale" : ""
+              }`}
+            >
+              <ControlRow
+                label="Alçada Aleta"
+                value={uiFinHeight.toFixed(3)}
+                unit="m"
+                colorClass="text-orange-400"
+                onDec={() => {
+                  setUiFinHeight((p) => Math.max(0.005, p - 0.005));
+                }}
+                onInc={() => {
+                  setUiFinHeight((p) => Math.min(0.2, p + 0.005));
+                }}
+                onSet={(v) => {
+                  setUiFinHeight(v);
+                }}
+              />
+            </div>
+            <div
+              className={`col-span-1 sm:col-span-1 ${
+                !uiUseFins ? "opacity-50 pointer-events-none grayscale" : ""
+              }`}
+            >
+              <ControlRow
+                label="Espaiat Aleta"
+                value={uiFinSpacing.toFixed(3)}
+                unit="m"
+                colorClass="text-orange-400"
+                onDec={() => {
+                  setUiFinSpacing((p) => Math.max(0.001, p - 0.001));
+                }}
+                onInc={() => {
+                  setUiFinSpacing((p) => Math.min(0.05, p + 0.001));
+                }}
+                onSet={(v) => {
+                  setUiFinSpacing(v);
+                }}
+              />
+            </div>
+            <div
+              className={`col-span-1 sm:col-span-1 ${
+                !uiUseFins ? "opacity-50 pointer-events-none grayscale" : ""
+              }`}
+            >
+              <ControlRow
+                label="Gruix Aleta"
+                value={uiFinThickness.toFixed(3)}
+                unit="m"
+                colorClass="text-orange-400"
+                onDec={() => {
+                  setUiFinThickness((p) => Math.max(0.0005, p - 0.0005));
+                }}
+                onInc={() => {
+                  setUiFinThickness((p) => Math.min(0.02, p + 0.0005));
+                }}
+                onSet={(v) => {
+                  setUiFinThickness(v);
+                }}
+              />
+            </div>
+            <div
+              className={`col-span-1 sm:col-span-1 ${
+                !uiUseFins ? "opacity-50 pointer-events-none grayscale" : ""
+              }`}
+            >
+              <ControlRow
+                label="Efic. Aleta (f)"
+                value={uiFinEfficiency.toFixed(2)}
+                colorClass="text-orange-400"
+                onDec={() => setUiFinEfficiency((p) => Math.max(0.1, p - 0.05))}
+                onInc={() => setUiFinEfficiency((p) => Math.min(1.0, p + 0.05))}
+              />
             </div>
           </div>
 
