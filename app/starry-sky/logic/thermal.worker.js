@@ -1,5 +1,5 @@
 // thermal.worker.js
-import init, { run_thermal_simulation } from "../wasm-embeddings/vc15/solar.js";
+import init, { run_thermal_simulation } from "../wasm-embeddings/vc16/solar.js";
 
 const tempColor = { r: 0, g: 0, b: 0 };
 

@@ -140,6 +140,7 @@ type PresetDef = Partial<{
   opticalEfficiency: number;
   pvEfficiency: number;
   // NEW: Environmental Presets
+  solarMode: string;
   windSpeed: number;
   ambientTemp: number;
   qSolar: number;
@@ -194,6 +195,35 @@ const PRESETS: Record<string, PresetDef> = {
   D: {
     name: "Desenfocar",
     fwhm: 0.4,
+  },
+  E: {
+    name: "Empíric",
+    fwhm: 0.01,
+    magicArea: 0.0068,
+    opticalEfficiency: 0.8,
+    qSolar: 978,
+    ambientTemp: 38,
+    windSpeed: 2.5,
+    plateDim: 0.04,
+    layerThick: 0.0021,
+    sinkThick: 0.0021,
+    matrixSize: 1,
+    solarMode: "cpv",
+    usePv: false,
+    pvThick: 0.3,
+    cpvScale: 0.2778,
+    useCircle: false,
+    baseMatKey: "Al-6061",
+    sinkMatKey: "Al-6061",
+    useReflector: false,
+    useFins: true,
+    finHeight: 0.0158,
+    finSpacing: 0.00252,
+    finThickness: 0.0013,
+    finEfficiency: 0.85,
+    nx: 40,
+    layerNz: 5,
+    sinkNz: 5,
   },
   SL: {
     name: "Sota límits",
@@ -1135,7 +1165,7 @@ const ThermalBox = memo(
       };
 
       const relativePath = new URL(
-        "./wasm-embeddings/vc15/solar_bg.wasm",
+        "./wasm-embeddings/vc16/solar_bg.wasm",
         import.meta.url
       ).toString();
       const wasmUrl = new URL(relativePath, window.location.origin).href;
@@ -2376,7 +2406,7 @@ export default function ThermalPage() {
 STARRY SKY - ENGINEERING FEASIBILITY REPORT
 MAGIC TELESCOPE THERMAL MANAGEMENT SYSTEM
 Generated: ${date}
-Version: 14.0.0
+Version: 16.0.0
 ===================================================================
 
 [1] PROJECT TEAM
@@ -3110,7 +3140,7 @@ STARRY SKY ENGINEERING GROUP
                 onDec={() => setUiOpticalEff((p) => Math.max(0, p - 0.05))}
                 onInc={() => setUiOpticalEff((p) => Math.min(1, p + 0.05))}
                 onSet={(n) => {
-                  setUiOpticalEff(n);
+                  setUiOpticalEff(Math.max(Math.min(n / 100, 1), 0));
                   handleManualChange("opticalEfficiency");
                 }}
               />
@@ -3327,11 +3357,15 @@ STARRY SKY ENGINEERING GROUP
             >
               <ControlRow
                 label="Efic. PV"
-                value={(uiPvEfficiency * 100).toFixed(0)}
+                value={(uiPvEfficiency * 100).toFixed(2)}
                 unit="%"
                 colorClass="text-blue-400"
                 onDec={() => setUiPvEfficiency((p) => Math.max(0, p - 0.01))}
                 onInc={() => setUiPvEfficiency((p) => Math.min(1, p + 0.01))}
+                onSet={(n) => {
+                  setUiPvEfficiency(Math.max(Math.min(n/100, 1.0), 0.0));
+                  handleManualChange("pvEfficiency");
+                }}
               />
             </div>
             <div
@@ -3343,15 +3377,19 @@ STARRY SKY ENGINEERING GROUP
             >
               <ControlRow
                 label="Escala (C)PV"
-                value={(uiCpvScale * 100).toFixed(0)}
+                value={(uiCpvScale * 100).toFixed(2)}
                 unit="%"
                 colorClass="text-blue-400"
                 onDec={() => {
-                  setUiCpvScale((p) => Math.max(p - 0.01, 0.1));
+                  setUiCpvScale((p) => Math.max(p - 0.01, 0.01));
                   handleManualChange("cpvScale");
                 }}
                 onInc={() => {
                   setUiCpvScale((p) => Math.min(p + 0.01, 1.0));
+                  handleManualChange("cpvScale");
+                }}
+                onSet={(n) => {
+                  setUiCpvScale(Math.max(Math.min(n / 100, 1.0), 0.01));
                   handleManualChange("cpvScale");
                 }}
               />
@@ -3454,7 +3492,7 @@ STARRY SKY ENGINEERING GROUP
             >
               <ControlRow
                 label="Alçada Aleta"
-                value={uiFinHeight.toFixed(3)}
+                value={uiFinHeight.toFixed(4)}
                 unit="m"
                 colorClass="text-orange-400"
                 onDec={() => {
@@ -3464,7 +3502,7 @@ STARRY SKY ENGINEERING GROUP
                   setUiFinHeight((p) => Math.min(0.2, p + 0.005));
                 }}
                 onSet={(v) => {
-                  setUiFinHeight(v);
+                  setUiFinHeight(Math.max(0.005, Math.min(0.2, v)));
                 }}
               />
             </div>
@@ -3475,7 +3513,7 @@ STARRY SKY ENGINEERING GROUP
             >
               <ControlRow
                 label="Espaiat Aleta"
-                value={uiFinSpacing.toFixed(3)}
+                value={uiFinSpacing.toFixed(5)}
                 unit="m"
                 colorClass="text-orange-400"
                 onDec={() => {
@@ -3496,7 +3534,7 @@ STARRY SKY ENGINEERING GROUP
             >
               <ControlRow
                 label="Gruix Aleta"
-                value={uiFinThickness.toFixed(3)}
+                value={uiFinThickness.toFixed(4)}
                 unit="m"
                 colorClass="text-orange-400"
                 onDec={() => {
