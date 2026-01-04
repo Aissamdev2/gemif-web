@@ -227,23 +227,26 @@ const PRESETS: Record<string, PresetDef> = {
   },
   SL: {
     name: "Sota límits",
-    fwhm: 0.186,
+    fwhm: 0.182,
     matrixSize: 6,
-    magicArea: 35,
+    magicArea: 38,
+    opticalEfficiency: 0.85,
     layerThick: 0.0189,
     sinkThick: 0.0106,
     pvThick: 0.2,
     plateDim: 1.5,
-    cpvScale: 0.8,
+    cpvScale: 0.855,
     nx: 40,
     layerNz: 10,
     sinkNz: 5,
     useCircle: false,
+    solarMode: "cpv",
     usePv: false,
     useFins: true,
     useReflector: true,
     baseMatKey: "Al-1050A (Anodized)",
     sinkMatKey: "Al-1050A (Anodized)",
+    qSolar: 1000,
     finHeight: 0.02,
     finSpacing: 0.005,
     finThickness: 0.001,
@@ -1915,7 +1918,7 @@ export default function ThermalPage() {
   const [uiFinEfficiency, setUiFinEfficiency] = useState(0.85); // Manual factor
 
   // --- NEW: Efficiency State ---
-  const [uiOpticalEff, setUiOpticalEff] = useState(1); // 90% Optical efficiency
+  const [uiOpticalEff, setUiOpticalEff] = useState(0.85); // 85% Optical efficiency
   const [uiPvEfficiency, setUiPvEfficiency] = useState(0.2); // 20% Standard PV
 
   // NEW: Environmental UI State
@@ -2392,117 +2395,164 @@ export default function ThermalPage() {
     };
   }, [simStats.pElectric, projectCost, maxRoi]);
 
-  // --- EXPORT REPORT HANDLER ---
+  // --- EXPORT REPORT HANDLER (ENHANCED) ---
   const handleExportReport = useCallback(() => {
     if (!activeParams || !projectCost || !paybackPeriod) return;
 
-    const date = new Date().toLocaleString("es-ES");
+    const date = new Date().toLocaleString("ca-ES", {
+      dateStyle: "full",
+      timeStyle: "medium",
+    });
     const filename = `StarrySky_Report_${
       new Date().toISOString().split("T")[0]
     }.txt`;
 
-    const content = `
-===================================================================
-STARRY SKY - ENGINEERING FEASIBILITY REPORT
-MAGIC TELESCOPE THERMAL MANAGEMENT SYSTEM
-Generated: ${date}
-Version: 16.0.0
-===================================================================
+    // Helper for formatting currency
+    const fmtEur = (val: number) =>
+      val.toLocaleString("es-ES", {
+        style: "currency",
+        currency: "EUR",
+        minimumFractionDigits: 2,
+      });
 
-[1] PROJECT TEAM
--------------------------------------------------------------------
+    // Helper for boolean features
+    const check = (val: boolean) => (val ? "[YES]" : "[NO] ");
+
+    const content = `
+================================================================================
+                            STARRY SKY PROJECT
+               MAGIC TELESCOPE THERMAL & CPV FEASIBILITY REPORT
+================================================================================
+Generated: ${date}
+Simulation Engine: v16.0.0 (Web/WASM)
+Status: ${simStats.status.toUpperCase()}
+================================================================================
+
+[1] PROJECT TEAM & CONTEXT
+--------------------------------------------------------------------------------
 Plant:                Aissam Khadraoui
 Completer Finisher:   Candela García
 Coordinator:          Filip Denis
 
-[2] SYSTEM CONFIGURATION (INPUTS)
--------------------------------------------------------------------
-FWHM:                     ${activeParams.focusOffset.toFixed(3)} m
-Magic Reflective Area:    ${activeParams.magicArea.toFixed(1)} m²
-Matrix Resolution:        ${activeParams.matrixSize}x${activeParams.matrixSize}
-Plate Dimensions:         ${activeParams.plateDim}m x ${activeParams.plateDim}m
+[2] SYSTEM DESIGN PARAMETERS (INPUTS)
+--------------------------------------------------------------------------------
+>> OPTICAL CONFIGURATION
+   Gaussian FWHM:          ${activeParams.focusOffset.toFixed(4)} m
+   Magic Reflective Area:  ${activeParams.magicArea.toFixed(2)} m²
+   Optical Efficiency:     ${(activeParams.opticalEfficiency * 100).toFixed(
+     1
+   )} %
+   Incident Power (Peak):  ${(
+     activeParams.qSolar * activeParams.opticalEfficiency
+   ).toFixed(0)} W/m² (Effective)
 
--- ENVIRONMENT --
-Base Solar Irradiance:    ${activeParams.qSolar.toFixed(0)} W/m²
-Ambient Temperature:      ${activeParams.ambientTemp.toFixed(1)} °C
-Wind Speed:               ${activeParams.windSpeed.toFixed(1)} m/s
+>> GEOMETRY & GRID
+   Plate Dimensions:       ${activeParams.plateDim.toFixed(
+     3
+   )} m x ${activeParams.plateDim.toFixed(3)} m
+   Matrix Array:           ${activeParams.matrixSize} x ${
+      activeParams.matrixSize
+    } (${Math.pow(activeParams.matrixSize, 2)} units)
+   Sim Grid Resolution:    XY=${activeParams.nx} | Z_Cond=${
+      activeParams.layerNz
+    } | Z_Sink=${activeParams.sinkNz}
 
--- LAYER GEOMETRY --
-Conductor Thickness:      ${(activeParams.layerThick * 1000).toFixed(2)} mm
-Heatsink Thickness:       ${(activeParams.sinkThick * 1000).toFixed(2)} mm
-(C)PV Thickness:          ${activeParams.pvThick.toFixed(2)} mm
-Cell Scale Factor:        ${(activeParams.cpvScale * 100).toFixed(1)} %
-Cell Shape:               ${
-      activeParams.useCircle ? "Circular Array" : "Square Array"
-    }
-Electric Generation Mode: ${
-      activeParams.usePv
-        ? "Photovoltaic Cells"
-        : activeParams.useSolarCell
-        ? "Concentrated PV Cells"
-        : "No Solar Cells"
-    }
+>> LAYER STACK
+   1. Conductor (Base):    ${(activeParams.layerThick * 1000).toFixed(
+     2
+   )} mm  | Material: ${MATERIALS[activeParams.baseMatKey].name}
+      Properties:          k=${MATERIALS[activeParams.baseMatKey].kt.toFixed(
+        0
+      )} W/mK | ρ=${MATERIALS[activeParams.baseMatKey].rho} kg/m³
+      
+   2. Heatsink:            ${(activeParams.sinkThick * 1000).toFixed(
+     2
+   )} mm  | Material: ${MATERIALS[activeParams.sinkMatKey].name}
+      Properties:          k=${MATERIALS[activeParams.sinkMatKey].kt.toFixed(
+        0
+      )} W/mK | ρ=${MATERIALS[activeParams.sinkMatKey].rho} kg/m³
 
--- ADD-ONS --
-Active Features:          [${activeParams.useFins ? "X" : " "}] Fins  [${
-      activeParams.useReflector ? "X" : " "
-    }] Reflector
+   3. (C)PV Layer:         ${activeParams.pvThick.toFixed(2)} mm
+      Technology:          ${
+        activeParams.usePv
+          ? "Standard PV"
+          : activeParams.useSolarCell
+          ? "Triple-Junction CPV"
+          : "Thermal Only (No Cell)"
+      }
+      ${ uiSolarMode === "pv" ? ("Cell Efficiency: " + (activeParams.pvEfficiency * 100).toFixed(1) + " %" ) : ""}
+      Fill Factor (Scale): ${(activeParams.cpvScale * 100).toFixed(1)} %
+      Geometry:            ${
+        activeParams.useCircle ? "Circular" : "Square"
+      }
 
--- MATERIALS --
-Base Material:            ${MATERIALS[activeParams.baseMatKey].name} (k=${
-      MATERIALS[activeParams.baseMatKey].kt
-    } W/(m·K), rho=${MATERIALS[activeParams.baseMatKey].rho} kg/m³)
-Sink Material:            ${MATERIALS[activeParams.sinkMatKey].name} (k=${
-      MATERIALS[activeParams.sinkMatKey].kt
-    } W/(m·K), rho=${MATERIALS[activeParams.sinkMatKey].rho} kg/m³)
+>> THERMAL FEATURES
+   ${check(activeParams.useReflector)} Reflective Top Layer (Ag Coating)
+   ${check(activeParams.useFins)} Active Heatsink Fins
+       - Fin Height:       ${(activeParams.finHeight * 1000).toFixed(2)} mm
+       - Fin Spacing:      ${(activeParams.finSpacing * 1000).toFixed(2)} mm
+       - Fin Thickness:    ${(activeParams.finThickness * 1000).toFixed(2)} mm
+       - Efficiency Factor:${(activeParams.finEfficiency * 100).toFixed(0)} %
 
-[3] THERMAL & ELECTRICAL PERFORMANCE
--------------------------------------------------------------------
-Status:                   ${simStats.status.toUpperCase()}
-Max Temperature:          ${
-      simStats.maxTemp.toFixed(2) +
-      " °C" +
-      (simStats.maxTemp > maxTemp ? " LIMIT EXCEEDED! THERMAL RISK!!" : "")
-    }
-Electrical Output:        ${simStats.pElectric.toFixed(2)} W
+>> ENVIRONMENTAL CONDITIONS
+   Solar Irradiance:       ${activeParams.qSolar.toFixed(1)} W/m²
+   Ambient Temperature:    ${activeParams.ambientTemp.toFixed(1)} °C
+   Wind Speed:             ${activeParams.windSpeed.toFixed(1)} m/s
 
-[4] STRUCTURAL ANALYSIS
--------------------------------------------------------------------
-Total Mass:               ${
-      structureWeight.toFixed(2) +
-      " kg" +
-      (structureWeight > 200 ? " LIMIT EXCEEDED! STRUCTURAL RISK!!" : "")
-    }
-Lifting Requirement:      ${
-      structureWeight > 50 ? "CRANE REQUIRED" : "MANUAL LIFT OK"
-    }
+[3] SIMULATION RESULTS
+--------------------------------------------------------------------------------
+>> THERMAL PERFORMANCE
+   Maximum Temperature:    ${simStats.maxTemp.toFixed(1)} °C
+   Minimum Temperature:    ${simStats.minTemp.toFixed(1)} °C
+   THERMAL SAFETY CHECK:   ${
+     simStats.maxTemp > maxTemp + 0.05
+       ? "!!! WARNING: EXCEEDS THERMAL LIMIT !!!"
+       : "OK (Within Limits)"
+   }
 
-[5] ECONOMIC BREAKDOWN (Estimate)
--------------------------------------------------------------------
-Calculation Mode:         ${
-      useManualCost ? "MANUAL OVERRIDE" : "AUTOMATIC ESTIMATION"
-    }
--------------------------------------------------------------------
-> Raw Materials:          € ${projectCost.breakdown.materials.toFixed(2)}
-> Manufacturing:          € ${projectCost.breakdown.manufacturing.toFixed(2)}
-> Assembly & Elec:        € ${projectCost.breakdown.assembly.toFixed(2)}
-> Engineering (NRE):      € ${projectCost.breakdown.engineering.toFixed(2)}
-> Logistics & Install:    € ${projectCost.breakdown.logistics.toFixed(2)}
--------------------------------------------------------------------
-TOTAL CAPEX (COST):       € ${projectCost.total.toFixed(2)}
+>> ELECTRICAL PERFORMANCE
+   Power Output:           ${simStats.pElectric.toFixed(2)} W
+   Energy per Year:        ${(
+     (simStats.pElectric / 1000) *
+     ROI_CONSTANTS.SUN_HOURS_YEAR
+   ).toFixed(0)} kWh/year
 
-[6] ROI CALCULATION
--------------------------------------------------------------------
-Annual Savings:           € ${paybackPeriod.annualSavings.toFixed(2)} / yr
-Payback Period:           ${paybackPeriod.years.toFixed(1)} Years
-Viability (${maxRoi}yr max):     ${
-      paybackPeriod.isViable ? "VIABLE" : "NOT VIABLE"
-    }
+>> STRUCTURAL ANALYSIS
+   Total System Mass:      ${structureWeight.toFixed(2)} kg
+   Installation Mode:      ${
+     structureWeight > 33 || activeParams.plateDim > 0.8
+       ? "CRANE REQUIRED (Heavy/Large)"
+       : "MANUAL INSTALL (Portable)"
+   }
 
-===================================================================
+[4] ECONOMIC FEASIBILITY & ROI
+--------------------------------------------------------------------------------
+Mode: ${useManualCost ? "MANUAL OVERRIDE" : "AUTOMATIC ESTIMATION"}
+
+>> CAPEX BREAKDOWN (ESTIMATED)
+   Raw Materials:          ${fmtEur(projectCost.breakdown.materials)}
+   Machining/Fab:          ${fmtEur(projectCost.breakdown.manufacturing)}
+   Assembly & Elec:        ${fmtEur(projectCost.breakdown.assembly)}
+   Engineering (NRE):      ${fmtEur(projectCost.breakdown.engineering)}
+   Logistics & Install:    ${fmtEur(projectCost.breakdown.logistics)}
+   -----------------------------------------------------
+   TOTAL CAPEX:            ${fmtEur(projectCost.total)}
+
+>> RETURN ON INVESTMENT
+   Energy Value:           ${ROI_CONSTANTS.ELEC_PRICE_EUR_KWH.toFixed(2)} €/kWh
+   Annual Savings:         ${fmtEur(paybackPeriod.annualSavings)} / year
+   
+   Payback Period:         ${paybackPeriod.years.toFixed(1)} Years
+   Project Viability:      ${
+     paybackPeriod.isViable
+       ? "VIABLE (Returns within " + maxRoi + " years)"
+       : "NOT VIABLE (Long term return)"
+   }
+
+================================================================================
 CONFIDENTIAL - INTERNAL USE ONLY
 STARRY SKY ENGINEERING GROUP
-===================================================================
+================================================================================
 `;
 
     const blob = new Blob([content], { type: "text/plain" });
@@ -2522,6 +2572,7 @@ STARRY SKY ENGINEERING GROUP
     structureWeight,
     useManualCost,
     maxRoi,
+    maxTemp,
   ]);
 
   return (
@@ -3363,7 +3414,7 @@ STARRY SKY ENGINEERING GROUP
                 onDec={() => setUiPvEfficiency((p) => Math.max(0, p - 0.01))}
                 onInc={() => setUiPvEfficiency((p) => Math.min(1, p + 0.01))}
                 onSet={(n) => {
-                  setUiPvEfficiency(Math.max(Math.min(n/100, 1.0), 0.0));
+                  setUiPvEfficiency(Math.max(Math.min(n / 100, 1.0), 0.0));
                   handleManualChange("pvEfficiency");
                 }}
               />
@@ -3913,34 +3964,38 @@ STARRY SKY ENGINEERING GROUP
                 label="Temp. Màx"
                 value={simStats.maxTemp.toFixed(1) + " °C"}
                 colorBg={
-                  simStats.maxTemp < maxTemp
+                  simStats.maxTemp <= maxTemp + 0.05
                     ? "bg-green-900/10"
                     : "bg-red-900/10"
                 }
                 colorBorder={
-                  simStats.maxTemp < maxTemp
+                  simStats.maxTemp <= maxTemp + 0.05
                     ? "border-green-500/30"
                     : "border-red-500/30"
                 }
                 colorLabel={
-                  simStats.maxTemp < maxTemp ? "text-green-300" : "text-red-300"
+                  simStats.maxTemp <= maxTemp + 0.05
+                    ? "text-green-300"
+                    : "text-red-300"
                 }
                 colorValue={
-                  simStats.maxTemp < maxTemp ? "text-green-400" : "text-red-400"
+                  simStats.maxTemp <= maxTemp + 0.05
+                    ? "text-green-400"
+                    : "text-red-400"
                 }
               />
 
               {/* Hover Temp Special Item */}
               <div
                 className={`rounded-md py-2 px-4 border ${
-                  simStats.hoverTemp && simStats.hoverTemp > maxTemp
+                  simStats.hoverTemp && simStats.hoverTemp > maxTemp + 0.05
                     ? "border-red-500/30 bg-red-900/10"
                     : "border-blue-500/30 bg-blue-900/10"
                 } flex flex-col justify-center min-w-[100px] h-full`}
               >
                 <p
                   className={`text-[10px] ${
-                    simStats.hoverTemp && simStats.hoverTemp > maxTemp
+                    simStats.hoverTemp && simStats.hoverTemp > maxTemp + 0.05
                       ? "text-red-300"
                       : "text-blue-300"
                   } uppercase tracking-wider leading-none mb-1`}
@@ -3949,7 +4004,7 @@ STARRY SKY ENGINEERING GROUP
                 </p>
                 <p
                   className={`font-mono text-md font-bold leading-none ${
-                    simStats.hoverTemp && simStats.hoverTemp > maxTemp
+                    simStats.hoverTemp && simStats.hoverTemp > maxTemp + 0.05
                       ? "text-red-400"
                       : "text-blue-400"
                   }`}
