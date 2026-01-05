@@ -202,6 +202,8 @@ const PRESETS: Record<string, PresetDef> = {
     matrixSize: 6,
     magicArea: 39,
     opticalEfficiency: 0.85,
+    windSpeed: 4,
+    ambientTemp: 25,
     layerThick: 0.0189,
     sinkThick: 0.0106,
     pvThick: 0.2,
