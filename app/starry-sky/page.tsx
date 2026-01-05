@@ -235,7 +235,7 @@ const PRESETS: Record<string, PresetDef> = {
     sinkThick: 0.0106,
     pvThick: 0.2,
     plateDim: 1.5,
-    cpvScale: 0.845,
+    cpvScale: 0.835,
     nx: 40,
     layerNz: 10,
     sinkNz: 5,
@@ -3964,7 +3964,7 @@ STARRY SKY ENGINEERING GROUP
 
               <StatItem
                 label="Temp. Màx"
-                value={simStats.maxTemp.toFixed(2) + " °C"}
+                value={simStats.maxTemp.toFixed(1) + " °C"}
                 colorBg={
                   simStats.maxTemp <= maxTemp + 0.05
                     ? "bg-green-900/10"
