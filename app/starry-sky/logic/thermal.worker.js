@@ -1,5 +1,5 @@
 // thermal.worker.js
-import init, { run_thermal_simulation } from "../wasm-embeddings/vc16/solar.js";
+import init, { run_thermal_simulation } from "../wasm-embeddings/vc17/solar.js";
 
 const tempColor = { r: 0, g: 0, b: 0 };
 
@@ -264,6 +264,7 @@ self.onmessage = async ({ data }) => {
 
     const uniqueTransferables = [...new Set(allBuffers)];
 
+    console.log("Worker: Sending results back to main thread.", { stats });
     self.postMessage({
       status: "success",
       stats,

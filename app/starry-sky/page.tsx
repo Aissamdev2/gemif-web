@@ -227,15 +227,15 @@ const PRESETS: Record<string, PresetDef> = {
   },
   SL: {
     name: "Sota límits",
-    fwhm: 0.182,
+    fwhm: 0.18,
     matrixSize: 6,
-    magicArea: 38,
+    magicArea: 39,
     opticalEfficiency: 0.85,
     layerThick: 0.0189,
     sinkThick: 0.0106,
     pvThick: 0.2,
     plateDim: 1.5,
-    cpvScale: 0.855,
+    cpvScale: 0.845,
     nx: 40,
     layerNz: 10,
     sinkNz: 5,
@@ -1168,7 +1168,7 @@ const ThermalBox = memo(
       };
 
       const relativePath = new URL(
-        "./wasm-embeddings/vc16/solar_bg.wasm",
+        "./wasm-embeddings/vc17/solar_bg.wasm",
         import.meta.url
       ).toString();
       const wasmUrl = new URL(relativePath, window.location.origin).href;
@@ -1212,6 +1212,8 @@ const ThermalBox = memo(
         pvEfficiencyParam: simPvEfficiency,
         wasmUrl,
       };
+
+      console.log("Sending payload to worker:", payload);
 
       workerRef.current.postMessage(payload);
 
@@ -2424,7 +2426,7 @@ export default function ThermalPage() {
                MAGIC TELESCOPE THERMAL & CPV FEASIBILITY REPORT
 ================================================================================
 Generated: ${date}
-Simulation Engine: v16.0.0 (Web/WASM)
+Simulation Engine: v17.0.0 (Web/WASM)
 Status: ${simStats.status.toUpperCase()}
 ================================================================================
 
@@ -3731,7 +3733,7 @@ STARRY SKY ENGINEERING GROUP
               structureWeight > 200 ? "text-red-400" : "text-white"
             } leading-none`}
           >
-            {structureWeight.toFixed(1)} kg
+            {structureWeight.toFixed(2)} kg
           </p>
         </div>
         <div className="flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-300">
@@ -3962,7 +3964,7 @@ STARRY SKY ENGINEERING GROUP
 
               <StatItem
                 label="Temp. Màx"
-                value={simStats.maxTemp.toFixed(1) + " °C"}
+                value={simStats.maxTemp.toFixed(2) + " °C"}
                 colorBg={
                   simStats.maxTemp <= maxTemp + 0.05
                     ? "bg-green-900/10"
