@@ -2428,11 +2428,11 @@ export default function ThermalPage() {
                MAGIC TELESCOPE THERMAL & CPV FEASIBILITY REPORT
 ================================================================================
 Generated: ${date}
-Simulation Engine: v17.0.0 (Web/WASM)
+Simulation Engine: v17.0.0 (Web/Stationary)
 Status: ${simStats.status.toUpperCase()}
 ================================================================================
 
-[1] PROJECT TEAM & CONTEXT
+[1] PROJECT TEAM
 --------------------------------------------------------------------------------
 Plant:                Aissam Khadraoui
 Completer Finisher:   Candela García
@@ -2446,9 +2446,6 @@ Coordinator:          Filip Denis
    Optical Efficiency:     ${(activeParams.opticalEfficiency * 100).toFixed(
      1
    )} %
-   Incident Power (Peak):  ${(
-     activeParams.qSolar * activeParams.opticalEfficiency
-   ).toFixed(0)} W/m² (Effective)
 
 >> GEOMETRY & GRID
    Plate Dimensions:       ${activeParams.plateDim.toFixed(
