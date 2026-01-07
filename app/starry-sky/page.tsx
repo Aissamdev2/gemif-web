@@ -1811,63 +1811,46 @@ function SceneReady({ onReady }: { onReady: () => void }) {
   return null;
 }
 
-// --- COST CONSTANTS (STRICT SCIENTIFIC / HIGH RISK REALITY) ---
-const PROJECT_COSTS = {
-  // CPV: Custom populated PCBs with Triple-Junction cells.
-  // This is not a solar farm panel; it is a precision sensor array.
-  CPV_PRICE_PER_M2: 8500,
+const ENGINEERING_RATIOS = {
+  // 1. MATERIALES (Commodities fáciles de verificar)
+  // Precio de bloque de aluminio 6061-T6 cortado a medida.
+  // Fuente: Cualquier proveedor online (ej. Alumeco, Broncesval).
+  ALUMINUM_BLOCK_PRICE_KG: 15.0, 
+  
+  // 2. CPV "BLACK BOX"
+  // Asumimos el receptor como un componente comercial "off-the-shelf" de alto coste.
+  // No desglosamos soldadura, pasta, ni chips. Es un precio de compra.
+  CPV_MODULE_PRICE_M2: 8500, 
+  PV_MODULE_PRICE_M2: 200, // Referencia estándar mercado
 
-  // Silver Sintering (Ag) - Process cost is higher than material cost
-  AG_THICKNESS: 0.00005,
-  AG_DENSITY: 8500,
-  AG_COST_PER_KG: 2200, // Includes specialized application/curing process
+  // 3. FACTORES DE MANUFACTURA (La clave del nuevo paradigma)
+  // Regla del pulgar: El coste de mecanizar una pieza única compleja
+  // es X veces el coste del material en bruto.
+  // x3: Pieza simple. x5: Pieza compleja. x8: Pieza aeroespacial/óptica.
+  MACHINING_FACTOR_BASE: 5.0, 
+  MACHINING_FACTOR_FINS: 2.0, // Penalización extra si hay aletas (+2x)
 
-  // FABRICATION (One-off Prototype pricing)
-  MATERIAL_WASTE_FACTOR: 1.6, // High waste for precision milling
-  CNC_SETUP_FEE: 4500, // Complex jigging for large thin plates (prevent warping)
-  CNC_MACHINING_RATE_M2: 6000, // Slow feed rates for high tolerance flatness
-  CNC_FINS_MULTIPLIER: 3.5, // Fins are a nightmare on large plates; high risk of chatter
-  SURFACE_TREAT_M2: 600, // Space-grade low-outgassing anodization (prevents fogging mirrors)
+  // 4. ELECTRÓNICA Y CONTROL (Paquete cerrado)
+  // Estimación por punto de control + potencia
+  ELEC_BASE_PACKAGE: 5000, // PLC + Caja estanca + Protecciones
 
-  // ASSEMBLY (Clean Room Environment)
-  ASSEMBLY_HOURLY_RATE: 110, // Specialist rate (Clean room technician)
-  ASSEMBLY_hours_BASE: 24, // Cleaning, priming, slow curing
-  ASSEMBLY_MINS_PER_CELL: 45, // Precision placement + wire bonding check
+  // 5. INGENIERÍA Y LOGÍSTICA (Paquetes fijos)
+  // Coste fijo estimado de horas de ingeniería (aprox 300h a 50€/h)
+  NRE_FIXED_COST: 17000, 
+  LOGISTICS_FLAT_RATE: 3000, // Envío a Canarias
+  INSTALLATION_FLAT_RATE: 6000, // 1 semana equipo técnico in-situ
+  CRANE_SURCHARGE: 1500, // Coste extra si se necesita grúa
 
-  // ELECTRONICS (Industrial/Scientific Grade)
-  // Needs to be weatherproof (IP67) and noise-shielded (EMC) to not affect PMTs
-  ELEC_BASE_FEE: 5000, // cRIO or PLC based controller + Enclosure
-  ELEC_COST_PER_WATT: 4.0, // High grade power supplies/loads
-
-  // ENGINEERING & COMPLIANCE (The hidden killer costs)
-  NRE_DESIGN: 18000, // Mechanical/Thermal design iterations
-  NRE_FEA_SIMULATION: 12000, // Structural analysis (Wind load survival @ 2400m)
-  SAFETY_REVIEW_MEETINGS: 6000, // Preparing/Presenting TDR to Collaboration
-  QUALIFICATION_TESTING: 8000, // Thermal cycling + Vibration test
-
-  // LOGISTICS (Roque de los Muchachos)
-  PACKAGING_CRATE: 2000, // Shock-proof crate
-  TRANSPORT_INTL: 3500, // Air freight + Customs + Insurance
-  LAST_MILE_MOUNTAIN: 1500, // Specialized transport up the winding road
-
-  // INSTALLATION (High Altitude / High Risk)
-  INSTALL_TEAM_DAILY_RATE: 2200, // 2 Senior Engineers + Travel + Residencia costs
-  INSTALL_DAYS: 5, // Includes acclimatization, safety briefing, slow install
-  CRANE_RENTAL_DAY: 1200, // Cherry picker or crane often needed for telescope access
-
-  // RISK PREMIUM
-  LIABILITY_INSURANCE: 5000, // Specific rider for working near optics
-  CONTINGENCY_PCT: 0.35, // 35% Contingency for scientific prototypes
+  // 6. FINANCIERO
+  CONTINGENCY_PCT: 0.30, // 20% Margen de error estándar
 };
 
-// --- ROI CONSTANTS (La Palma, Canary Islands) ---
+// --- ROI CONSTANTS (DATOS PÚBLICOS) ---
 const ROI_CONSTANTS = {
-  // Annual Equivalent Sun Hours for a 2-axis tracker in La Palma
-  // Roque de los Muchachos offers approx 2800-3000 usable DNI hours/year.
-  SUN_HOURS_YEAR: 2800,
-
-  // Electricity Cost in €/kWh (Average Commercial/Scientific Grid Rate)
-  ELEC_PRICE_EUR_KWH: 0.22,
+  // Fuente: PVGIS (Dato conservador)
+  SUN_HOURS_YEAR: 1750,
+  // Fuente: Factura eléctrica estándar
+  ELEC_PRICE_EUR_KWH: 0.15,
 };
 
 // --- MAIN PAGE COMPONENT ---
@@ -2238,166 +2221,106 @@ export default function ThermalPage() {
     uiFinThickness,
   ]);
 
-  // 1. Calculate Scientific Project Cost (Middle Case / Realistic)
   const projectCost = useMemo(() => {
+    // 1. CÁLCULO DE MATERIAL BRUTO (Volumen envolvente)
+    // Asumimos que se compra un bloque rectangular y se mecaniza (Sustractivo)
     const area = Math.pow(uiPlateDim, 2);
-    const baseMat = MATERIALS[uiBaseMatKey];
+    const baseMat = MATERIALS[uiBaseMatKey]; // Usamos densidad real
     const sinkMat = MATERIALS[uiSinkMatKey];
 
-    // --- A. RAW MATERIALS ---
-    const wasteFactor = PROJECT_COSTS.MATERIAL_WASTE_FACTOR;
-    const volBaseRaw = area * uiLayerThick * wasteFactor;
-    const finHeight = uiUseFins ? 0.04 : 0;
-    const volSinkRaw = area * (uiSinkThick + finHeight) * wasteFactor;
+    // Espesor total del bloque a comprar (Base + Disipador + Margen de corte)
+    // Si hay aletas, compramos un bloque mucho más grueso para vaciarlo.
+    const totalThickness = uiLayerThick + uiSinkThick + (uiUseFins ? 0.04 : 0);
+    
+    // Volumen con un 20% de desperdicio de corte (scrap)
+    const rawVolume = area * totalThickness * 1.2; 
+    
+    // Peso del material en bruto
+    const rawMass = rawVolume * baseMat.rho; 
+    
+    // Coste del Material Base (Puro)
+    // Precio Kg Aluminio * Peso
+    const costRawMaterial = rawMass * ENGINEERING_RATIOS.ALUMINUM_BLOCK_PRICE_KG;
 
-    const costMatBase = volBaseRaw * baseMat.rho * baseMat.cost;
-    const costMatSink = volSinkRaw * sinkMat.rho * sinkMat.cost;
+    // 2. COSTE DEL SENSOR (CPV o PV)
+    let costSensor = 0;
+    if (uiSolarMode === "cpv") {
+        costSensor = area * ENGINEERING_RATIOS.CPV_MODULE_PRICE_M2;
+    } else if (uiSolarMode === "pv") {
+        costSensor = area * ENGINEERING_RATIOS.PV_MODULE_PRICE_M2;
+    }
 
-    const volAg = area * PROJECT_COSTS.AG_THICKNESS;
-    const costMatAg = uiUseReflector
-      ? volAg * PROJECT_COSTS.AG_DENSITY * PROJECT_COSTS.AG_COST_PER_KG
-      : 0;
+    // 3. COSTE DE MANUFACTURA (Aplicando Ratios)
+    // Aquí está la magia: El coste de hacer la pieza es proporcional al material.
+    let manufMultiplier = ENGINEERING_RATIOS.MACHINING_FACTOR_BASE;
+    
+    // Si tiene aletas, es mucho más difícil de mecanizar -> Aumenta el multiplicador
+    if (uiUseFins) manufMultiplier += ENGINEERING_RATIOS.MACHINING_FACTOR_FINS;
+    
+    // Si la pieza es enorme (>1m), es más difícil de manejar -> +50% complejidad
+    if (uiPlateDim > 1.0) manufMultiplier *= 1.5;
 
-    const cpvAreaCost =
-      uiSolarMode !== "none"
-        ? uiSolarMode === "cpv"
-          ? area * PROJECT_COSTS.CPV_PRICE_PER_M2
-          : area * 500 // 500 for standard PV
-        : 0;
+    // Coste Manufactura = (Coste Material * Multiplicador)
+    // Esto cubre: Tiempo de máquina, operario, desgaste de herramientas, anodizado, etc.
+    const costManufacturing = costRawMaterial * manufMultiplier;
 
-    const totalMaterials = costMatBase + costMatSink + costMatAg + cpvAreaCost;
+    // 4. ELECTRÓNICA (Escala suave con tamaño)
+    // Base + un pequeño extra por tamaño (más cables, fuentes más grandes)
+    const costElectronics = ENGINEERING_RATIOS.ELEC_BASE_PACKAGE + (area * 500);
 
-    // --- B. FABRICATION & MACHINING ---
-    let machiningCost = PROJECT_COSTS.CNC_SETUP_FEE;
-    machiningCost +=
-      area * PROJECT_COSTS.CNC_MACHINING_RATE_M2 * baseMat.machiningFactor;
+    // 5. LOGÍSTICA E INSTALACIÓN
+    // Lógica simple de peso/tamaño para la grúa
+    const isHeavy = structureWeight > 40; 
+    const isLarge = uiPlateDim > 0.9;
+    const needsCrane = isHeavy || isLarge;
 
-    const sinkComplexity = uiUseFins ? PROJECT_COSTS.CNC_FINS_MULTIPLIER : 1.0;
-    // Penalty for large plates (difficult to fixture/anodize)
-    const sizePenalty = uiPlateDim > 1.0 ? 1.5 : 1.0;
+    const costLogistics = ENGINEERING_RATIOS.LOGISTICS_FLAT_RATE + 
+                          ENGINEERING_RATIOS.INSTALLATION_FLAT_RATE +
+                          (needsCrane ? ENGINEERING_RATIOS.CRANE_SURCHARGE : 0);
 
-    machiningCost +=
-      area *
-      PROJECT_COSTS.CNC_MACHINING_RATE_M2 *
-      sinkMat.machiningFactor *
-      sinkComplexity *
-      sizePenalty;
-    machiningCost += area * PROJECT_COSTS.SURFACE_TREAT_M2 * 2;
+    // --- TOTALES ---
+    // NRE se suma al final (Coste único)
+    const subTotal = costRawMaterial + costSensor + costManufacturing + 
+                     costElectronics + costLogistics + ENGINEERING_RATIOS.NRE_FIXED_COST;
 
-    // --- C. ASSEMBLY ---
-    const totalCells = Math.pow(uiMatrixSize, 2);
-    const assemblyHours =
-      PROJECT_COSTS.ASSEMBLY_hours_BASE +
-      (totalCells * PROJECT_COSTS.ASSEMBLY_MINS_PER_CELL) / 60;
-    const assemblyCost = assemblyHours * PROJECT_COSTS.ASSEMBLY_HOURLY_RATE;
-
-    // --- D. ELECTRONICS ---
-    const pwrElectric = area * 1000 * 0.35;
-    const electronicsCost =
-      PROJECT_COSTS.ELEC_BASE_FEE +
-      pwrElectric * PROJECT_COSTS.ELEC_COST_PER_WATT;
-
-    // --- E. ENGINEERING (NRE) ---
-    const nreCost =
-      PROJECT_COSTS.NRE_DESIGN +
-      PROJECT_COSTS.NRE_FEA_SIMULATION +
-      PROJECT_COSTS.SAFETY_REVIEW_MEETINGS +
-      PROJECT_COSTS.QUALIFICATION_TESTING;
-
-    // --- F. LOGISTICS & INSTALLATION (SMART LOGIC) ---
-    const logisticsCost =
-      PROJECT_COSTS.PACKAGING_CRATE +
-      PROJECT_COSTS.TRANSPORT_INTL +
-      PROJECT_COSTS.LAST_MILE_MOUNTAIN;
-
-    // 1. Is it too big for the stairs? (Stairs are approx 80cm-1m wide with cages)
-    const isTooBigForStairs = uiPlateDim > 0.8;
-
-    // 2. Is it too heavy for a 2-person manual carry up 20m of stairs?
-    // Limit is typically 25kg per person. 50kg total.
-    const isTooHeavy = structureWeight > 33;
-
-    const needsCrane = isTooBigForStairs || isTooHeavy;
-
-    // Crane Cost: If needed, we pay per day.
-    const craneCost = needsCrane
-      ? PROJECT_COSTS.CRANE_RENTAL_DAY * PROJECT_COSTS.INSTALL_DAYS
-      : 0;
-
-    // Install difficulty multiplier
-    let installRiskMult = 1.0;
-    if (needsCrane) installRiskMult += 0.5; // Coordination is harder with crane
-    if (uiPlateDim > 1.2) installRiskMult += 0.3; // Wind risk
-
-    const installCost =
-      PROJECT_COSTS.INSTALL_DAYS *
-        PROJECT_COSTS.INSTALL_TEAM_DAILY_RATE *
-        installRiskMult +
-      craneCost;
-
-    const totalLogistics =
-      logisticsCost + installCost + PROJECT_COSTS.LIABILITY_INSURANCE;
-
-    // --- TOTALS ---
-    const subTotal =
-      totalMaterials +
-      machiningCost +
-      assemblyCost +
-      electronicsCost +
-      nreCost +
-      totalLogistics;
-    const contingency = subTotal * PROJECT_COSTS.CONTINGENCY_PCT;
-    const calculatedTotal = subTotal + contingency;
+    const contingency = subTotal * ENGINEERING_RATIOS.CONTINGENCY_PCT;
+    const finalTotal = subTotal + contingency;
 
     return {
-      total: useManualCost ? manualCostInput : calculatedTotal,
+      total: useManualCost ? manualCostInput : finalTotal,
       isManual: useManualCost,
       breakdown: {
-        materials: totalMaterials,
-        manufacturing: machiningCost,
-        assembly: assemblyCost + electronicsCost,
-        engineering: nreCost,
-        logistics: totalLogistics + contingency,
+        materials: costRawMaterial + costSensor, // Material + Celdas
+        manufacturing: costManufacturing, // Mecanizado completo
+        electronics: costElectronics,
+        engineering: ENGINEERING_RATIOS.NRE_FIXED_COST,
+        logistics: costLogistics + contingency,
       },
     };
-  }, [
-    uiPlateDim,
-    uiLayerThick,
-    uiSinkThick,
-    uiBaseMatKey,
-    uiSinkMatKey,
-    uiMatrixSize,
-    uiUseFins,
-    uiSolarMode,
-    uiUseReflector,
-    structureWeight,
-    useManualCost,
-    manualCostInput,
-  ]);
+}, [
+    uiPlateDim, uiLayerThick, uiSinkThick, uiBaseMatKey, uiSinkMatKey,
+    uiUseFins, uiSolarMode, structureWeight, useManualCost, manualCostInput
+]);
 
-  // 2. Calculate ROI / Payback Period
-  const paybackPeriod = useMemo(() => {
-    if (!projectCost) return null;
-    // If we aren't generating power yet, return null
-    if (simStats.pElectric <= 0) return null;
+// 2. ROI Calculation (Simplificado)
+const paybackPeriod = useMemo(() => {
+    if (!projectCost || simStats.pElectric <= 0) return null;
 
-    // 1. Annual Energy Production (kWh/year)
-    // pElectric is in Watts. Convert to kW, then multiply by annual sun hours.
-    const annualEnergyKwh =
-      (simStats.pElectric / 1000) * ROI_CONSTANTS.SUN_HOURS_YEAR;
+    // Energía Anual (kWh) = Potencia Pico (W) / 1000 * Horas Sol Útiles
+    const annualEnergyKwh = (simStats.pElectric / 1000) * ROI_CONSTANTS.SUN_HOURS_YEAR;
 
-    // 2. Annual Value of Energy (€/year)
+    // Ahorro Anual (€)
     const annualSavings = annualEnergyKwh * ROI_CONSTANTS.ELEC_PRICE_EUR_KWH;
 
-    // 3. Years to Payoff = Total CAPEX / Annual Savings
+    // Retorno (Años)
     const years = projectCost.total / annualSavings;
 
     return {
       years: years,
       annualSavings: annualSavings,
-      isViable: years < maxRoi, // Arbitrary lifecycle limit for "viable"
+      isViable: years < maxRoi,
     };
-  }, [simStats.pElectric, projectCost, maxRoi]);
+}, [simStats.pElectric, projectCost, maxRoi]);
 
   // --- EXPORT REPORT HANDLER (ENHANCED) ---
   const handleExportReport = useCallback(() => {
@@ -2533,7 +2456,7 @@ Mode: ${useManualCost ? "MANUAL OVERRIDE" : "AUTOMATIC ESTIMATION"}
 >> CAPEX BREAKDOWN (ESTIMATED)
    Raw Materials:          ${fmtEur(projectCost.breakdown.materials)}
    Machining/Fab:          ${fmtEur(projectCost.breakdown.manufacturing)}
-   Assembly & Elec:        ${fmtEur(projectCost.breakdown.assembly)}
+   Assembly & Elec:        ${fmtEur(2)}
    Engineering (NRE):      ${fmtEur(projectCost.breakdown.engineering)}
    Logistics & Install:    ${fmtEur(projectCost.breakdown.logistics)}
    -----------------------------------------------------
