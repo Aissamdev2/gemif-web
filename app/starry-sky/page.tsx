@@ -1848,9 +1848,9 @@ const ENGINEERING_RATIOS = {
 // --- ROI CONSTANTS (DATOS PÚBLICOS) ---
 const ROI_CONSTANTS = {
   // Fuente: PVGIS (Dato conservador)
-  SUN_HOURS_YEAR: 1750,
+  SUN_HOURS_YEAR: 2800,
   // Fuente: Factura eléctrica estándar
-  ELEC_PRICE_EUR_KWH: 0.15,
+  ELEC_PRICE_EUR_KWH: 0.14,
 };
 
 // --- MAIN PAGE COMPONENT ---
