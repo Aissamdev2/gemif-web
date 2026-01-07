@@ -17,12 +17,12 @@ import {
   Html,
   Grid,
   Stars,
-  GizmoHelper, // <--- Add this
-  GizmoViewport, // <--- Add this
+  GizmoHelper, 
+  GizmoViewport, 
 } from "@react-three/drei";
 import * as THREE from "three";
 
-// --- CONSTANTS & MATERIALS ---
+
 const PLATE_WIDTH = 1.5;
 const PLATE_DEPTH = 1.5;
 const FWHM_MIN = 0.17;
@@ -40,8 +40,8 @@ type MaterialDef = {
   roughness: number;
 };
 
-// --- MATERIALS DATABASE ---
-// Added 'machiningFactor': Multiplier for manufacturing difficulty (1.0 = Standard Al)
+
+
 const MATERIALS: Record<
   string,
   MaterialDef & { cost: number; machiningFactor: number }
@@ -52,7 +52,7 @@ const MATERIALS: Record<
     emi: 0.85,
     rho: 2705,
     cost: 4.5,
-    machiningFactor: 1.0, // Standard reference
+    machiningFactor: 1.0, 
     color: "#4a4a4a",
     metalness: 0.5,
     roughness: 0.7,
@@ -63,7 +63,7 @@ const MATERIALS: Record<
     emi: 0.15,
     rho: 2700,
     cost: 5.0,
-    machiningFactor: 1.1, // Slightly harder than pure Al
+    machiningFactor: 1.1, 
     color: "#5c5c5c",
     metalness: 0.5,
     roughness: 0.7,
@@ -74,7 +74,7 @@ const MATERIALS: Record<
     emi: 0.8,
     rho: 1770,
     cost: 12.0,
-    machiningFactor: 1.8, // Flammable chips, specialized cooling needed
+    machiningFactor: 1.8, 
     color: "#e0e0e0",
     metalness: 0.3,
     roughness: 0.5,
@@ -85,7 +85,7 @@ const MATERIALS: Record<
     emi: 0.95,
     rho: 2100,
     cost: 150.0,
-    machiningFactor: 0.5, // It's cut/stamped, not CNC machined (cheaper process)
+    machiningFactor: 0.5, 
     color: "#252525",
     metalness: 0.2,
     roughness: 0.9,
@@ -96,7 +96,7 @@ const MATERIALS: Record<
     emi: 0.65,
     rho: 8960,
     cost: 10.0,
-    machiningFactor: 2.5, // Hard on tools, slow feed rates, heavy
+    machiningFactor: 2.5, 
     color: "#6b3818",
     metalness: 0.4,
     roughness: 0.4,
@@ -111,7 +111,7 @@ const REFELCTIVE_MATERIAL = {
   roughness: 0.2,
 };
 
-// --- PRESET CONFIGURATIONS ---
+
 type PresetDef = Partial<{
   name: string;
   fwhm: number;
@@ -131,22 +131,22 @@ type PresetDef = Partial<{
   useReflector: boolean;
   baseMatKey: string;
   sinkMatKey: string;
-  // NEW: Fin Parameters
+  
   finHeight: number;
   finSpacing: number;
   finThickness: number;
   finEfficiency: number;
-  // NEW: Efficiency Parameters
+  
   opticalEfficiency: number;
   pvEfficiency: number;
-  // NEW: Environmental Presets
+  
   solarMode: string;
   windSpeed: number;
   ambientTemp: number;
   qSolar: number;
 }>;
 
-// Modular presets designed for stacking
+
 const PRESETS: Record<string, PresetDef> = {
   PC: {
     name: "Pitjor Cas",
@@ -256,20 +256,20 @@ const PRESETS: Record<string, PresetDef> = {
   },
 };
 
-// --- FIXED LAYER CONSTANTS ---
+
 const LAYER_COSTS = {
-  // CPV Cells (Silicon/III-V multijunction)
-  // Priced per Area (m2) because thickness is negligible for volume pricing
+  
+  
   CPV_PRICE_PER_M2: 800,
 
-  // Silver Sintering / Paste (Ag)
-  // Very thin layer, but Silver is expensive (~€800/kg)
-  AG_THICKNESS: 0.00005, // 50 microns
-  AG_DENSITY: 10490, // kg/m3
-  AG_COST_PER_KG: 850, // €/kg
+  
+  
+  AG_THICKNESS: 0.00005, 
+  AG_DENSITY: 10490, 
+  AG_COST_PER_KG: 850, 
 };
 
-// --- TYPES ---
+
 type LayerTextures = [
   THREE.Texture,
   THREE.Texture,
@@ -294,7 +294,7 @@ interface WorkerMessageData {
   height: number;
 }
 
-// --- HELPERS ---
+
 const createTexturesFromData = (
   dataArray: WorkerMessageData[]
 ): LayerTextures => {
@@ -315,7 +315,7 @@ const createTexturesFromData = (
   return textures as unknown as LayerTextures;
 };
 
-// --- SUB-COMPONENTS (UI) ---
+
 
 const ControlRow = memo(
   ({
@@ -331,7 +331,7 @@ const ControlRow = memo(
     onMax,
     showMin = false,
     showMax = false,
-    // NEW
+    
     onSet,
   }: {
     label: string;
@@ -346,7 +346,7 @@ const ControlRow = memo(
     onMax?: () => void;
     showMin?: boolean;
     showMax?: boolean;
-    onSet?: (v: number) => void; // NEW
+    onSet?: (v: number) => void; 
   }) => {
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState(String(value));
@@ -498,7 +498,7 @@ const ToggleRow = memo(
 );
 ToggleRow.displayName = "ToggleRow";
 
-// NEW: Material Selector Component with Info Display
+
 const MaterialSelector = memo(
   ({
     label,
@@ -511,10 +511,10 @@ const MaterialSelector = memo(
     onChange: (val: string) => void;
     colorClass: string;
   }) => {
-    // Helper to format the info string inside the option
+    
     const formatMatInfo = (key: string) => {
       const m = MATERIALS[key];
-      // k=W/mK, ε=Emissivity, ρ=kg/m³
+      
       return `${m.name} | k:${m.kt.toFixed(0)} | ε:${m.emi.toFixed(2)} | ρ:${
         m.rho
       }`;
@@ -550,6 +550,7 @@ const MaterialSelector = memo(
           {/* Custom Arrow Icon */}
           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-white/50">
             <svg
+              xmlns="http://www.w3.org/2000/svg"
               className="h-4 w-4"
               fill="none"
               viewBox="0 0 24 24"
@@ -610,7 +611,7 @@ const PresetSelector = memo(
 );
 PresetSelector.displayName = "PresetSelector";
 
-// --- HELPER: MULTI-STATE TOGGLE ---
+
 const MultiStateToggle = memo(
   ({
     label,
@@ -719,7 +720,7 @@ const GaussianOverlay = memo(
     realScale: boolean;
   }) => {
     const { geometry } = useMemo(() => {
-      const geo = new THREE.PlaneGeometry(PLATE_WIDTH, PLATE_DEPTH, 140, 140); // Reduced segs slightly for clearer grid
+      const geo = new THREE.PlaneGeometry(PLATE_WIDTH, PLATE_DEPTH, 140, 140); 
       geo.rotateX(-Math.PI / 2);
 
       const posAttribute = geo.attributes.position;
@@ -745,7 +746,7 @@ const GaussianOverlay = memo(
         }
       }
 
-      // Determine Amplitude
+      
       let amplitude;
       if (realScale) {
         const baseHeight = 0.5;
@@ -756,7 +757,7 @@ const GaussianOverlay = memo(
         amplitude = 0.5;
       }
 
-      // Deform Mesh & Paint Colors
+      
       for (let i = 0; i < count; i++) {
         vertex.fromBufferAttribute(posAttribute, i);
         let totalY = 0;
@@ -770,11 +771,11 @@ const GaussianOverlay = memo(
 
         posAttribute.setXYZ(i, vertex.x, totalY, vertex.z);
 
-        // --- IMPROVED COLOR GRADIENT (Red -> Orange -> Yellow) ---
+        
         const t = Math.min(totalY / amplitude, 1.0);
 
-        // HSL: Hue 0.0 (Red) -> 0.15 (Yellow)
-        // Lightness: 0.2 (Dark) -> 0.6 (Bright)
+        
+        
         color.setHSL(t * 0.15, 1.0, 0.25 + t * 0.35);
 
         colors[i * 3] = color.r;
@@ -797,9 +798,9 @@ const GaussianOverlay = memo(
             roughness={0.4}
             metalness={0.1}
             transparent={true}
-            opacity={0.75} // High opacity to see the shape clearly
+            opacity={0.75} 
             side={THREE.DoubleSide}
-            depthWrite={true} // Allow self-occlusion so it looks 3D
+            depthWrite={true} 
           />
         </mesh>
 
@@ -808,7 +809,7 @@ const GaussianOverlay = memo(
           <meshBasicMaterial
             color="#555"
             transparent
-            opacity={0.15} // Subtle grid lines
+            opacity={0.15} 
             wireframe
             depthWrite={false}
           />
@@ -819,7 +820,7 @@ const GaussianOverlay = memo(
 );
 GaussianOverlay.displayName = "GaussianOverlay";
 
-// --- HELPER: VOLUME GRID VISUALIZATION (UPDATED) ---
+
 const VolumeGrid = memo(
   ({
     width,
@@ -836,7 +837,7 @@ const VolumeGrid = memo(
     nz: number;
     visible: boolean;
   }) => {
-    // 2. Side Slices (Subtle)
+    
     const SideLines = useMemo(() => {
       if (nz <= 1) return null;
       const vertices = [];
@@ -862,10 +863,10 @@ const VolumeGrid = memo(
 
     if (!visible) return null;
 
-    // 1. Top Grid (Subtle)
+    
     const TopGrid = () => (
       <gridHelper
-        args={[width, nx, 0xffffff, 0xffffff]} // White for better contrast on dark/metal
+        args={[width, nx, 0xffffff, 0xffffff]} 
         position={[0, thickness / 2 + 0.0005, 0]}
         rotation={[0, 0, 0]}
       >
@@ -873,8 +874,8 @@ const VolumeGrid = memo(
           attach="material"
           color="#ffffff"
           transparent
-          opacity={0.5} // Very subtle
-          depthTest={true} // Allow depth occlusion so it looks "painted on"
+          opacity={0.5} 
+          depthTest={true} 
         />
       </gridHelper>
     );
@@ -898,7 +899,7 @@ const VolumeGrid = memo(
 );
 VolumeGrid.displayName = "VolumeGrid";
 
-// --- HELPER: TECH ANNOTATION LABEL (FIXED ALIGNMENT) ---
+
 const TechLabel = memo(
   ({
     position = [0, 0, 0],
@@ -917,12 +918,12 @@ const TechLabel = memo(
       <Html
         position={position}
         zIndexRange={[100, 0]}
-        // Hides label if geometry blocks the view (standard raycast)
+        
         style={{
           transition: "opacity 0.2s",
           opacity: visible && !hidden ? 1 : 0,
           pointerEvents: "none",
-          // Shift entire block up so the bottom edge sits on the 3D point
+          
           transform: "translate3d(-50%, -100%, 0)",
         }}
       >
@@ -960,7 +961,7 @@ const TechLabel = memo(
 );
 TechLabel.displayName = "TechLabel";
 
-// --- 3D COMPONENT: THERMAL BOX ---
+
 const ThermalBox = memo(
   ({
     simMatrixSize,
@@ -979,7 +980,7 @@ const ThermalBox = memo(
     simUseSolarCell,
     simBaseMatKey,
     simSinkMatKey,
-    // NEW: Sim Props
+    
     simUseFins,
     simUseReflector,
     simWindSpeed,
@@ -1000,7 +1001,7 @@ const ThermalBox = memo(
     visSinkThick,
     visBaseMatKey,
     visSinkMatKey,
-    // NEW: Vis Props
+    
     visUseFins,
     visFinHeight,
     visFinSpacing,
@@ -1013,10 +1014,10 @@ const ThermalBox = memo(
     hasPendingChanges,
     showGrid,
     explodedView,
-    // NEW PROPS
-    visNx, // Visual Control for Nx
-    visLayerNz, // Visual Control for Nz
-    visSinkNz, // Visual Control for Sink Nz
+    
+    visNx, 
+    visLayerNz, 
+    visSinkNz, 
     showLabels,
     onUpdateStats,
   }: {
@@ -1087,13 +1088,13 @@ const ThermalBox = memo(
     const currentExpansion = useRef(0);
     const workerRef = useRef<Worker | null>(null);
 
-    // --- CONSTANTS FOR GEOMETRY ---
-    const CPV_SUBSTRATE_THICK = 0.002; // Thin layer for the wafer
-    const CPV_CELL_HEIGHT = 0.001; // Height of the actual PV cells
-    const FIN_H = realScale ? visFinHeight : visFinHeight * 2; // Exaggerate slightly if not real scale? Or keep consistent.
+    
+    const CPV_SUBSTRATE_THICK = 0.002; 
+    const CPV_CELL_HEIGHT = 0.001; 
+    const FIN_H = realScale ? visFinHeight : visFinHeight * 2; 
     const FIN_T = realScale ? visFinThickness : visFinThickness * 2;
 
-    // Cleanup Textures
+    
     useEffect(() => {
       if (status.loading) {
         setTexSink(null);
@@ -1110,7 +1111,7 @@ const ThermalBox = memo(
       };
     }, [texSink, texBase, texCPV]);
 
-    // --- WORKER LIFECYCLE ---
+    
     useEffect(() => {
       if (
         simMatrixSize === null ||
@@ -1175,7 +1176,7 @@ const ThermalBox = memo(
       ).toString();
       const wasmUrl = new URL(relativePath, window.location.origin).href;
 
-      // Get Material Props
+      
       const baseMat = MATERIALS[simBaseMatKey];
       const sinkMat = MATERIALS[simSinkMatKey];
 
@@ -1194,15 +1195,15 @@ const ThermalBox = memo(
         useCircle: simUseCircle,
         usePv: simUsePv,
         useSolarCell: simUseSolarCell,
-        // Material props
+        
         baseKt: baseMat.kt,
         baseEmi: baseMat.emi,
         sinkKt: sinkMat.kt,
         sinkEmi: sinkMat.emi,
-        // Boolean Toggles
+        
         useFins: simUseFins,
         useReflector: simUseReflector,
-        // NEW: Environmental Params
+        
         windSpeed: simWindSpeed,
         ambientTemp: simAmbientTemp,
         qSolar: simQSolar,
@@ -1256,12 +1257,12 @@ const ThermalBox = memo(
       onUpdateStats,
     ]);
 
-    // --- STATE DETERMINATION ---
-    // The "Simulation Mode" is active if we have textures AND no pending changes AND not loading
+    
+    
     const isSimulationActive =
       texSink !== null && !status.loading && !hasPendingChanges;
 
-    // --- DYNAMIC POSITIONING ---
+    
     const BASE_REST_Y = 0;
     const SINK_REST_Y = -(visLayerThick / 2 + visSinkThick / 2);
     const SINK_EXPANDED_Y = SINK_REST_Y - 0.15;
@@ -1269,7 +1270,7 @@ const ThermalBox = memo(
     const CPV_EXPANDED_Y = CPV_REST_Y + 0.15;
 
     useFrame((state, delta) => {
-      // Logic: Explode if explicitly requested (explodedView) OR if Simulation Results are active (Original Behavior)
+      
       const shouldExplode = explodedView || isSimulationActive;
 
       const targetExpansion = shouldExplode ? 1 : 0;
@@ -1298,12 +1299,12 @@ const ThermalBox = memo(
         );
     });
 
-    // --- INTERACTION ---
+    
     const handlePointerMove = useCallback(
       (e: any, layerName: string, textures: LayerTextures | null) => {
         e.stopPropagation();
 
-        // If Simulating -> Show Temp
+        
         if (isSimulationActive && textures) {
           const matIndex = e.face?.materialIndex;
           if (matIndex === undefined) return;
@@ -1314,11 +1315,11 @@ const ThermalBox = memo(
           const x = Math.floor(e.uv.x * image.width);
           const y = Math.floor(e.uv.y * image.height);
           const index = (y * image.width + x) * 4;
-          const r = image.data[index]; // Red channel
-          const g = image.data[index + 1]; // Green channel
+          const r = image.data[index]; 
+          const g = image.data[index + 1]; 
 
           let normVal = 0;
-          // Decode heatmap color logic (approximate reverse of shader)
+          
           if (g > 5) normVal = g / 255 / 2.0 + 0.5;
           else normVal = r / 255 / 2.0;
 
@@ -1328,7 +1329,7 @@ const ThermalBox = memo(
           return;
         }
 
-        // If Not Simulating -> Show Label
+        
         if (showLabels !== 0) {
           setHoveredPart(layerName);
         }
@@ -1345,7 +1346,7 @@ const ThermalBox = memo(
     cpvTexture.wrapS = cpvTexture.wrapT = THREE.RepeatWrapping;
 
     const materials = useMemo(() => {
-      // Realistic PBR Materials (For Setup Mode)
+      
       const base = MATERIALS[visBaseMatKey];
       const sink = MATERIALS[visSinkMatKey];
 
@@ -1374,9 +1375,9 @@ const ThermalBox = memo(
           opacity: 1.0,
         }),
         cpvCell: new THREE.MeshStandardMaterial({
-          color: "#aaa", // White base so texture shows true colors
-          map: cpvTexture, // <--- Apply Texture Here
-          emissive: "#00b", // No emissive in structural mode
+          color: "#aaa", 
+          map: cpvTexture, 
+          emissive: "#00b", 
           metalness: 0.9,
           roughness: 0.3,
           transparent: false,
@@ -1388,7 +1389,7 @@ const ThermalBox = memo(
     const geometries = useMemo(
       () => ({
         sink: new THREE.BoxGeometry(PLATE_WIDTH, visSinkThick, PLATE_DEPTH),
-        // Update Fin Geometry based on props
+        
         sinkFin: new THREE.BoxGeometry(FIN_T, FIN_H, PLATE_DEPTH),
         base: new THREE.BoxGeometry(PLATE_WIDTH, visLayerThick, PLATE_DEPTH),
         cpvSub: new THREE.BoxGeometry(
@@ -1403,20 +1404,20 @@ const ThermalBox = memo(
     const finPositions = useMemo(() => {
       if (!visUseFins) return [];
 
-      // Logic must match Rust/Weight logic approx
+      
       const count = Math.floor(PLATE_WIDTH / (visFinSpacing + visFinThickness));
       const totalWidth = count * (visFinSpacing + visFinThickness);
       const startX = -totalWidth / 2 + (visFinSpacing + visFinThickness) / 2;
 
       return Array.from({ length: count }).map((_, i) => {
-        // Center the fin in its slot
+        
         return (
           startX + i * (visFinSpacing + visFinThickness) - visFinSpacing / 2
         );
       });
     }, [visUseFins, visFinSpacing, visFinThickness]);
 
-    // --- RENDER ---
+    
     return (
       <group rotation={[0, 0, 0]} position={[0, 0.1, 0]}>
         {/* SINK LAYER */}
@@ -1631,7 +1632,7 @@ const ThermalBox = memo(
 );
 ThermalBox.displayName = "ThermalBox";
 
-// --- REAL TELEMETRY STATUS BAR ---
+
 const SystemStatusBar = memo(
   ({ status, loading }: { status: string; loading: boolean }) => {
     const [telemetry, setTelemetry] = useState({
@@ -1642,7 +1643,7 @@ const SystemStatusBar = memo(
       netType: "UNKNOWN",
     });
 
-    // 1. Frame Rate (FPS) Loop
+    
     useEffect(() => {
       let frameCount = 0;
       let lastTime = performance.now();
@@ -1653,14 +1654,14 @@ const SystemStatusBar = memo(
         frameCount++;
 
         if (now - lastTime >= 1000) {
-          // Update state every second
+          
           const currentFps = frameCount;
 
-          // Memory (Chrome/Edge only property)
-          // @ts-ignore - performance.memory is non-standard but works in Chromium
-          const memUsed = performance.memory?.usedJSHeapSize / 1048576 || 0;
+          
+          
+          const memUsed = (performance as any).memory?.usedJSHeapSize / 1048576 || 0;
 
-          // Network Type
+          
           const connection =
             (navigator as any).connection ||
             (navigator as any).mozConnection ||
@@ -1687,12 +1688,12 @@ const SystemStatusBar = memo(
       return () => cancelAnimationFrame(animationFrameId);
     }, []);
 
-    // 2. Latency "Ping" (runs every 5 seconds)
+    
     useEffect(() => {
       const checkPing = async () => {
         const start = Date.now();
         try {
-          // Ping the current server to see app latency
+          
           await fetch(window.location.href, {
             method: "HEAD",
             cache: "no-cache",
@@ -1704,12 +1705,12 @@ const SystemStatusBar = memo(
         }
       };
 
-      checkPing(); // Initial
+      checkPing(); 
       const interval = setInterval(checkPing, 5000);
       return () => clearInterval(interval);
     }, []);
 
-    // Format Uptime (MM:SS)
+    
     const formatTime = (secs: number) => {
       const m = Math.floor(secs / 60)
         .toString()
@@ -1718,7 +1719,7 @@ const SystemStatusBar = memo(
       return `${m}:${s}`;
     };
 
-    // Color logic
+    
     const statusColor = loading
       ? "text-yellow-400"
       : status === "Error"
@@ -1812,48 +1813,48 @@ function SceneReady({ onReady }: { onReady: () => void }) {
 }
 
 const ENGINEERING_RATIOS = {
-  // 1. MATERIALES (Commodities fáciles de verificar)
-  // Precio de bloque de aluminio 6061-T6 cortado a medida.
-  // Fuente: Cualquier proveedor online (ej. Alumeco, Broncesval).
+  
+  
+  
   ALUMINUM_BLOCK_PRICE_KG: 15.0, 
   
-  // 2. CPV "BLACK BOX"
-  // Asumimos el receptor como un componente comercial "off-the-shelf" de alto coste.
-  // No desglosamos soldadura, pasta, ni chips. Es un precio de compra.
+  
+  
+  
   CPV_MODULE_PRICE_M2: 8500, 
-  PV_MODULE_PRICE_M2: 200, // Referencia estándar mercado
+  PV_MODULE_PRICE_M2: 200, 
 
-  // 3. FACTORES DE MANUFACTURA (La clave del nuevo paradigma)
-  // Regla del pulgar: El coste de mecanizar una pieza única compleja
-  // es X veces el coste del material en bruto.
-  // x3: Pieza simple. x5: Pieza compleja. x8: Pieza aeroespacial/óptica.
+  
+  
+  
+  
   MACHINING_FACTOR_BASE: 5.0, 
-  MACHINING_FACTOR_FINS: 2.0, // Penalización extra si hay aletas (+2x)
+  MACHINING_FACTOR_FINS: 2.0, 
 
-  // 4. ELECTRÓNICA Y CONTROL (Paquete cerrado)
-  // Estimación por punto de control + potencia
-  ELEC_BASE_PACKAGE: 5000, // PLC + Caja estanca + Protecciones
+  
+  
+  ELEC_BASE_PACKAGE: 5000, 
 
-  // 5. INGENIERÍA Y LOGÍSTICA (Paquetes fijos)
-  // Coste fijo estimado de horas de ingeniería (aprox 300h a 50€/h)
+  
+  
   NRE_FIXED_COST: 17000, 
-  LOGISTICS_FLAT_RATE: 3000, // Envío a Canarias
-  INSTALLATION_FLAT_RATE: 6000, // 1 semana equipo técnico in-situ
-  CRANE_SURCHARGE: 1500, // Coste extra si se necesita grúa
+  LOGISTICS_FLAT_RATE: 3000, 
+  INSTALLATION_FLAT_RATE: 6000, 
+  CRANE_SURCHARGE: 1500, 
 
-  // 6. FINANCIERO
-  CONTINGENCY_PCT: 0.30, // 20% Margen de error estándar
+  
+  CONTINGENCY_PCT: 0.30, 
 };
 
-// --- ROI CONSTANTS (DATOS PÚBLICOS) ---
+
 const ROI_CONSTANTS = {
-  // Fuente: PVGIS (Dato conservador)
+  
   SUN_HOURS_YEAR: 2800,
-  // Fuente: Factura eléctrica estándar
+  
   ELEC_PRICE_EUR_KWH: 0.14,
 };
 
-// --- MAIN PAGE COMPONENT ---
+
 export default function ThermalPage() {
   const [simStats, setSimStats] = useState<SimStats>({
     maxTemp: 0,
@@ -1864,7 +1865,7 @@ export default function ThermalPage() {
     loading: false,
   });
 
-  // UI STATE
+  
   const [uiFwhm, setUiFwhm] = useState(0.267);
   const [uiMatrixSize, setUiMatrixSize] = useState(5);
   const [uiMagicArea, setUiMagicArea] = useState(45);
@@ -1877,7 +1878,7 @@ export default function ThermalPage() {
   const [showGrid, setShowGrid] = useState(false);
   const [showLabels, setShowLabels] = useState(1);
 
-  // ADVANCED UI STATE
+  
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [uiLayerThick, setUiLayerThick] = useState(0.0189);
   const [uiSinkThick, setUiSinkThick] = useState(0.0106);
@@ -1890,39 +1891,39 @@ export default function ThermalPage() {
   const [uiUseCircle, setUiUseCircle] = useState(false);
   const [uiSolarMode, setUiSolarMode] = useState<"none" | "pv" | "cpv">("cpv");
 
-  // NEW: Boolean Toggles State
+  
   const [uiUseFins, setUiUseFins] = useState(true);
   const [uiUseReflector, setUiUseReflector] = useState(true);
 
-  // Material Keys
+  
   const [uiBaseMatKey, setUiBaseMatKey] = useState("Al-1050A (Anodized)");
   const [uiSinkMatKey, setUiSinkMatKey] = useState("Al-1050A (Anodized)");
 
-  // --- NEW: Fin Geometry State ---
+  
   const [uiFinHeight, setUiFinHeight] = useState(0.02);
   const [uiFinSpacing, setUiFinSpacing] = useState(0.005);
   const [uiFinThickness, setUiFinThickness] = useState(0.001);
-  const [uiFinEfficiency, setUiFinEfficiency] = useState(0.85); // Manual factor
+  const [uiFinEfficiency, setUiFinEfficiency] = useState(0.85); 
 
-  // --- NEW: Efficiency State ---
-  const [uiOpticalEff, setUiOpticalEff] = useState(0.85); // 85% Optical efficiency
-  const [uiPvEfficiency, setUiPvEfficiency] = useState(0.2); // 20% Standard PV
+  
+  const [uiOpticalEff, setUiOpticalEff] = useState(0.85); 
+  const [uiPvEfficiency, setUiPvEfficiency] = useState(0.2); 
 
-  // NEW: Environmental UI State
-  const [uiWindSpeed, setUiWindSpeed] = useState(4.0); // m/s
-  const [uiAmbientTemp, setUiAmbientTemp] = useState(25.0); // °C
-  const [uiQSolar, setUiQSolar] = useState(1000.0); // W/m²
+  
+  const [uiWindSpeed, setUiWindSpeed] = useState(4.0); 
+  const [uiAmbientTemp, setUiAmbientTemp] = useState(25.0); 
+  const [uiQSolar, setUiQSolar] = useState(1000.0); 
 
   const [activePresetKeys, setActivePresetKeys] = useState<string[]>([]);
 
   const [maxRoi, setMaxRoi] = useState(15);
   const [maxTemp, setMaxTemp] = useState(85);
 
-  // NEW: Manual Cost State
+  
   const [useManualCost, setUseManualCost] = useState(false);
-  const [manualCostInput, setManualCostInput] = useState<number>(50000); // Default manual value
+  const [manualCostInput, setManualCostInput] = useState<number>(50000); 
 
-  // SIMULATION STATE
+  
   const [activeParams, setActiveParams] = useState<{
     focusOffset: number;
     matrixSize: number;
@@ -1942,14 +1943,14 @@ export default function ThermalPage() {
     useReflector: boolean;
     baseMatKey: string;
     sinkMatKey: string;
-    // NEW Params
+    
     finHeight: number;
     finSpacing: number;
     finThickness: number;
     finEfficiency: number;
     opticalEfficiency: number;
     pvEfficiency: number;
-    // NEW Params
+    
     windSpeed: number;
     ambientTemp: number;
     qSolar: number;
@@ -1960,18 +1961,18 @@ export default function ThermalPage() {
   const [loaded, setLoaded] = useState(false);
   const [introFinished, setIntroFinished] = useState(false);
 
-  // --- NEW: SMART PRESET HANDLER ---
+  
   const togglePreset = useCallback((key: string) => {
     const targetPreset = PRESETS[key];
     if (!targetPreset) return;
 
     setActivePresetKeys((prevKeys) => {
-      // 1. If currently active, simply remove it (toggle off)
+      
       if (prevKeys.includes(key)) {
         return prevKeys.filter((k) => k !== key);
       }
 
-      // 2. If adding new one, check for overlaps with existing ones
+      
       const targetParams = Object.keys(targetPreset).filter(
         (k) => k !== "name"
       );
@@ -1981,19 +1982,19 @@ export default function ThermalPage() {
         if (!existingPreset) return false;
 
         const existingParams = Object.keys(existingPreset);
-        // Check if they share any parameter key
+        
         const hasOverlap = existingParams.some((p) => targetParams.includes(p));
 
-        // If overlap exists, we remove the OLD one to let the NEW one take precedence
+        
         return !hasOverlap;
       });
 
       return [...nonConflictingKeys, key];
     });
 
-    // 3. Apply the values of the NEW preset immediately
-    // Note: We don't need to re-apply old presets because their values
-    // are already in the state. We just overwrite with the new one.
+    
+    
+    
     if (targetPreset.fwhm !== undefined) setUiFwhm(targetPreset.fwhm);
     if (targetPreset.matrixSize !== undefined)
       setUiMatrixSize(targetPreset.matrixSize);
@@ -2034,7 +2035,7 @@ export default function ThermalPage() {
       setUiOpticalEff(targetPreset.opticalEfficiency);
     if (targetPreset.pvEfficiency !== undefined)
       setUiPvEfficiency(targetPreset.pvEfficiency);
-    // NEW: Apply Environmental Presets
+    
     if (targetPreset.windSpeed !== undefined)
       setUiWindSpeed(targetPreset.windSpeed);
     if (targetPreset.ambientTemp !== undefined)
@@ -2042,14 +2043,14 @@ export default function ThermalPage() {
     if (targetPreset.qSolar !== undefined) setUiQSolar(targetPreset.qSolar);
   }, []);
 
-  // --- NEW: GRANULAR MANUAL CHANGE HANDLER ---
-  // When a specific param is changed manually, we only remove presets that controlled THAT param.
+  
+  
   const handleManualChange = useCallback((paramKey: keyof PresetDef) => {
     setActivePresetKeys((prevKeys) => {
-      // Filter out any preset that defines the parameter being changed manually
+      
       return prevKeys.filter((key) => {
         const preset = PRESETS[key];
-        // Keep the preset only if it DOES NOT contain the changed parameter
+        
         return (
           !preset || !Object.prototype.hasOwnProperty.call(preset, paramKey)
         );
@@ -2089,21 +2090,21 @@ export default function ThermalPage() {
       layerNz: uiLayerNz,
       sinkNz: uiSinkNz,
       useCircle: uiUseCircle,
-      useSolarCell: uiSolarMode !== "none", // True if PV or CPV
-      usePv: uiSolarMode === "pv", // True only if PV mode
-      // Pass new params
+      useSolarCell: uiSolarMode !== "none", 
+      usePv: uiSolarMode === "pv", 
+      
       useFins: uiUseFins,
       useReflector: uiUseReflector,
       baseMatKey: uiBaseMatKey,
       sinkMatKey: uiSinkMatKey,
-      // NEW Params
+      
       finHeight: uiFinHeight,
       finSpacing: uiFinSpacing,
       finThickness: uiFinThickness,
       finEfficiency: uiFinEfficiency,
       opticalEfficiency: uiOpticalEff,
       pvEfficiency: uiPvEfficiency,
-      // NEW Params
+      
       windSpeed: uiWindSpeed,
       ambientTemp: uiAmbientTemp,
       qSolar: uiQSolar,
@@ -2144,9 +2145,9 @@ export default function ThermalPage() {
         uiLayerNz !== activeParams.layerNz ||
         uiSinkNz !== activeParams.sinkNz ||
         uiUseCircle !== activeParams.useCircle ||
-        uiSolarMode !== currentMode || // Check change
-        uiUseFins !== activeParams.useFins || // Check change
-        uiUseReflector !== activeParams.useReflector || // Check change
+        uiSolarMode !== currentMode || 
+        uiUseFins !== activeParams.useFins || 
+        uiUseReflector !== activeParams.useReflector || 
         uiBaseMatKey !== activeParams.baseMatKey ||
         uiSinkMatKey !== activeParams.sinkMatKey ||
         uiFinHeight !== activeParams.finHeight ||
@@ -2194,15 +2195,15 @@ export default function ThermalPage() {
     const sinkRho = MATERIALS[uiSinkMatKey].rho;
     const volBase = Math.pow(uiPlateDim, 2) * uiLayerThick;
 
-    // If thickness is 0, volume is 0.
-    // If fins are on, we assume 50% void, if off (solid block), 100% solid.
-    // However, simplified for now: thickness 0 -> 0 volume.
+    
+    
+    
 
     const nFins = uiUseFins
       ? Math.floor(uiPlateDim / (uiFinSpacing + uiFinThickness))
       : 0;
 
-    // Base sink plate volume + Fins volume
+    
     const volSinkPlate = Math.pow(uiPlateDim, 2) * uiSinkThick;
     const volFins = nFins * uiFinHeight * uiFinThickness * uiPlateDim;
 
@@ -2222,27 +2223,27 @@ export default function ThermalPage() {
   ]);
 
   const projectCost = useMemo(() => {
-    // 1. CÁLCULO DE MATERIAL BRUTO (Volumen envolvente)
-    // Asumimos que se compra un bloque rectangular y se mecaniza (Sustractivo)
+    
+    
     const area = Math.pow(uiPlateDim, 2);
-    const baseMat = MATERIALS[uiBaseMatKey]; // Usamos densidad real
+    const baseMat = MATERIALS[uiBaseMatKey]; 
     const sinkMat = MATERIALS[uiSinkMatKey];
 
-    // Espesor total del bloque a comprar (Base + Disipador + Margen de corte)
-    // Si hay aletas, compramos un bloque mucho más grueso para vaciarlo.
+    
+    
     const totalThickness = uiLayerThick + uiSinkThick + (uiUseFins ? 0.04 : 0);
     
-    // Volumen con un 20% de desperdicio de corte (scrap)
+    
     const rawVolume = area * totalThickness * 1.2; 
     
-    // Peso del material en bruto
+    
     const rawMass = rawVolume * baseMat.rho; 
     
-    // Coste del Material Base (Puro)
-    // Precio Kg Aluminio * Peso
+    
+    
     const costRawMaterial = rawMass * ENGINEERING_RATIOS.ALUMINUM_BLOCK_PRICE_KG;
 
-    // 2. COSTE DEL SENSOR (CPV o PV)
+    
     let costSensor = 0;
     if (uiSolarMode === "cpv") {
         costSensor = area * ENGINEERING_RATIOS.CPV_MODULE_PRICE_M2;
@@ -2250,26 +2251,26 @@ export default function ThermalPage() {
         costSensor = area * ENGINEERING_RATIOS.PV_MODULE_PRICE_M2;
     }
 
-    // 3. COSTE DE MANUFACTURA (Aplicando Ratios)
-    // Aquí está la magia: El coste de hacer la pieza es proporcional al material.
+    
+    
     let manufMultiplier = ENGINEERING_RATIOS.MACHINING_FACTOR_BASE;
     
-    // Si tiene aletas, es mucho más difícil de mecanizar -> Aumenta el multiplicador
+    
     if (uiUseFins) manufMultiplier += ENGINEERING_RATIOS.MACHINING_FACTOR_FINS;
     
-    // Si la pieza es enorme (>1m), es más difícil de manejar -> +50% complejidad
+    
     if (uiPlateDim > 1.0) manufMultiplier *= 1.5;
 
-    // Coste Manufactura = (Coste Material * Multiplicador)
-    // Esto cubre: Tiempo de máquina, operario, desgaste de herramientas, anodizado, etc.
+    
+    
     const costManufacturing = costRawMaterial * manufMultiplier;
 
-    // 4. ELECTRÓNICA (Escala suave con tamaño)
-    // Base + un pequeño extra por tamaño (más cables, fuentes más grandes)
+    
+    
     const costElectronics = ENGINEERING_RATIOS.ELEC_BASE_PACKAGE + (area * 500);
 
-    // 5. LOGÍSTICA E INSTALACIÓN
-    // Lógica simple de peso/tamaño para la grúa
+    
+    
     const isHeavy = structureWeight > 40; 
     const isLarge = uiPlateDim > 0.9;
     const needsCrane = isHeavy || isLarge;
@@ -2278,8 +2279,8 @@ export default function ThermalPage() {
                           ENGINEERING_RATIOS.INSTALLATION_FLAT_RATE +
                           (needsCrane ? ENGINEERING_RATIOS.CRANE_SURCHARGE : 0);
 
-    // --- TOTALES ---
-    // NRE se suma al final (Coste único)
+    
+    
     const subTotal = costRawMaterial + costSensor + costManufacturing + 
                      costElectronics + costLogistics + ENGINEERING_RATIOS.NRE_FIXED_COST;
 
@@ -2290,8 +2291,8 @@ export default function ThermalPage() {
       total: useManualCost ? manualCostInput : finalTotal,
       isManual: useManualCost,
       breakdown: {
-        materials: costRawMaterial + costSensor, // Material + Celdas
-        manufacturing: costManufacturing, // Mecanizado completo
+        materials: costRawMaterial + costSensor, 
+        manufacturing: costManufacturing, 
         electronics: costElectronics,
         engineering: ENGINEERING_RATIOS.NRE_FIXED_COST,
         logistics: costLogistics + contingency,
@@ -2302,17 +2303,17 @@ export default function ThermalPage() {
     uiUseFins, uiSolarMode, structureWeight, useManualCost, manualCostInput
 ]);
 
-// 2. ROI Calculation (Simplificado)
+
 const paybackPeriod = useMemo(() => {
     if (!projectCost || simStats.pElectric <= 0) return null;
 
-    // Energía Anual (kWh) = Potencia Pico (W) / 1000 * Horas Sol Útiles
+    
     const annualEnergyKwh = (simStats.pElectric / 1000) * ROI_CONSTANTS.SUN_HOURS_YEAR;
 
-    // Ahorro Anual (€)
+    
     const annualSavings = annualEnergyKwh * ROI_CONSTANTS.ELEC_PRICE_EUR_KWH;
 
-    // Retorno (Años)
+    
     const years = projectCost.total / annualSavings;
 
     return {
@@ -2322,7 +2323,7 @@ const paybackPeriod = useMemo(() => {
     };
 }, [simStats.pElectric, projectCost, maxRoi]);
 
-  // --- EXPORT REPORT HANDLER (ENHANCED) ---
+  
   const handleExportReport = useCallback(() => {
     if (!activeParams || !projectCost || !paybackPeriod) return;
 
@@ -2334,7 +2335,7 @@ const paybackPeriod = useMemo(() => {
       new Date().toISOString().split("T")[0]
     }.txt`;
 
-    // Helper for formatting currency
+    
     const fmtEur = (val: number) =>
       val.toLocaleString("es-ES", {
         style: "currency",
@@ -2342,7 +2343,7 @@ const paybackPeriod = useMemo(() => {
         minimumFractionDigits: 2,
       });
 
-    // Helper for boolean features
+    
     const check = (val: boolean) => (val ? "[YES]" : "[NO] ");
 
     const content = `
@@ -2456,7 +2457,7 @@ Mode: ${useManualCost ? "MANUAL OVERRIDE" : "AUTOMATIC ESTIMATION"}
 >> CAPEX BREAKDOWN (ESTIMATED)
    Raw Materials:          ${fmtEur(projectCost.breakdown.materials)}
    Machining/Fab:          ${fmtEur(projectCost.breakdown.manufacturing)}
-   Assembly & Elec:        ${fmtEur(2)}
+   Electronics:            ${fmtEur(projectCost.breakdown.electronics)}
    Engineering (NRE):      ${fmtEur(projectCost.breakdown.engineering)}
    Logistics & Install:    ${fmtEur(projectCost.breakdown.logistics)}
    -----------------------------------------------------
@@ -2495,6 +2496,7 @@ STARRY SKY ENGINEERING GROUP
     simStats,
     structureWeight,
     useManualCost,
+    uiSolarMode,
     maxRoi,
     maxTemp,
   ]);
@@ -2542,20 +2544,6 @@ STARRY SKY ENGINEERING GROUP
             />
           </div>
         </div>
-
-        {/* <Link
-          href="/playground/magic"
-          className="pointer-events-auto group relative overflow-hidden rounded-full bg-cyan-600 px-6 py-2.5 transition-all duration-300 hover:bg-cyan-500 hover:scale-105 hover:shadow-[0_0_20px_rgba(34,211,238,0.6)] border border-white/20 shadow-lg"
-        >
-          <div className="flex items-center gap-2">
-            <span className="relative z-10 text-xs font-extrabold uppercase tracking-wider text-white">
-              Visualització telescopi
-            </span>
-            <span className="relative z-10 text-white transition-transform duration-300 group-hover:translate-x-1">
-              &rarr;
-            </span>
-          </div>
-        </Link> */}
       </div>
       {/*Initial overlay*/}
       <div
@@ -2699,7 +2687,7 @@ STARRY SKY ENGINEERING GROUP
             simUseCircle={activeParams?.useCircle ?? null}
             simUsePv={activeParams?.usePv ?? null}
             simUseSolarCell={activeParams?.useSolarCell ?? null}
-            // Pass new sim params
+            
             simUseFins={activeParams?.useFins ?? null}
             simUseReflector={activeParams?.useReflector ?? null}
             simBaseMatKey={activeParams?.baseMatKey ?? null}
@@ -2735,7 +2723,7 @@ STARRY SKY ENGINEERING GROUP
             explodedView={explodedView}
             showGrid={showGrid}
             showLabels={showLabels}
-            visNx={uiNx} // Controlling grid visually via same variable
+            visNx={uiNx} 
             visLayerNz={uiLayerNz}
             visSinkNz={uiSinkNz}
             onUpdateStats={onUpdateStats}
@@ -2767,7 +2755,6 @@ STARRY SKY ENGINEERING GROUP
               Visualització
             </span>
 
-            {/* Logic: If results exist and not loading -> Visualization Mode */}
             {activeParams && !simStats.loading && !hasPendingChanges ? (
               <div className="flex items-center gap-1.5 bg-gradient-to-r from-red-500/10 to-orange-500/10 px-2 py-0.5 rounded border border-red-500/20">
                 <span className="relative flex h-1.5 w-1.5">
@@ -2869,7 +2856,7 @@ STARRY SKY ENGINEERING GROUP
               <span className="text-[6px] font-black uppercase">Malla</span>
             </button>
 
-            {/* 4. LAYERS (Capes) - Disabled if Simulating */}
+            {/* 4. LAYERS (Capes) */}
             <button
               onClick={() => setExplodedView(!explodedView)}
               title="Obrir/Tancar Capes"
@@ -2898,7 +2885,7 @@ STARRY SKY ENGINEERING GROUP
               <span className="text-[6px] font-black uppercase">Capes</span>
             </button>
 
-            {/* 5. LABELS (Info) - Disabled if Simulating */}
+            {/* 5. LABELS (Info) */}
             <button
               onClick={() => setShowLabels((prev) => (prev + 1) % 3)}
               disabled={
@@ -3003,7 +2990,7 @@ STARRY SKY ENGINEERING GROUP
           </span>
         </button>
       </div>
-      {/* ADVANCED SETTINGS SIDEBAR (Sliding from Left) */}
+      {/* ADVANCED SETTINGS SIDEBAR */}
       <div
         className={`absolute top-0 left-0 h-full z-[60] w-full md:w-[500px] bg-neutral-900 border-r border-white/10 flex flex-col transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform ${
           showAdvanced
@@ -3011,7 +2998,7 @@ STARRY SKY ENGINEERING GROUP
             : "-translate-x-full pointer-events-none"
         }`}
       >
-        {/* --- Header (Fixed) --- */}
+        {/* --- Header --- */}
         <div className="flex-none flex items-center justify-between p-6 pb-4 border-b border-white/10 bg-neutral-900/50">
           <div>
             <h2 className="text-sm font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-purple-200 to-white">
@@ -3042,7 +3029,7 @@ STARRY SKY ENGINEERING GROUP
           </button>
         </div>
 
-        {/* --- Content (Scrollable) --- */}
+        {/* --- Content --- */}
         <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-10 no-scrollbar">
           {/* SECTION 1: GEOMETRIA I DIMENSIONS */}
           <div>
@@ -3272,7 +3259,7 @@ STARRY SKY ENGINEERING GROUP
               ]}
               onChange={(val) => {
                 setUiSolarMode(val as any);
-                handleManualChange("usePv"); // Reuse existing key or add new one
+                handleManualChange("usePv"); 
               }}
               colorClass="text-blue-400"
             />
@@ -3773,7 +3760,7 @@ STARRY SKY ENGINEERING GROUP
 
               <div className="border-t border-white/10 my-1"></div>
 
-              {/* 3. Total Profit (Projected) */}
+              {/* 3. Total Profit */}
               <div className="flex justify-between items-center">
                 <span
                   className={`text-[10px] uppercase tracking-wider ${
@@ -3806,7 +3793,7 @@ STARRY SKY ENGINEERING GROUP
               </p>
             </div>
           )}
-          {/* EXPORT BUTTON - ONLY VISIBLE WHEN RESULTS EXIST */}
+          {/* EXPORT BUTTON */}
           {activeParams && !simStats.loading && !hasPendingChanges && (
             <div className="animate-in fade-in slide-in-from-top-2 duration-500">
               <button
@@ -3844,7 +3831,7 @@ STARRY SKY ENGINEERING GROUP
         </div>
       </div>
 
-      {/* BOTTOM HUD BAR */}
+      {/* BOTTOM BAR */}
       {activeParams &&
       !hideUI &&
       simStats.maxTemp > 0 &&
@@ -3909,7 +3896,7 @@ STARRY SKY ENGINEERING GROUP
                 }
               />
 
-              {/* Hover Temp Special Item */}
+              {/* Hover Temp */}
               <div
                 className={`rounded-md py-2 px-4 border ${
                   simStats.hoverTemp && simStats.hoverTemp > maxTemp + 0.05
@@ -3956,7 +3943,7 @@ STARRY SKY ENGINEERING GROUP
         !simStats.loading &&
         !hideUI &&
         introFinished && (
-          // Placeholder Bar when not running
+          
           <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
             <div className="px-6 py-2 bg-neutral-900/80 border border-white/10 rounded-full shadow-2xl text-xs text-gray-400 italic">
               {hasPendingChanges
@@ -3979,7 +3966,7 @@ STARRY SKY ENGINEERING GROUP
             title={hideUI ? "Mostrar UI" : "Amagar UI"}
           >
             {hideUI ? (
-              // Eye Open Icon
+              
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
@@ -4000,7 +3987,7 @@ STARRY SKY ENGINEERING GROUP
                 />
               </svg>
             ) : (
-              // Eye Slash Icon
+              
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
