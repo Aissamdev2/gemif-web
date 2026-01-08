@@ -1,4 +1,4 @@
-// thermal.worker.js
+
 import init, { run_thermal_simulation } from "../wasm-embeddings/vc17/solar.js";
 
 const tempColor = { r: 0, g: 0, b: 0 };
@@ -40,19 +40,19 @@ self.onmessage = async ({ data }) => {
     useCircle,
     usePv,
     useSolarCell,
-    // Material Properties
+    
     baseKt,
     baseEmi,
     sinkKt,
     sinkEmi,
-    // Logic Toggles
+    
     useFins,
     useReflector,
-    // NEW: Environment Parameters
+    
     windSpeed,
     ambientTemp,
     qSolar,
-    // NEW: Customizable Fins & Efficiency
+    
     finHeight,
     finSpacing,
     finThickness,
@@ -66,8 +66,8 @@ self.onmessage = async ({ data }) => {
   try {
     await init(wasmUrl);
 
-    // Call the Rust function with the new signature
-    // IMPORTANT: Ensure this order matches the Rust function signature exactly
+    
+    
     const result = run_thermal_simulation(
         fwhm,
         magicArea,
@@ -89,11 +89,11 @@ self.onmessage = async ({ data }) => {
         sinkEmi,
         useFins,
         useReflector,
-        // NEW: Pass Environment Parameters
+        
         windSpeed,
         ambientTemp,
         qSolar,
-        // NEW: Pass Customizable Fins & Efficiency
+        
         finHeight,
         finSpacing,
         finThickness,
@@ -125,7 +125,7 @@ self.onmessage = async ({ data }) => {
 
     const range = Math.max(gMax - gMin, 0.1);
 
-    // --- UPDATED TEXTURE GENERATION ---
+    
 
     const generateXYData = (zIndex) => {
       const fullNx = nx * 2;
@@ -133,7 +133,7 @@ self.onmessage = async ({ data }) => {
       const dataSize = fullNx * fullNy * 4;
       const textureData = new Uint8Array(dataSize);
       
-      // Safety Check: Return empty transparent texture if index is out of bounds
+      
       if (zIndex < 0 || zIndex >= nz) {
         return { data: textureData, width: fullNx, height: fullNy };
       }
@@ -158,7 +158,7 @@ self.onmessage = async ({ data }) => {
     };
 
     const generateSideData = (zStart, zEnd, isXFace) => {
-      // Safety Check: Return 1x1 dummy if range is invalid
+      
       if (zStart > zEnd || zStart < 0 || zEnd >= nz) {
         return { data: new Uint8Array(4), width: 1, height: 1 };
       }
@@ -190,7 +190,7 @@ self.onmessage = async ({ data }) => {
     };
 
     const buildLayerData = (zStart, zEnd) => {
-      // If range is invalid (e.g. no sink), generate dummy textures
+      
       if (zEnd < zStart) {
         const dummy = { data: new Uint8Array(4), width: 1, height: 1 };
         return [dummy, dummy, dummy, dummy, dummy, dummy];
@@ -203,52 +203,52 @@ self.onmessage = async ({ data }) => {
       return [rightLeft, rightLeft, top, bottom, frontBack, frontBack];
     };
 
-    // --- Dynamic Layer Calculation ---
-    // The Rust code always adds 5 'skin' layers at the top for the CPV/interface
+    
+    
     const skinLayers = 5;
     
-    // Calculate boundaries
+    
     let sinkStart = 0;
-    let sinkEnd = -1; // Default to invalid
+    let sinkEnd = -1; 
     let baseStart = 0;
 
-    // Use the passed nZSink parameter for logic consistency
-    // Note: Rust code ensures at least 2 points if sinkThickness > 0
-    // So the sink layer count in the array will be approx nZSink (or 2)
+    
+    
+    
     
     if (sinkThickness > 1e-6) {
         sinkStart = 0;
-        // The number of Z points allocated to sink is roughly nZSink
-        // We use the param to estimate the slice index
-        // (In strict mode, we might want to return the exact layer indices from Rust, 
-        //  but for now we assume nZSink corresponds to the allocated points)
+        
+        
+        
+        
         const actualSinkLayers = nZSink < 2 ? 2 : nZSink; 
         sinkEnd = actualSinkLayers - 1; 
         baseStart = actualSinkLayers;
     } else {
-        // No sink layers generated (only 1 point at 0.0 usually)
+        
         sinkStart = 0;
         sinkEnd = -1; 
         baseStart = 0; 
-        // If sinkThickness is 0, Rust might put 1 dummy point or start base at 0.
-        // Adjust logic if needed based on exact Rust grid construction.
+        
+        
     }
 
-    // Rust logic: if sink_thickness > 1e-9, it adds 5 sink layers (indices 0-4)
+    
     if (sinkThickness > 1e-6) {
         sinkStart = 0;
         sinkEnd = 4;
         baseStart = 5;
     } else {
-        // No sink layers generated
+        
         sinkStart = 0;
-        sinkEnd = -1; // Triggers dummy generation
+        sinkEnd = -1; 
         baseStart = 0;
     }
 
-    const cpvStart = nz - skinLayers; // Top 5 layers are CPV
+    const cpvStart = nz - skinLayers; 
     const cpvEnd = nz - 1;
-    const baseEnd = cpvStart - 1;     // Base fills space between Sink and CPV
+    const baseEnd = cpvStart - 1;     
 
     const sinkData = buildLayerData(sinkStart, sinkEnd);
     const baseData = buildLayerData(baseStart, baseEnd);

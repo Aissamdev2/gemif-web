@@ -176,8 +176,9 @@ const PRESETS: Record<string, PresetDef> = {
   },
   A: {
     name: "Aletes",
-
+    sinkThick: 0.01,
     useFins: true,
+    sinkMatKey: "Al-1050A (Anodized)",
   },
 
   M: {
@@ -2444,6 +2445,11 @@ Coordinator:          Filip Denis
 
 >> STRUCTURAL ANALYSIS
    Total System Mass:      ${structureWeight.toFixed(2)} kg
+   STRUCTURAL SAFETY CHECK:${
+     structureWeight > 200
+       ? "!!! WARNING: EXCEEDS WEIGHT LIMIT !!!"
+       : "OK (Within Limits)"
+   }
    Installation Mode:      ${
      structureWeight > 33 || activeParams.plateDim > 0.8
        ? "CRANE REQUIRED (Heavy/Large)"
