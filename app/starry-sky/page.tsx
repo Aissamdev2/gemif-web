@@ -1087,9 +1087,7 @@ const ThermalBox = memo(
     const workerRef = useRef<Worker | null>(null);
 
     const CPV_SUBSTRATE_THICK = 0.002;
-    const CPV_CELL_HEIGHT = 0.001;
-    const FIN_H = realScale ? visFinHeight : visFinHeight * 2;
-    const FIN_T = realScale ? visFinThickness : visFinThickness * 2;
+    const CPV_CELL_HEIGHT = 0.002;
 
     useEffect(() => {
       if (status.loading) {
@@ -1254,10 +1252,12 @@ const ThermalBox = memo(
     const isSimulationActive =
       texSink !== null && !status.loading && !hasPendingChanges;
 
+    const Z_FIGHT_OFFSET = 0.001;
+
     const BASE_REST_Y = 0;
     const SINK_REST_Y = -(visLayerThick / 2 + visSinkThick / 2);
     const SINK_EXPANDED_Y = SINK_REST_Y - 0.15;
-    const CPV_REST_Y = visLayerThick / 2 + CPV_SUBSTRATE_THICK / 2;
+    const CPV_REST_Y = visLayerThick / 2 + CPV_SUBSTRATE_THICK / 2 + Z_FIGHT_OFFSET;
     const CPV_EXPANDED_Y = CPV_REST_Y + 0.15;
 
     useFrame((state, delta) => {
@@ -1870,7 +1870,7 @@ export default function ThermalPage() {
 
   const [explodedView, setExplodedView] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
-  const [showLabels, setShowLabels] = useState(1);
+  const [showLabels, setShowLabels] = useState(0);
 
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [uiLayerThick, setUiLayerThick] = useState(0.0189);
@@ -2623,7 +2623,7 @@ STARRY SKY ENGINEERING GROUP
       <div className="relative order-2 flex-1 w-full min-h-0 md:absolute md:inset-0 md:h-full">
         <Canvas
           shadows
-          dpr={1}
+          dpr={[1,2]}
           gl={{
             powerPreference: "high-performance",
             antialias: true,
@@ -2656,7 +2656,7 @@ STARRY SKY ENGINEERING GROUP
             fade
             speed={0.3}
           />
-          <PerspectiveCamera makeDefault position={[2, 0, 2]} fov={40} />
+          <PerspectiveCamera makeDefault position={[2, 0, 2]} fov={40} near={0.1} far={300} />
           <OrbitControls
             makeDefault
             minDistance={2}
