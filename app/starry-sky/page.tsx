@@ -19,6 +19,7 @@ import {
   Stars,
   GizmoHelper,
   GizmoViewport,
+  Sparkles,
 } from "@react-three/drei";
 import * as THREE from "three";
 
@@ -269,6 +270,11 @@ const LAYER_COSTS = {
   AG_DENSITY: 10490,
   AG_COST_PER_KG: 850,
 };
+
+const CPV_SUBSTRATE_THICK = 0.002;
+const CPV_CELL_HEIGHT = 0.002;
+const Z_FIGHT_OFFSET = 0.001;
+const DEATH_RAY_TEMP = 600;
 
 type LayerTextures = [
   THREE.Texture,
@@ -582,7 +588,7 @@ const PresetSelector = memo(
         >
           Paràmetres ràpids
         </span>
-        
+
         {/* CHANGED LAYOUT:
            - Mobile (default): flex row + overflow-x-auto (horizontal scroll)
            - Desktop (md:): grid + grid-cols-2 (original vertical/grid behavior)
@@ -958,6 +964,146 @@ const TechLabel = memo(
 );
 TechLabel.displayName = "TechLabel";
 
+const DeathRay = memo(
+  ({
+    visible,
+    visLayerThick,
+    visSinkThick,
+  }: {
+    visible: boolean;
+    visLayerThick: number;
+    visSinkThick: number;
+  }) => {
+    const beamRef = useRef<THREE.Mesh>(null);
+    const coreRef = useRef<THREE.Mesh>(null);
+
+    const SINK_REST_Y = -(visLayerThick / 2 + visSinkThick / 2);
+    let SINK_EXPANDED_Y;
+    if (visSinkThick > 0) {
+      
+      SINK_EXPANDED_Y = SINK_REST_Y - 0.15;
+    } else {
+      SINK_EXPANDED_Y = SINK_REST_Y;
+    }
+    const CPV_REST_Y =
+      visLayerThick / 2 + CPV_SUBSTRATE_THICK / 2 + Z_FIGHT_OFFSET;
+    const CPV_EXPANDED_Y = CPV_REST_Y + 0.15;
+    console.log({ SINK_EXPANDED_Y, CPV_EXPANDED_Y })
+
+    useFrame((state) => {
+      if (!visible) return;
+      const t = state.clock.elapsedTime;
+
+      // High-frequency vibration (Energy hum)
+      if (beamRef.current) {
+        beamRef.current.scale.setScalar(1 + Math.sin(t * 60) * 0.15);
+        (beamRef.current.material as THREE.MeshBasicMaterial).opacity =
+          0.6 + Math.sin(t * 25) * 0.2;
+      }
+      // Core instability
+      if (coreRef.current) {
+        coreRef.current.scale.x = 1 + Math.sin(t * 40) * 0.1;
+        coreRef.current.scale.z = 1 + Math.sin(t * 40) * 0.1;
+      }
+    });
+
+    if (!visible) return null;
+
+    return (
+      <group position={[0, 0, 0]}>
+        {" "}
+        {/* Centered to pass through the plate */}
+        {/* 1. Main Penetrating Beam (Longer length: 15) */}
+        <mesh ref={beamRef}>
+          <cylinderGeometry args={[0.1, 0.1, 15, 32]} />
+          <meshBasicMaterial
+            color="#ff2200"
+            transparent
+            opacity={0.5}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+          />
+        </mesh>
+        {/* 2. White Hot Inner Core (Laser) */}
+        <mesh ref={coreRef}>
+          <cylinderGeometry args={[0.06, 0.06, 15, 32]} />
+          <meshBasicMaterial
+            color="#ffffff"
+            blending={THREE.AdditiveBlending}
+            opacity={0.9}
+            transparent
+          />
+        </mesh>
+        {/* 3. Top Impact Splash */}
+        <mesh position={[0, CPV_EXPANDED_Y + 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0, 0.18, 32]} />
+          <meshBasicMaterial
+            color="#ffaa00"
+            transparent
+            opacity={0.4}
+            blending={THREE.AdditiveBlending}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+        {/* 4. Bottom Exit Splash */}
+        <mesh position={[0, SINK_EXPANDED_Y -0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0, 0.25, 32]} />
+          <meshBasicMaterial
+            color="#ff4400"
+            transparent
+            opacity={0.3}
+            blending={THREE.AdditiveBlending}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      </group>
+    );
+  }
+);
+DeathRay.displayName = "DeathRay";
+
+
+const DeathRayButton = memo(({ isActive, onClick }: { isActive: boolean; onClick: () => void }) => {
+  return (
+    <button
+      onClick={onClick}
+      className={`
+        relative group cursor-pointer overflow-hidden px-3 py-3 rounded-xl border transition-all duration-300
+        ${isActive 
+          ? "bg-red-900/40 border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.6)] scale-95" 
+          : "bg-neutral-900/80 border-red-900/30 hover:border-red-500/50 hover:shadow-[0_0_20px_rgba(220,38,38,0.3)]"
+        }
+      `}
+    >
+      {/* Background Pulse Animation */}
+      <div className={`absolute inset-0 bg-gradient-to-r from-transparent via-red-600/10 to-transparent translate-x-[-100%] group-hover:animate-[shimmer_2s_infinite] ${isActive ? 'animate-none bg-red-600/20' : ''}`} />
+
+      <div className="relative flex items-center justify-center gap-3">
+        {/* Warning Icon with Ping Effect */}
+        <div className={`relative w-4 h-4 transition-colors ${isActive ? "text-white" : "text-red-500 group-hover:text-red-400"}`}>
+           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+           </svg>
+           {/* Ping animation only when active */}
+           {isActive && <div className="absolute inset-0 animate-ping opacity-75 bg-red-500 rounded-full blur-sm" />}
+        </div>
+
+        {/* Text Stack */}
+        <div className="flex flex-col items-start leading-none">
+          <span className={`text-[10px] font-black uppercase tracking-widest transition-colors ${isActive ? "text-white" : "text-red-500 group-hover:text-red-400"}`}>
+            {isActive ? "SOBRECARREGA" : "ACTIVAR RAIG DE LA MORT"}
+          </span>
+          <span className="text-[8px] font-mono text-red-200/70 mt-0.5 group-hover:text-red-400/80">
+            {isActive ? "INSTALACIÓ DESTRUïDA" : "ATENCIÓ: TEMPERATURA EXTREMA"}
+          </span>
+        </div>
+      </div>
+    </button>
+  );
+});
+DeathRayButton.displayName = "DeathRayButton";
+
+
 const ThermalBox = memo(
   ({
     simMatrixSize,
@@ -1011,11 +1157,11 @@ const ThermalBox = memo(
     hasPendingChanges,
     showGrid,
     explodedView,
-
     visNx,
     visLayerNz,
     visSinkNz,
     showLabels,
+    showDeathRay,
     onUpdateStats,
   }: {
     simMatrixSize: number | null;
@@ -1071,6 +1217,7 @@ const ThermalBox = memo(
     visLayerNz: number;
     visSinkNz: number;
     showLabels: number;
+    showDeathRay: boolean;
     onUpdateStats: (stats: Partial<SimStats>) => void;
   }) => {
     const [texSink, setTexSink] = useState<LayerTextures | null>(null);
@@ -1085,9 +1232,6 @@ const ThermalBox = memo(
     const cpvRef = useRef<THREE.Group>(null);
     const currentExpansion = useRef(0);
     const workerRef = useRef<Worker | null>(null);
-
-    const CPV_SUBSTRATE_THICK = 0.002;
-    const CPV_CELL_HEIGHT = 0.002;
 
     useEffect(() => {
       if (status.loading) {
@@ -1252,34 +1396,26 @@ const ThermalBox = memo(
     const isSimulationActive =
       texSink !== null && !status.loading && !hasPendingChanges;
 
-    const Z_FIGHT_OFFSET = 0.001;
-
     const BASE_REST_Y = 0;
     const SINK_REST_Y = -(visLayerThick / 2 + visSinkThick / 2);
     const SINK_EXPANDED_Y = SINK_REST_Y - 0.15;
-    const CPV_REST_Y = visLayerThick / 2 + CPV_SUBSTRATE_THICK / 2 + Z_FIGHT_OFFSET;
+    const CPV_REST_Y =
+      visLayerThick / 2 + CPV_SUBSTRATE_THICK / 2 + Z_FIGHT_OFFSET;
     const CPV_EXPANDED_Y = CPV_REST_Y + 0.15;
 
     useFrame((state, delta) => {
+      // 1. Explosion/Expansion Logic
       const shouldExplode = explodedView || isSimulationActive;
-
       const targetExpansion = shouldExplode ? 1 : 0;
-
       currentExpansion.current = THREE.MathUtils.damp(
         currentExpansion.current,
         targetExpansion,
         3.0,
         delta * 2.0
       );
-
       const t = currentExpansion.current;
 
-      if (sinkRef.current)
-        sinkRef.current.position.y = THREE.MathUtils.lerp(
-          SINK_REST_Y,
-          SINK_EXPANDED_Y,
-          t
-        );
+      // 2. Base Layer Positioning (Standard Expansion)
       if (baseRef.current) baseRef.current.position.y = BASE_REST_Y;
       if (cpvRef.current)
         cpvRef.current.position.y = THREE.MathUtils.lerp(
@@ -1287,6 +1423,62 @@ const ThermalBox = memo(
           CPV_EXPANDED_Y,
           t
         );
+      if (sinkRef.current)
+        sinkRef.current.position.y = THREE.MathUtils.lerp(
+          SINK_REST_Y,
+          SINK_EXPANDED_Y,
+          t
+        );
+
+      // 3. CRITICAL MELTDOWN LOGIC (Apply to ALL layers)
+      const isMelting = showDeathRay && status.maxTemp > DEATH_RAY_TEMP;
+
+      // Helper to apply shake and material overrides
+      const applyMeltdown = (groupRef: React.RefObject<THREE.Group>) => {
+        if (!groupRef.current) return;
+
+        // A. Physical Vibration (Shake X/Z, preserve Y expansion)
+        if (isMelting) {
+          groupRef.current.position.x = (Math.random() - 0.5) * 0.03; // Violent shake
+          groupRef.current.position.z = (Math.random() - 0.5) * 0.03;
+        } else {
+          groupRef.current.position.x = 0;
+          groupRef.current.position.z = 0;
+        }
+
+        // B. Material Overrides (Magma Effect)
+        groupRef.current.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            const mats = Array.isArray(child.material)
+              ? child.material
+              : [child.material];
+
+            mats.forEach((mat) => {
+              // Safety check for standard materials
+              if (mat.isMeshStandardMaterial) {
+                if (isMelting) {
+                  const flicker = Math.random();
+                  // Magma Look: Blinding Orange/White
+                  mat.emissive.setRGB(1.0, 0.2 + flicker * 0.3, 0);
+                  mat.emissiveIntensity = 3.0 + flicker * 2.0; // High intensity
+                  mat.color.setHex(0x110000); // Darken the base texture
+                } else if (!isSimulationActive) {
+                  // Reset visual state when idle
+                  mat.emissive.setHex(0x000000);
+                  // Note: We don't reset .color here perfectly as it depends on the specific
+                  // material selected in the UI, but React handles that re-render usually.
+                  // This ensures the "glow" turns off.
+                }
+              }
+            });
+          }
+        });
+      };
+
+      // Apply the effect to all 3 layers
+      applyMeltdown(sinkRef);
+      applyMeltdown(baseRef);
+      applyMeltdown(cpvRef);
     });
 
     const handlePointerMove = useCallback(
@@ -1420,6 +1612,21 @@ const ThermalBox = memo(
 
     return (
       <group rotation={[0, 0, 0]} position={[0, 0.1, 0]}>
+        {/* NEW: Death Ray - Only visible when critical */}
+        <DeathRay visible={showDeathRay && status.maxTemp > DEATH_RAY_TEMP} visLayerThick={visLayerThick} visSinkThick={visSinkThick} />
+
+        {/* NEW: Fire/Sparks - Only visible when critical */}
+        {showDeathRay && status.maxTemp > DEATH_RAY_TEMP && (
+          <Sparkles
+            count={50}
+            scale={1}
+            size={4}
+            speed={0.4}
+            opacity={0.8}
+            color="#ffaa00"
+            position={[0, 0.3, 0]} // Float above the plate
+          />
+        )}
         {/* SINK LAYER */}
         {visSinkThick > 0.0001 && (
           <group ref={sinkRef}>
@@ -1947,6 +2154,8 @@ export default function ThermalPage() {
   const [loaded, setLoaded] = useState(false);
   const [introFinished, setIntroFinished] = useState(false);
 
+  const [showDeathRay, setShowDeathRay] = useState(false);
+
   const [showMobileStats, setShowMobileStats] = useState(false);
 
   const isShortScreen = useMediaQuery("(max-height: 700px)");
@@ -2167,6 +2376,8 @@ export default function ThermalPage() {
     if (hasChanged) {
       // 1. Kill the active simulation parameters (This clears the 3D heatmaps)
       setActiveParams(null);
+
+      setShowDeathRay(false);
 
       // 2. Wipe the statistical results (This clears the bottom bar and ROI panel)
       setSimStats({
@@ -2623,7 +2834,7 @@ STARRY SKY ENGINEERING GROUP
       <div className="relative order-2 flex-1 w-full min-h-0 md:absolute md:inset-0 md:h-full">
         <Canvas
           shadows
-          dpr={[1,2]}
+          dpr={[1, 2]}
           gl={{
             powerPreference: "high-performance",
             antialias: true,
@@ -2656,7 +2867,13 @@ STARRY SKY ENGINEERING GROUP
             fade
             speed={0.3}
           />
-          <PerspectiveCamera makeDefault position={[2, 0, 2]} fov={40} near={0.1} far={300} />
+          <PerspectiveCamera
+            makeDefault
+            position={[2, 1, 2]}
+            fov={40}
+            near={0.1}
+            far={300}
+          />
           <OrbitControls
             makeDefault
             minDistance={2}
@@ -2747,6 +2964,7 @@ STARRY SKY ENGINEERING GROUP
               visNx={uiNx}
               visLayerNz={uiLayerNz}
               visSinkNz={uiSinkNz}
+              showDeathRay={showDeathRay}
               onUpdateStats={onUpdateStats}
             />
           </Suspense>
@@ -2782,7 +3000,6 @@ STARRY SKY ENGINEERING GROUP
             <span className="text-[10px] uppercase tracking-widest font-bold text-gray-400">
               Visualització
             </span>
-
             {activeParams && !simStats.loading && !hasPendingChanges ? (
               <div className="flex items-center gap-1.5 bg-gradient-to-r from-red-500/10 to-orange-500/10 px-2 py-0.5 rounded border border-red-500/20">
                 <span className="relative flex h-1.5 w-1.5">
@@ -2947,6 +3164,12 @@ STARRY SKY ENGINEERING GROUP
               <span className="text-[8px] font-black uppercase">Info</span>
             </button>
           </div>
+
+          {
+          simStats && simStats.maxTemp && simStats.maxTemp > DEATH_RAY_TEMP ? (
+              <DeathRayButton isActive={showDeathRay} onClick={() => setShowDeathRay(prev => !prev)} />
+            ) : null
+          }
 
           {/* NEW: Mobile-only Grid for Actions */}
           <div className="md:hidden grid grid-cols-2 gap-2">
