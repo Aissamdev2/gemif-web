@@ -44,8 +44,8 @@ export default async function StarrySkyLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col max-h-screen py-3">
-      <main className="overflow-hidden h-fit sm:h-screen w-screen p-4 bg-bg overflow-y-hidden">
+    <div className="flex flex-col max-h-screen ">
+      <main className="overflow-hidden h-fit sm:h-screen w-screen bg-bg overflow-y-hidden">
         {children}
       </main>
     </div>

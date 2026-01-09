@@ -12,6 +12,12 @@ const config: Config = {
   darkMode: "class",
   theme: {
   	extend: {
+      screens: {
+        // Creates a 'short' breakpoint for screens shorter than 800px
+        'short': { 'raw': '(max-height: 700px)' },
+        // You can add 'tall' too if needed
+        'tall': { 'raw': '(min-height: 700px)' },
+      },
   		fontFamily: {
   			sans: [
   				'Inter',

@@ -17,11 +17,10 @@ import {
   Html,
   Grid,
   Stars,
-  GizmoHelper, 
-  GizmoViewport, 
+  GizmoHelper,
+  GizmoViewport,
 } from "@react-three/drei";
 import * as THREE from "three";
-
 
 const PLATE_WIDTH = 1.5;
 const PLATE_DEPTH = 1.5;
@@ -40,8 +39,6 @@ type MaterialDef = {
   roughness: number;
 };
 
-
-
 const MATERIALS: Record<
   string,
   MaterialDef & { cost: number; machiningFactor: number }
@@ -52,7 +49,7 @@ const MATERIALS: Record<
     emi: 0.85,
     rho: 2705,
     cost: 4.5,
-    machiningFactor: 1.0, 
+    machiningFactor: 1.0,
     color: "#4a4a4a",
     metalness: 0.5,
     roughness: 0.7,
@@ -63,7 +60,7 @@ const MATERIALS: Record<
     emi: 0.15,
     rho: 2700,
     cost: 5.0,
-    machiningFactor: 1.1, 
+    machiningFactor: 1.1,
     color: "#5c5c5c",
     metalness: 0.5,
     roughness: 0.7,
@@ -74,7 +71,7 @@ const MATERIALS: Record<
     emi: 0.8,
     rho: 1770,
     cost: 12.0,
-    machiningFactor: 1.8, 
+    machiningFactor: 1.8,
     color: "#e0e0e0",
     metalness: 0.3,
     roughness: 0.5,
@@ -85,7 +82,7 @@ const MATERIALS: Record<
     emi: 0.95,
     rho: 2100,
     cost: 150.0,
-    machiningFactor: 0.5, 
+    machiningFactor: 0.5,
     color: "#252525",
     metalness: 0.2,
     roughness: 0.9,
@@ -96,7 +93,7 @@ const MATERIALS: Record<
     emi: 0.65,
     rho: 8960,
     cost: 10.0,
-    machiningFactor: 2.5, 
+    machiningFactor: 2.5,
     color: "#6b3818",
     metalness: 0.4,
     roughness: 0.4,
@@ -110,7 +107,6 @@ const REFELCTIVE_MATERIAL = {
   color: "#eeeeee",
   roughness: 0.2,
 };
-
 
 type PresetDef = Partial<{
   name: string;
@@ -131,42 +127,46 @@ type PresetDef = Partial<{
   useReflector: boolean;
   baseMatKey: string;
   sinkMatKey: string;
-  
+
   finHeight: number;
   finSpacing: number;
   finThickness: number;
   finEfficiency: number;
-  
+
   opticalEfficiency: number;
   pvEfficiency: number;
-  
+
   solarMode: string;
   windSpeed: number;
   ambientTemp: number;
   qSolar: number;
 }>;
 
-
 const PRESETS: Record<string, PresetDef> = {
   PC: {
     name: "Pitjor Cas",
     fwhm: 0.17,
-    matrixSize: 1,
     magicArea: 236,
+    opticalEfficiency: 0.85,
+    qSolar: 1000,
+    ambientTemp: 25,
+    windSpeed: 4,
+    plateDim: 1.5,
     layerThick: 0.03,
     sinkThick: 0.0,
-    pvThick: 0.2,
-    plateDim: 1.5,
-    cpvScale: 0.7,
-    nx: 40,
-    layerNz: 9,
-    sinkNz: 3,
-    useCircle: false,
+    matrixSize: 1,
+    solarMode: "cpv",
     usePv: false,
-    useFins: false,
-    useReflector: false,
+    pvThick: 0.2,
+    cpvScale: 0.7,
+    useCircle: false,
     baseMatKey: "Al-1050A (Anodized)",
     sinkMatKey: "Al-1050A (Anodized)",
+    useReflector: false,
+    useFins: false,
+    nx: 40,
+    layerNz: 9,
+    sinkNz: 0,
   },
   MC: {
     name: "Multicapa",
@@ -176,9 +176,14 @@ const PRESETS: Record<string, PresetDef> = {
   },
   A: {
     name: "Aletes",
+    sinkNz: 2,
     sinkThick: 0.01,
     useFins: true,
     sinkMatKey: "Al-1050A (Anodized)",
+    finHeight: 0.05,
+    finSpacing: 0.03,
+    finThickness: 0.001,
+    finEfficiency: 0.85,
   },
 
   M: {
@@ -257,19 +262,13 @@ const PRESETS: Record<string, PresetDef> = {
   },
 };
 
-
 const LAYER_COSTS = {
-  
-  
   CPV_PRICE_PER_M2: 800,
 
-  
-  
-  AG_THICKNESS: 0.00005, 
-  AG_DENSITY: 10490, 
-  AG_COST_PER_KG: 850, 
+  AG_THICKNESS: 0.00005,
+  AG_DENSITY: 10490,
+  AG_COST_PER_KG: 850,
 };
-
 
 type LayerTextures = [
   THREE.Texture,
@@ -295,7 +294,6 @@ interface WorkerMessageData {
   height: number;
 }
 
-
 const createTexturesFromData = (
   dataArray: WorkerMessageData[]
 ): LayerTextures => {
@@ -316,8 +314,6 @@ const createTexturesFromData = (
   return textures as unknown as LayerTextures;
 };
 
-
-
 const ControlRow = memo(
   ({
     label,
@@ -332,7 +328,7 @@ const ControlRow = memo(
     onMax,
     showMin = false,
     showMax = false,
-    
+
     onSet,
   }: {
     label: string;
@@ -347,7 +343,7 @@ const ControlRow = memo(
     onMax?: () => void;
     showMin?: boolean;
     showMax?: boolean;
-    onSet?: (v: number) => void; 
+    onSet?: (v: number) => void;
   }) => {
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState(String(value));
@@ -499,7 +495,6 @@ const ToggleRow = memo(
 );
 ToggleRow.displayName = "ToggleRow";
 
-
 const MaterialSelector = memo(
   ({
     label,
@@ -512,10 +507,9 @@ const MaterialSelector = memo(
     onChange: (val: string) => void;
     colorClass: string;
   }) => {
-    
     const formatMatInfo = (key: string) => {
       const m = MATERIALS[key];
-      
+
       return `${m.name} | k:${m.kt.toFixed(0)} | ε:${m.emi.toFixed(2)} | ρ:${
         m.rho
       }`;
@@ -582,24 +576,33 @@ const PresetSelector = memo(
   }) => {
     return (
       <div className="w-full flex flex-col items-center gap-2 bg-neutral-900/80 p-1.5 rounded-xl border border-white/10 shadow-lg overflow-hidden">
-        {/* Scrollable Container */}
+        {/* Header */}
         <span
           className={`text-[10px] uppercase tracking-widest font-bold text-cyan-400 transition-colors`}
         >
           Paràmetres ràpids
         </span>
-        <div className="flex-1 overflow-x-auto no-scrollbar grid grid-cols-2 gap-1 pr-2 mask-linear-fade">
+        
+        {/* CHANGED LAYOUT:
+           - Mobile (default): flex row + overflow-x-auto (horizontal scroll)
+           - Desktop (md:): grid + grid-cols-2 (original vertical/grid behavior)
+        */}
+        <div className="w-full flex flex-row overflow-x-auto no-scrollbar gap-2 px-1 pb-1 md:grid md:grid-cols-2 md:gap-1 md:px-0 md:pb-0 md:overflow-visible mask-linear-fade">
           {Object.entries(PRESETS).map(([key, def]) => {
             const isActive = activeKeys.includes(key);
             return (
               <button
                 key={key}
                 onClick={() => onToggle(key)}
-                className={`shrink-0 cursor-pointer px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider transition-all duration-200 border whitespace-nowrap ${
-                  isActive
-                    ? "bg-cyan-600 border-cyan-400 text-white shadow-[0_0_8px_rgba(8,145,178,0.4)]"
-                    : "bg-white/5 border-transparent text-gray-400 hover:bg-white/10 hover:text-white hover:border-white/10"
-                }`}
+                className={`
+                  shrink-0 cursor-pointer px-3 py-1.5 md:px-2.5 md:py-1 rounded-full 
+                  text-[9px] font-bold uppercase tracking-wider transition-all duration-200 border whitespace-nowrap 
+                  ${
+                    isActive
+                      ? "bg-cyan-600 border-cyan-400 text-white shadow-[0_0_8px_rgba(8,145,178,0.4)]"
+                      : "bg-white/5 border-transparent text-gray-400 hover:bg-white/10 hover:text-white hover:border-white/10"
+                  }
+                `}
               >
                 {def.name}
               </button>
@@ -611,7 +614,6 @@ const PresetSelector = memo(
   }
 );
 PresetSelector.displayName = "PresetSelector";
-
 
 const MultiStateToggle = memo(
   ({
@@ -714,24 +716,28 @@ const GaussianOverlay = memo(
     matrixSize,
     magicArea,
     realScale,
+    plateDim,
   }: {
     fwhm: number;
     matrixSize: number;
     magicArea: number;
     realScale: boolean;
+    plateDim: number;
   }) => {
     const { geometry } = useMemo(() => {
-      const geo = new THREE.PlaneGeometry(PLATE_WIDTH, PLATE_DEPTH, 140, 140); 
+      const geo = new THREE.PlaneGeometry(PLATE_WIDTH, PLATE_DEPTH, 140, 140);
       geo.rotateX(-Math.PI / 2);
 
       const posAttribute = geo.attributes.position;
       const vertex = new THREE.Vector3();
       const count = posAttribute.count;
 
+      const realScaleFwhm = (fwhm * PLATE_WIDTH) / plateDim;
+
       const colors = new Float32Array(count * 3);
       const color = new THREE.Color();
 
-      const sigma = fwhm / 2.355;
+      const sigma = realScaleFwhm / 2.355;
       const twoSigmaSq = 2 * sigma * sigma;
 
       const cellSpacing = (PLATE_WIDTH * 0.9) / matrixSize;
@@ -747,7 +753,6 @@ const GaussianOverlay = memo(
         }
       }
 
-      
       let amplitude;
       if (realScale) {
         const baseHeight = 0.5;
@@ -758,7 +763,6 @@ const GaussianOverlay = memo(
         amplitude = 0.5;
       }
 
-      
       for (let i = 0; i < count; i++) {
         vertex.fromBufferAttribute(posAttribute, i);
         let totalY = 0;
@@ -772,11 +776,8 @@ const GaussianOverlay = memo(
 
         posAttribute.setXYZ(i, vertex.x, totalY, vertex.z);
 
-        
         const t = Math.min(totalY / amplitude, 1.0);
 
-        
-        
         color.setHSL(t * 0.15, 1.0, 0.25 + t * 0.35);
 
         colors[i * 3] = color.r;
@@ -788,7 +789,7 @@ const GaussianOverlay = memo(
       geo.computeVertexNormals();
 
       return { geometry: geo };
-    }, [fwhm, matrixSize, magicArea, realScale]);
+    }, [fwhm, plateDim, matrixSize, magicArea, realScale]);
 
     return (
       <group position={[0, 0.03, 0]}>
@@ -799,9 +800,9 @@ const GaussianOverlay = memo(
             roughness={0.4}
             metalness={0.1}
             transparent={true}
-            opacity={0.75} 
+            opacity={0.75}
             side={THREE.DoubleSide}
-            depthWrite={true} 
+            depthWrite={true}
           />
         </mesh>
 
@@ -810,7 +811,7 @@ const GaussianOverlay = memo(
           <meshBasicMaterial
             color="#555"
             transparent
-            opacity={0.15} 
+            opacity={0.15}
             wireframe
             depthWrite={false}
           />
@@ -820,7 +821,6 @@ const GaussianOverlay = memo(
   }
 );
 GaussianOverlay.displayName = "GaussianOverlay";
-
 
 const VolumeGrid = memo(
   ({
@@ -838,7 +838,6 @@ const VolumeGrid = memo(
     nz: number;
     visible: boolean;
   }) => {
-    
     const SideLines = useMemo(() => {
       if (nz <= 1) return null;
       const vertices = [];
@@ -864,10 +863,9 @@ const VolumeGrid = memo(
 
     if (!visible) return null;
 
-    
     const TopGrid = () => (
       <gridHelper
-        args={[width, nx, 0xffffff, 0xffffff]} 
+        args={[width, nx, 0xffffff, 0xffffff]}
         position={[0, thickness / 2 + 0.0005, 0]}
         rotation={[0, 0, 0]}
       >
@@ -875,8 +873,8 @@ const VolumeGrid = memo(
           attach="material"
           color="#ffffff"
           transparent
-          opacity={0.5} 
-          depthTest={true} 
+          opacity={0.5}
+          depthTest={true}
         />
       </gridHelper>
     );
@@ -900,7 +898,6 @@ const VolumeGrid = memo(
 );
 VolumeGrid.displayName = "VolumeGrid";
 
-
 const TechLabel = memo(
   ({
     position = [0, 0, 0],
@@ -919,12 +916,11 @@ const TechLabel = memo(
       <Html
         position={position}
         zIndexRange={[100, 0]}
-        
         style={{
           transition: "opacity 0.2s",
           opacity: visible && !hidden ? 1 : 0,
           pointerEvents: "none",
-          
+
           transform: "translate3d(-50%, -100%, 0)",
         }}
       >
@@ -962,7 +958,6 @@ const TechLabel = memo(
 );
 TechLabel.displayName = "TechLabel";
 
-
 const ThermalBox = memo(
   ({
     simMatrixSize,
@@ -981,7 +976,7 @@ const ThermalBox = memo(
     simUseSolarCell,
     simBaseMatKey,
     simSinkMatKey,
-    
+
     simUseFins,
     simUseReflector,
     simWindSpeed,
@@ -998,11 +993,12 @@ const ThermalBox = memo(
     visMagicArea,
     visCpvScale,
     visUseCircle,
+    visPlateDim,
     visLayerThick,
     visSinkThick,
     visBaseMatKey,
     visSinkMatKey,
-    
+
     visUseFins,
     visFinHeight,
     visFinSpacing,
@@ -1015,10 +1011,10 @@ const ThermalBox = memo(
     hasPendingChanges,
     showGrid,
     explodedView,
-    
-    visNx, 
-    visLayerNz, 
-    visSinkNz, 
+
+    visNx,
+    visLayerNz,
+    visSinkNz,
     showLabels,
     onUpdateStats,
   }: {
@@ -1056,6 +1052,7 @@ const ThermalBox = memo(
     visUseCircle: boolean;
     visLayerThick: number;
     visSinkThick: number;
+    visPlateDim: number;
     visUseFins: boolean;
     visFinHeight: number;
     visFinSpacing: number;
@@ -1089,13 +1086,11 @@ const ThermalBox = memo(
     const currentExpansion = useRef(0);
     const workerRef = useRef<Worker | null>(null);
 
-    
-    const CPV_SUBSTRATE_THICK = 0.002; 
-    const CPV_CELL_HEIGHT = 0.001; 
-    const FIN_H = realScale ? visFinHeight : visFinHeight * 2; 
+    const CPV_SUBSTRATE_THICK = 0.002;
+    const CPV_CELL_HEIGHT = 0.001;
+    const FIN_H = realScale ? visFinHeight : visFinHeight * 2;
     const FIN_T = realScale ? visFinThickness : visFinThickness * 2;
 
-    
     useEffect(() => {
       if (status.loading) {
         setTexSink(null);
@@ -1112,7 +1107,6 @@ const ThermalBox = memo(
       };
     }, [texSink, texBase, texCPV]);
 
-    
     useEffect(() => {
       if (
         simMatrixSize === null ||
@@ -1177,7 +1171,6 @@ const ThermalBox = memo(
       ).toString();
       const wasmUrl = new URL(relativePath, window.location.origin).href;
 
-      
       const baseMat = MATERIALS[simBaseMatKey];
       const sinkMat = MATERIALS[simSinkMatKey];
 
@@ -1196,15 +1189,15 @@ const ThermalBox = memo(
         useCircle: simUseCircle,
         usePv: simUsePv,
         useSolarCell: simUseSolarCell,
-        
+
         baseKt: baseMat.kt,
         baseEmi: baseMat.emi,
         sinkKt: sinkMat.kt,
         sinkEmi: sinkMat.emi,
-        
+
         useFins: simUseFins,
         useReflector: simUseReflector,
-        
+
         windSpeed: simWindSpeed,
         ambientTemp: simAmbientTemp,
         qSolar: simQSolar,
@@ -1258,12 +1251,9 @@ const ThermalBox = memo(
       onUpdateStats,
     ]);
 
-    
-    
     const isSimulationActive =
       texSink !== null && !status.loading && !hasPendingChanges;
 
-    
     const BASE_REST_Y = 0;
     const SINK_REST_Y = -(visLayerThick / 2 + visSinkThick / 2);
     const SINK_EXPANDED_Y = SINK_REST_Y - 0.15;
@@ -1271,7 +1261,6 @@ const ThermalBox = memo(
     const CPV_EXPANDED_Y = CPV_REST_Y + 0.15;
 
     useFrame((state, delta) => {
-      
       const shouldExplode = explodedView || isSimulationActive;
 
       const targetExpansion = shouldExplode ? 1 : 0;
@@ -1300,12 +1289,10 @@ const ThermalBox = memo(
         );
     });
 
-    
     const handlePointerMove = useCallback(
       (e: any, layerName: string, textures: LayerTextures | null) => {
         e.stopPropagation();
 
-        
         if (isSimulationActive && textures) {
           const matIndex = e.face?.materialIndex;
           if (matIndex === undefined) return;
@@ -1316,11 +1303,11 @@ const ThermalBox = memo(
           const x = Math.floor(e.uv.x * image.width);
           const y = Math.floor(e.uv.y * image.height);
           const index = (y * image.width + x) * 4;
-          const r = image.data[index]; 
-          const g = image.data[index + 1]; 
+          const r = image.data[index];
+          const g = image.data[index + 1];
 
           let normVal = 0;
-          
+
           if (g > 5) normVal = g / 255 / 2.0 + 0.5;
           else normVal = r / 255 / 2.0;
 
@@ -1330,7 +1317,6 @@ const ThermalBox = memo(
           return;
         }
 
-        
         if (showLabels !== 0) {
           setHoveredPart(layerName);
         }
@@ -1347,15 +1333,14 @@ const ThermalBox = memo(
     cpvTexture.wrapS = cpvTexture.wrapT = THREE.RepeatWrapping;
 
     const materials = useMemo(() => {
-      
       const base = MATERIALS[visBaseMatKey];
       const sink = MATERIALS[visSinkMatKey];
 
       return {
         sink: new THREE.MeshStandardMaterial({
           color: sink.color,
-          metalness: 0.5,
-          roughness: 0.6,
+          metalness: 0.6,
+          roughness: 0.5,
           transparent: false,
           opacity: 1.0,
           side: THREE.FrontSide,
@@ -1376,9 +1361,9 @@ const ThermalBox = memo(
           opacity: 1.0,
         }),
         cpvCell: new THREE.MeshStandardMaterial({
-          color: "#aaa", 
-          map: cpvTexture, 
-          emissive: "#00b", 
+          color: "#aaa",
+          map: cpvTexture,
+          emissive: "#00b",
           metalness: 0.9,
           roughness: 0.3,
           transparent: false,
@@ -1390,8 +1375,11 @@ const ThermalBox = memo(
     const geometries = useMemo(
       () => ({
         sink: new THREE.BoxGeometry(PLATE_WIDTH, visSinkThick, PLATE_DEPTH),
-        
-        sinkFin: new THREE.BoxGeometry(FIN_T, FIN_H, PLATE_DEPTH),
+        sinkFin: new THREE.BoxGeometry(
+          (visFinThickness * PLATE_DEPTH) / visPlateDim,
+          (visFinHeight * PLATE_DEPTH) / visPlateDim,
+          PLATE_DEPTH
+        ),
         base: new THREE.BoxGeometry(PLATE_WIDTH, visLayerThick, PLATE_DEPTH),
         cpvSub: new THREE.BoxGeometry(
           PLATE_WIDTH,
@@ -1399,26 +1387,37 @@ const ThermalBox = memo(
           PLATE_DEPTH
         ),
       }),
-      [visLayerThick, visSinkThick, FIN_H, FIN_T]
+      [visLayerThick, visSinkThick, visFinHeight, visFinThickness, visPlateDim]
     );
 
     const finPositions = useMemo(() => {
       if (!visUseFins) return [];
 
-      
-      const count = Math.floor(PLATE_WIDTH / (visFinSpacing + visFinThickness));
-      const totalWidth = count * (visFinSpacing + visFinThickness);
-      const startX = -totalWidth / 2 + (visFinSpacing + visFinThickness) / 2;
+      const spacing = (visFinSpacing * PLATE_WIDTH) / visPlateDim;
+      const thickness = (visFinThickness * PLATE_WIDTH) / visPlateDim;
+
+      const unit = spacing + thickness;
+      // Rough max count, then we check if it fits
+      let count = Math.floor((PLATE_WIDTH + spacing) / unit);
+
+      // Safety check: Ensure at least one fin if it fits at all
+      if (count * thickness + (count - 1) * spacing > PLATE_WIDTH) {
+        count--;
+      }
+
+      if (count <= 0) return [];
+
+      // Calculate the total span of the array of fins
+      const totalSpan = count * thickness + (count - 1) * spacing;
+
+      // Start from the left edge of the plate (-PLATE_WIDTH/2), add half the remaining margin
+      const startX = -totalSpan / 2 + thickness / 2;
 
       return Array.from({ length: count }).map((_, i) => {
-        
-        return (
-          startX + i * (visFinSpacing + visFinThickness) - visFinSpacing / 2
-        );
+        return startX + i * (thickness + spacing);
       });
-    }, [visUseFins, visFinSpacing, visFinThickness]);
+    }, [visUseFins, visFinSpacing, visFinThickness, visPlateDim]);
 
-    
     return (
       <group rotation={[0, 0, 0]} position={[0, 0.1, 0]}>
         {/* SINK LAYER */}
@@ -1449,7 +1448,12 @@ const ThermalBox = memo(
               finPositions.map((xPos, i) => (
                 <mesh
                   key={i}
-                  position={[xPos, -visSinkThick / 2 - FIN_H / 2, 0]}
+                  position={[
+                    xPos,
+                    -visSinkThick / 2 -
+                      (visFinHeight * PLATE_WIDTH) / (2 * visPlateDim),
+                    0,
+                  ]}
                   geometry={geometries.sinkFin}
                   material={materials.sink}
                 />
@@ -1600,6 +1604,7 @@ const ThermalBox = memo(
           {showGaussian !== 0 && (
             <GaussianOverlay
               fwhm={visFwhm}
+              plateDim={visPlateDim}
               matrixSize={visMatrixSize}
               magicArea={visMagicArea}
               realScale={showGaussian === 2}
@@ -1633,7 +1638,6 @@ const ThermalBox = memo(
 );
 ThermalBox.displayName = "ThermalBox";
 
-
 const SystemStatusBar = memo(
   ({ status, loading }: { status: string; loading: boolean }) => {
     const [telemetry, setTelemetry] = useState({
@@ -1644,7 +1648,6 @@ const SystemStatusBar = memo(
       netType: "UNKNOWN",
     });
 
-    
     useEffect(() => {
       let frameCount = 0;
       let lastTime = performance.now();
@@ -1655,14 +1658,11 @@ const SystemStatusBar = memo(
         frameCount++;
 
         if (now - lastTime >= 1000) {
-          
           const currentFps = frameCount;
 
-          
-          
-          const memUsed = (performance as any).memory?.usedJSHeapSize / 1048576 || 0;
+          const memUsed =
+            (performance as any).memory?.usedJSHeapSize / 1048576 || 0;
 
-          
           const connection =
             (navigator as any).connection ||
             (navigator as any).mozConnection ||
@@ -1689,12 +1689,10 @@ const SystemStatusBar = memo(
       return () => cancelAnimationFrame(animationFrameId);
     }, []);
 
-    
     useEffect(() => {
       const checkPing = async () => {
         const start = Date.now();
         try {
-          
           await fetch(window.location.href, {
             method: "HEAD",
             cache: "no-cache",
@@ -1706,12 +1704,11 @@ const SystemStatusBar = memo(
         }
       };
 
-      checkPing(); 
+      checkPing();
       const interval = setInterval(checkPing, 5000);
       return () => clearInterval(interval);
     }, []);
 
-    
     const formatTime = (secs: number) => {
       const m = Math.floor(secs / 60)
         .toString()
@@ -1720,7 +1717,6 @@ const SystemStatusBar = memo(
       return `${m}:${s}`;
     };
 
-    
     const statusColor = loading
       ? "text-yellow-400"
       : status === "Error"
@@ -1751,7 +1747,7 @@ const SystemStatusBar = memo(
             ></div>
           </div>
           <span
-            className={`text-[10px] font-black tracking-widest uppercase ${statusColor}`}
+            className={`text-[10px] font-black truncate tracking-widest uppercase ${statusColor}`}
           >
             {status.toUpperCase()}
           </span>
@@ -1760,7 +1756,7 @@ const SystemStatusBar = memo(
         {/* SECTION 2: REAL BROWSER TELEMETRY */}
         <div className="flex items-center px-4 gap-4 text-[10px] font-mono text-gray-400">
           {/* Latency */}
-          <div className="flex flex-col items-start leading-none gap-0.5 w-14">
+          <div className="flex flex-col items-start leading-none gap-0.5 w-12">
             <span className="uppercase">LATENCY</span>
             <span className={latencyColor}>
               {telemetry.latency === -1 ? "OFF" : `${telemetry.latency} ms`}
@@ -1806,6 +1802,22 @@ const SystemStatusBar = memo(
 );
 SystemStatusBar.displayName = "SystemStatusBar";
 
+function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    if (media.matches !== matches) {
+      setMatches(media.matches);
+    }
+    const listener = () => setMatches(media.matches);
+    media.addEventListener("change", listener);
+    return () => media.removeEventListener("change", listener);
+  }, [matches, query]);
+
+  return matches;
+}
+
 function SceneReady({ onReady }: { onReady: () => void }) {
   useEffect(() => {
     onReady();
@@ -1814,47 +1826,29 @@ function SceneReady({ onReady }: { onReady: () => void }) {
 }
 
 const ENGINEERING_RATIOS = {
-  
-  
-  
-  ALUMINUM_BLOCK_PRICE_KG: 15.0, 
-  
-  
-  
-  
-  CPV_MODULE_PRICE_M2: 8500, 
-  PV_MODULE_PRICE_M2: 200, 
+  ALUMINUM_BLOCK_PRICE_KG: 15.0,
 
-  
-  
-  
-  
-  MACHINING_FACTOR_BASE: 5.0, 
-  MACHINING_FACTOR_FINS: 2.0, 
+  CPV_MODULE_PRICE_M2: 8500,
+  PV_MODULE_PRICE_M2: 200,
 
-  
-  
-  ELEC_BASE_PACKAGE: 5000, 
+  MACHINING_FACTOR_BASE: 5.0,
+  MACHINING_FACTOR_FINS: 2.0,
 
-  
-  
-  NRE_FIXED_COST: 17000, 
-  LOGISTICS_FLAT_RATE: 3000, 
-  INSTALLATION_FLAT_RATE: 6000, 
-  CRANE_SURCHARGE: 1500, 
+  ELEC_BASE_PACKAGE: 5000,
 
-  
-  CONTINGENCY_PCT: 0.30, 
+  NRE_FIXED_COST: 17000,
+  LOGISTICS_FLAT_RATE: 3000,
+  INSTALLATION_FLAT_RATE: 6000,
+  CRANE_SURCHARGE: 1500,
+
+  CONTINGENCY_PCT: 0.3,
 };
-
 
 const ROI_CONSTANTS = {
-  
   SUN_HOURS_YEAR: 2800,
-  
+
   ELEC_PRICE_EUR_KWH: 0.14,
 };
-
 
 export default function ThermalPage() {
   const [simStats, setSimStats] = useState<SimStats>({
@@ -1866,7 +1860,6 @@ export default function ThermalPage() {
     loading: false,
   });
 
-  
   const [uiFwhm, setUiFwhm] = useState(0.267);
   const [uiMatrixSize, setUiMatrixSize] = useState(5);
   const [uiMagicArea, setUiMagicArea] = useState(45);
@@ -1879,7 +1872,6 @@ export default function ThermalPage() {
   const [showGrid, setShowGrid] = useState(false);
   const [showLabels, setShowLabels] = useState(1);
 
-  
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [uiLayerThick, setUiLayerThick] = useState(0.0189);
   const [uiSinkThick, setUiSinkThick] = useState(0.0106);
@@ -1892,39 +1884,32 @@ export default function ThermalPage() {
   const [uiUseCircle, setUiUseCircle] = useState(false);
   const [uiSolarMode, setUiSolarMode] = useState<"none" | "pv" | "cpv">("cpv");
 
-  
   const [uiUseFins, setUiUseFins] = useState(true);
   const [uiUseReflector, setUiUseReflector] = useState(true);
 
-  
   const [uiBaseMatKey, setUiBaseMatKey] = useState("Al-1050A (Anodized)");
   const [uiSinkMatKey, setUiSinkMatKey] = useState("Al-1050A (Anodized)");
 
-  
   const [uiFinHeight, setUiFinHeight] = useState(0.02);
   const [uiFinSpacing, setUiFinSpacing] = useState(0.005);
   const [uiFinThickness, setUiFinThickness] = useState(0.001);
-  const [uiFinEfficiency, setUiFinEfficiency] = useState(0.85); 
+  const [uiFinEfficiency, setUiFinEfficiency] = useState(0.85);
 
-  
-  const [uiOpticalEff, setUiOpticalEff] = useState(0.85); 
-  const [uiPvEfficiency, setUiPvEfficiency] = useState(0.2); 
+  const [uiOpticalEff, setUiOpticalEff] = useState(0.85);
+  const [uiPvEfficiency, setUiPvEfficiency] = useState(0.2);
 
-  
-  const [uiWindSpeed, setUiWindSpeed] = useState(4.0); 
-  const [uiAmbientTemp, setUiAmbientTemp] = useState(25.0); 
-  const [uiQSolar, setUiQSolar] = useState(1000.0); 
+  const [uiWindSpeed, setUiWindSpeed] = useState(4.0);
+  const [uiAmbientTemp, setUiAmbientTemp] = useState(25.0);
+  const [uiQSolar, setUiQSolar] = useState(1000.0);
 
   const [activePresetKeys, setActivePresetKeys] = useState<string[]>([]);
 
   const [maxRoi, setMaxRoi] = useState(15);
   const [maxTemp, setMaxTemp] = useState(85);
 
-  
   const [useManualCost, setUseManualCost] = useState(false);
-  const [manualCostInput, setManualCostInput] = useState<number>(50000); 
+  const [manualCostInput, setManualCostInput] = useState<number>(50000);
 
-  
   const [activeParams, setActiveParams] = useState<{
     focusOffset: number;
     matrixSize: number;
@@ -1944,14 +1929,14 @@ export default function ThermalPage() {
     useReflector: boolean;
     baseMatKey: string;
     sinkMatKey: string;
-    
+
     finHeight: number;
     finSpacing: number;
     finThickness: number;
     finEfficiency: number;
     opticalEfficiency: number;
     pvEfficiency: number;
-    
+
     windSpeed: number;
     ambientTemp: number;
     qSolar: number;
@@ -1962,18 +1947,43 @@ export default function ThermalPage() {
   const [loaded, setLoaded] = useState(false);
   const [introFinished, setIntroFinished] = useState(false);
 
-  
+  const [showMobileStats, setShowMobileStats] = useState(false);
+
+  const isShortScreen = useMediaQuery("(max-height: 700px)");
+
+  const isVeryShortScreen = useMediaQuery("(max-height: 650px)");
+
+  const isMobile = useMediaQuery("(max-width: 768px)"); // NEW: Mobile detection
+
+  const uiScaleClass = isVeryShortScreen
+    ? "scale-[0.70]"
+    : isShortScreen
+    ? "scale-[0.80]"
+    : "scale-100";
+
+  const gizmoMargin = React.useMemo(() => {
+    if (isMobile) return [50, 50] as [number, number];
+    let x = 330;
+    let y = 120;
+
+    if (isShortScreen) x = 290;
+
+    if (isVeryShortScreen) x = 260;
+
+    return [x, y] as [number, number];
+  }, [isShortScreen, isVeryShortScreen, isMobile]);
+
+  const gizmoSize = isMobile ? 30 : 30;
+
   const togglePreset = useCallback((key: string) => {
     const targetPreset = PRESETS[key];
     if (!targetPreset) return;
 
     setActivePresetKeys((prevKeys) => {
-      
       if (prevKeys.includes(key)) {
         return prevKeys.filter((k) => k !== key);
       }
 
-      
       const targetParams = Object.keys(targetPreset).filter(
         (k) => k !== "name"
       );
@@ -1983,19 +1993,15 @@ export default function ThermalPage() {
         if (!existingPreset) return false;
 
         const existingParams = Object.keys(existingPreset);
-        
+
         const hasOverlap = existingParams.some((p) => targetParams.includes(p));
 
-        
         return !hasOverlap;
       });
 
       return [...nonConflictingKeys, key];
     });
 
-    
-    
-    
     if (targetPreset.fwhm !== undefined) setUiFwhm(targetPreset.fwhm);
     if (targetPreset.matrixSize !== undefined)
       setUiMatrixSize(targetPreset.matrixSize);
@@ -2036,7 +2042,7 @@ export default function ThermalPage() {
       setUiOpticalEff(targetPreset.opticalEfficiency);
     if (targetPreset.pvEfficiency !== undefined)
       setUiPvEfficiency(targetPreset.pvEfficiency);
-    
+
     if (targetPreset.windSpeed !== undefined)
       setUiWindSpeed(targetPreset.windSpeed);
     if (targetPreset.ambientTemp !== undefined)
@@ -2044,14 +2050,11 @@ export default function ThermalPage() {
     if (targetPreset.qSolar !== undefined) setUiQSolar(targetPreset.qSolar);
   }, []);
 
-  
-  
   const handleManualChange = useCallback((paramKey: keyof PresetDef) => {
     setActivePresetKeys((prevKeys) => {
-      
       return prevKeys.filter((key) => {
         const preset = PRESETS[key];
-        
+
         return (
           !preset || !Object.prototype.hasOwnProperty.call(preset, paramKey)
         );
@@ -2091,21 +2094,21 @@ export default function ThermalPage() {
       layerNz: uiLayerNz,
       sinkNz: uiSinkNz,
       useCircle: uiUseCircle,
-      useSolarCell: uiSolarMode !== "none", 
-      usePv: uiSolarMode === "pv", 
-      
+      useSolarCell: uiSolarMode !== "none",
+      usePv: uiSolarMode === "pv",
+
       useFins: uiUseFins,
       useReflector: uiUseReflector,
       baseMatKey: uiBaseMatKey,
       sinkMatKey: uiSinkMatKey,
-      
+
       finHeight: uiFinHeight,
       finSpacing: uiFinSpacing,
       finThickness: uiFinThickness,
       finEfficiency: uiFinEfficiency,
       opticalEfficiency: uiOpticalEff,
       pvEfficiency: uiPvEfficiency,
-      
+
       windSpeed: uiWindSpeed,
       ambientTemp: uiAmbientTemp,
       qSolar: uiQSolar,
@@ -2133,34 +2136,51 @@ export default function ThermalPage() {
         : "cpv"
       : "none";
 
-    setHasPendingChanges(
+    const hasChanged =
       uiFwhm !== activeParams.focusOffset ||
-        uiMatrixSize !== activeParams.matrixSize ||
-        uiMagicArea !== activeParams.magicArea ||
-        uiLayerThick !== activeParams.layerThick ||
-        uiSinkThick !== activeParams.sinkThick ||
-        uiPvThick !== activeParams.pvThick ||
-        uiPlateDim !== activeParams.plateDim ||
-        uiCpvScale !== activeParams.cpvScale ||
-        uiNx !== activeParams.nx ||
-        uiLayerNz !== activeParams.layerNz ||
-        uiSinkNz !== activeParams.sinkNz ||
-        uiUseCircle !== activeParams.useCircle ||
-        uiSolarMode !== currentMode || 
-        uiUseFins !== activeParams.useFins || 
-        uiUseReflector !== activeParams.useReflector || 
-        uiBaseMatKey !== activeParams.baseMatKey ||
-        uiSinkMatKey !== activeParams.sinkMatKey ||
-        uiFinHeight !== activeParams.finHeight ||
-        uiFinSpacing !== activeParams.finSpacing ||
-        uiFinThickness !== activeParams.finThickness ||
-        uiFinEfficiency !== activeParams.finEfficiency ||
-        uiOpticalEff !== activeParams.opticalEfficiency ||
-        uiPvEfficiency !== activeParams.pvEfficiency ||
-        uiWindSpeed !== activeParams.windSpeed ||
-        uiAmbientTemp !== activeParams.ambientTemp ||
-        uiQSolar !== activeParams.qSolar
-    );
+      uiMatrixSize !== activeParams.matrixSize ||
+      uiMagicArea !== activeParams.magicArea ||
+      uiLayerThick !== activeParams.layerThick ||
+      uiSinkThick !== activeParams.sinkThick ||
+      uiPvThick !== activeParams.pvThick ||
+      uiPlateDim !== activeParams.plateDim ||
+      uiCpvScale !== activeParams.cpvScale ||
+      uiNx !== activeParams.nx ||
+      uiLayerNz !== activeParams.layerNz ||
+      uiSinkNz !== activeParams.sinkNz ||
+      uiUseCircle !== activeParams.useCircle ||
+      uiSolarMode !== currentMode ||
+      uiUseFins !== activeParams.useFins ||
+      uiUseReflector !== activeParams.useReflector ||
+      uiBaseMatKey !== activeParams.baseMatKey ||
+      uiSinkMatKey !== activeParams.sinkMatKey ||
+      uiFinHeight !== activeParams.finHeight ||
+      uiFinSpacing !== activeParams.finSpacing ||
+      uiFinThickness !== activeParams.finThickness ||
+      uiFinEfficiency !== activeParams.finEfficiency ||
+      uiOpticalEff !== activeParams.opticalEfficiency ||
+      uiPvEfficiency !== activeParams.pvEfficiency ||
+      uiWindSpeed !== activeParams.windSpeed ||
+      uiAmbientTemp !== activeParams.ambientTemp ||
+      uiQSolar !== activeParams.qSolar;
+
+    if (hasChanged) {
+      // 1. Kill the active simulation parameters (This clears the 3D heatmaps)
+      setActiveParams(null);
+
+      // 2. Wipe the statistical results (This clears the bottom bar and ROI panel)
+      setSimStats({
+        maxTemp: 0,
+        pElectric: 0,
+        minTemp: 0,
+        hoverTemp: null,
+        status: "Ready to Start",
+        loading: false,
+      });
+
+      // 3. Reset pending flag
+      setHasPendingChanges(false);
+    }
   }, [
     uiFwhm,
     uiMatrixSize,
@@ -2196,15 +2216,10 @@ export default function ThermalPage() {
     const sinkRho = MATERIALS[uiSinkMatKey].rho;
     const volBase = Math.pow(uiPlateDim, 2) * uiLayerThick;
 
-    
-    
-    
-
     const nFins = uiUseFins
       ? Math.floor(uiPlateDim / (uiFinSpacing + uiFinThickness))
       : 0;
 
-    
     const volSinkPlate = Math.pow(uiPlateDim, 2) * uiSinkThick;
     const volFins = nFins * uiFinHeight * uiFinThickness * uiPlateDim;
 
@@ -2224,66 +2239,52 @@ export default function ThermalPage() {
   ]);
 
   const projectCost = useMemo(() => {
-    
-    
     const area = Math.pow(uiPlateDim, 2);
-    const baseMat = MATERIALS[uiBaseMatKey]; 
+    const baseMat = MATERIALS[uiBaseMatKey];
     const sinkMat = MATERIALS[uiSinkMatKey];
 
-    
-    
     const totalThickness = uiLayerThick + uiSinkThick + (uiUseFins ? 0.04 : 0);
-    
-    
-    const rawVolume = area * totalThickness * 1.2; 
-    
-    
-    const rawMass = rawVolume * baseMat.rho; 
-    
-    
-    
-    const costRawMaterial = rawMass * ENGINEERING_RATIOS.ALUMINUM_BLOCK_PRICE_KG;
 
-    
+    const rawVolume = area * totalThickness * 1.2;
+
+    const rawMass = rawVolume * baseMat.rho;
+
+    const costRawMaterial =
+      rawMass * ENGINEERING_RATIOS.ALUMINUM_BLOCK_PRICE_KG;
+
     let costSensor = 0;
     if (uiSolarMode === "cpv") {
-        costSensor = area * ENGINEERING_RATIOS.CPV_MODULE_PRICE_M2;
+      costSensor = area * ENGINEERING_RATIOS.CPV_MODULE_PRICE_M2;
     } else if (uiSolarMode === "pv") {
-        costSensor = area * ENGINEERING_RATIOS.PV_MODULE_PRICE_M2;
+      costSensor = area * ENGINEERING_RATIOS.PV_MODULE_PRICE_M2;
     }
 
-    
-    
     let manufMultiplier = ENGINEERING_RATIOS.MACHINING_FACTOR_BASE;
-    
-    
+
     if (uiUseFins) manufMultiplier += ENGINEERING_RATIOS.MACHINING_FACTOR_FINS;
-    
-    
+
     if (uiPlateDim > 1.0) manufMultiplier *= 1.5;
 
-    
-    
     const costManufacturing = costRawMaterial * manufMultiplier;
 
-    
-    
-    const costElectronics = ENGINEERING_RATIOS.ELEC_BASE_PACKAGE + (area * 500);
+    const costElectronics = ENGINEERING_RATIOS.ELEC_BASE_PACKAGE + area * 500;
 
-    
-    
-    const isHeavy = structureWeight > 40; 
+    const isHeavy = structureWeight > 40;
     const isLarge = uiPlateDim > 0.9;
     const needsCrane = isHeavy || isLarge;
 
-    const costLogistics = ENGINEERING_RATIOS.LOGISTICS_FLAT_RATE + 
-                          ENGINEERING_RATIOS.INSTALLATION_FLAT_RATE +
-                          (needsCrane ? ENGINEERING_RATIOS.CRANE_SURCHARGE : 0);
+    const costLogistics =
+      ENGINEERING_RATIOS.LOGISTICS_FLAT_RATE +
+      ENGINEERING_RATIOS.INSTALLATION_FLAT_RATE +
+      (needsCrane ? ENGINEERING_RATIOS.CRANE_SURCHARGE : 0);
 
-    
-    
-    const subTotal = costRawMaterial + costSensor + costManufacturing + 
-                     costElectronics + costLogistics + ENGINEERING_RATIOS.NRE_FIXED_COST;
+    const subTotal =
+      costRawMaterial +
+      costSensor +
+      costManufacturing +
+      costElectronics +
+      costLogistics +
+      ENGINEERING_RATIOS.NRE_FIXED_COST;
 
     const contingency = subTotal * ENGINEERING_RATIOS.CONTINGENCY_PCT;
     const finalTotal = subTotal + contingency;
@@ -2292,29 +2293,34 @@ export default function ThermalPage() {
       total: useManualCost ? manualCostInput : finalTotal,
       isManual: useManualCost,
       breakdown: {
-        materials: costRawMaterial + costSensor, 
-        manufacturing: costManufacturing, 
+        materials: costRawMaterial + costSensor,
+        manufacturing: costManufacturing,
         electronics: costElectronics,
         engineering: ENGINEERING_RATIOS.NRE_FIXED_COST,
         logistics: costLogistics + contingency,
       },
     };
-}, [
-    uiPlateDim, uiLayerThick, uiSinkThick, uiBaseMatKey, uiSinkMatKey,
-    uiUseFins, uiSolarMode, structureWeight, useManualCost, manualCostInput
-]);
+  }, [
+    uiPlateDim,
+    uiLayerThick,
+    uiSinkThick,
+    uiBaseMatKey,
+    uiSinkMatKey,
+    uiUseFins,
+    uiSolarMode,
+    structureWeight,
+    useManualCost,
+    manualCostInput,
+  ]);
 
-
-const paybackPeriod = useMemo(() => {
+  const paybackPeriod = useMemo(() => {
     if (!projectCost || simStats.pElectric <= 0) return null;
 
-    
-    const annualEnergyKwh = (simStats.pElectric / 1000) * ROI_CONSTANTS.SUN_HOURS_YEAR;
+    const annualEnergyKwh =
+      (simStats.pElectric / 1000) * ROI_CONSTANTS.SUN_HOURS_YEAR;
 
-    
     const annualSavings = annualEnergyKwh * ROI_CONSTANTS.ELEC_PRICE_EUR_KWH;
 
-    
     const years = projectCost.total / annualSavings;
 
     return {
@@ -2322,9 +2328,8 @@ const paybackPeriod = useMemo(() => {
       annualSavings: annualSavings,
       isViable: years < maxRoi,
     };
-}, [simStats.pElectric, projectCost, maxRoi]);
+  }, [simStats.pElectric, projectCost, maxRoi]);
 
-  
   const handleExportReport = useCallback(() => {
     if (!activeParams || !projectCost || !paybackPeriod) return;
 
@@ -2336,7 +2341,6 @@ const paybackPeriod = useMemo(() => {
       new Date().toISOString().split("T")[0]
     }.txt`;
 
-    
     const fmtEur = (val: number) =>
       val.toLocaleString("es-ES", {
         style: "currency",
@@ -2344,7 +2348,6 @@ const paybackPeriod = useMemo(() => {
         minimumFractionDigits: 2,
       });
 
-    
     const check = (val: boolean) => (val ? "[YES]" : "[NO] ");
 
     const content = `
@@ -2406,11 +2409,15 @@ Coordinator:          Filip Denis
           ? "Triple-Junction CPV"
           : "Thermal Only (No Cell)"
       }
-      ${ uiSolarMode === "pv" ? ("Cell Efficiency: " + (activeParams.pvEfficiency * 100).toFixed(1) + " %" ) : ""}
-      Fill Factor (Scale): ${(activeParams.cpvScale * 100).toFixed(1)} %
-      Geometry:            ${
-        activeParams.useCircle ? "Circular" : "Square"
+      ${
+        uiSolarMode === "pv"
+          ? "Cell Efficiency: " +
+            (activeParams.pvEfficiency * 100).toFixed(1) +
+            " %"
+          : ""
       }
+      Fill Factor (Scale): ${(activeParams.cpvScale * 100).toFixed(1)} %
+      Geometry:            ${activeParams.useCircle ? "Circular" : "Square"}
 
 >> THERMAL FEATURES
    ${check(activeParams.useReflector)} Reflective Top Layer (Ag Coating)
@@ -2508,10 +2515,10 @@ STARRY SKY ENGINEERING GROUP
   ]);
 
   return (
-    <div className="relative w-full h-full bg-black overflow-hidden rounded-2xl">
+    <div className="relative w-full h-[100dvh] bg-black overflow-hidden rounded-none flex flex-col md:block">
       {/* HEADER */}
       <div
-        className={`absolute w-full top-0 left-0 px-8 py-3 z-50 pointer-events-none select-none flex justify-between items-center transition-all duration-1000 ease-out border-b border-white/20 bg-neutral-900 shadow-2xl ${
+        className={`absolute w-full top-0 left-0 px-4 md:px-8 py-2 z-50 pointer-events-none select-none flex justify-between items-center transition-all duration-1000 ease-out border-b border-white/20 bg-neutral-900 shadow-2xl origin-top ${
           introFinished && !hideUI
             ? "opacity-100 translate-y-0"
             : "opacity-0 -translate-y-8"
@@ -2519,25 +2526,31 @@ STARRY SKY ENGINEERING GROUP
       >
         <div className="flex justify-between w-full">
           <div className="flex gap-5">
-            <h1 className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-indigo-200 via-purple-200 to-white drop-shadow-[0_0_25px_rgba(255,255,255,0.6)]">
+            <h1 className="text-2xl md:text-3xl truncate font-black text-transparent bg-clip-text bg-gradient-to-br from-indigo-200 via-purple-200 to-white drop-shadow-[0_0_25px_rgba(255,255,255,0.6)]">
               STARRY SKY
             </h1>
-            <div className="h-9 border-r border-cyan-700" />
-            <div className="flex items-center gap-4 text-[10px] md:text-xs font-medium text-cyan-400 uppercase tracking-widest">
+            <div className="hidden md:block h-9 border-r border-cyan-700" />
+            <div className="hidden md:flex items-center gap-4 text-[10px] md:text-xs font-medium text-cyan-400 uppercase tracking-widest">
               <div className="flex flex-col items-end leading-none">
-                <span className="text-white font-bold">Aissam Khadraoui</span>
+                <span className="text-white font-bold truncate">
+                  Aissam Khadraoui
+                </span>
                 <span className="text-[8px] text-gray-500">Plant</span>
               </div>
               <div className="h-6 w-px bg-white/10" />
               <div className="flex flex-col items-end leading-none">
-                <span className="text-white font-bold">Candela García</span>
+                <span className="text-white font-bold truncate">
+                  Candela García
+                </span>
                 <span className="text-[8px] text-gray-500">
                   Completer Finisher
                 </span>
               </div>
               <div className="h-6 w-px bg-white/10" />
               <div className="flex flex-col items-end leading-none">
-                <span className="text-white font-bold">Filip Denis</span>
+                <span className="text-white font-bold truncate">
+                  Filip Denis
+                </span>
                 <span className="text-[8px] text-gray-500">Coordinator</span>
               </div>
             </div>
@@ -2575,7 +2588,7 @@ STARRY SKY ENGINEERING GROUP
             : "opacity-0 pointer-events-none"
         }`}
       >
-        <div className="flex flex-col items-center justify-center">
+        <div className="flex flex-col items-center justify-center text-center">
           <h1 className="hover:scale-105 transform transition-transform duration-700 text-6xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-br from-indigo-200 via-purple-200 to-white drop-shadow-[0_0_25px_rgba(255,255,255,0.6)] animate-pulse tracking-widest">
             STARRY SKY
           </h1>
@@ -2607,143 +2620,152 @@ STARRY SKY ENGINEERING GROUP
       </div>
 
       {/* 3D SCENE */}
-      <Canvas
-        shadows
-        dpr={1}
-        gl={{
-          powerPreference: "high-performance",
-          antialias: true,
-          stencil: false,
-          depth: true,
-        }}
-      >
-        <color attach="background" args={["#050a14"]} />
-        <fog attach="fog" args={["#050a14", 12, 45]} />
-        <Grid
-          position={[0, -1.1, 0]}
-          args={[10.5, 10.5]}
-          cellSize={0.5}
-          cellThickness={0.5}
-          cellColor="#1f55a1"
-          sectionSize={3}
-          sectionThickness={1}
-          sectionColor="#4fa9c9"
-          fadeDistance={25}
-          fadeStrength={1}
-          followCamera={false}
-          infiniteGrid
-        />
-        <Stars
-          radius={100}
-          depth={10}
-          count={2000}
-          factor={5}
-          saturation={0.3}
-          fade
-          speed={0.3}
-        />
-        <PerspectiveCamera makeDefault position={[2, 0, 2]} fov={40} />
-        <OrbitControls
-          makeDefault
-          minDistance={2}
-          maxDistance={50}
-          target={[0, 0, 0]}
-          enablePan={true}
-          panSpeed={1.0}
-        />
-        {/* ENGINEERING COORDINATE SYSTEM (Bottom-Right) */}
-        <GizmoHelper alignment="bottom-left" margin={[150, 130]}>
-          <GizmoViewport
-            axisColors={["#ff3653", "#0adb50", "#2c8fdf"]}
-            labelColor="white"
-            hideNegativeAxes={true}
+      <div className="relative order-2 flex-1 w-full min-h-0 md:absolute md:inset-0 md:h-full">
+        <Canvas
+          shadows
+          dpr={1}
+          gl={{
+            powerPreference: "high-performance",
+            antialias: true,
+            stencil: false,
+            depth: true,
+          }}
+        >
+          <color attach="background" args={["#050a14"]} />
+          <fog attach="fog" args={["#050a14", 12, 45]} />
+          <Grid
+            position={[0, -1.1, 0]}
+            args={[10.5, 10.5]}
+            cellSize={0.5}
+            cellThickness={0.5}
+            cellColor="#1f55a1"
+            sectionSize={3}
+            sectionThickness={1}
+            sectionColor="#4fa9c9"
+            fadeDistance={25}
+            fadeStrength={1}
+            followCamera={false}
+            infiniteGrid
           />
-        </GizmoHelper>
-        <ambientLight intensity={5} /> {/* Increased from 0.5 */}
-        <directionalLight
-          shadow-mapSize={[512, 512]}
-          shadow-bias={-0.0001}
-          position={[10, 20, 5]}
-          intensity={9.0}
-          castShadow
-          color="#fffaed"
-        />
-        {/* Add a fill light from the bottom/side to light up shadows */}
-        <directionalLight
-          position={[-5, -10, -5]}
-          intensity={1.0}
-          color="#aaccff"
-        />
-        <Suspense fallback={null}>
-          <SceneReady onReady={() => setLoaded(true)} />
-          <ThermalBox
-            simMatrixSize={activeParams?.matrixSize ?? null}
-            simFwhm={activeParams?.focusOffset ?? null}
-            simMagicArea={activeParams?.magicArea ?? null}
-            simLayerThick={activeParams?.layerThick ?? null}
-            simSinkThick={activeParams?.sinkThick ?? null}
-            simPvThick={
-              activeParams?.pvThick ? activeParams.pvThick / 1000 : null
-            }
-            simPlateDim={activeParams?.plateDim ?? null}
-            simCpvScale={activeParams?.cpvScale ?? null}
-            simNx={activeParams?.nx ?? null}
-            simLayerNz={activeParams?.layerNz ?? null}
-            simSinkNz={activeParams?.sinkNz ?? null}
-            simUseCircle={activeParams?.useCircle ?? null}
-            simUsePv={activeParams?.usePv ?? null}
-            simUseSolarCell={activeParams?.useSolarCell ?? null}
-            
-            simUseFins={activeParams?.useFins ?? null}
-            simUseReflector={activeParams?.useReflector ?? null}
-            simBaseMatKey={activeParams?.baseMatKey ?? null}
-            simSinkMatKey={activeParams?.sinkMatKey ?? null}
-            simWindSpeed={activeParams?.windSpeed ?? null}
-            simAmbientTemp={activeParams?.ambientTemp ?? null}
-            simQSolar={activeParams?.qSolar ?? null}
-            simFinHeight={activeParams?.finHeight ?? null}
-            simFinSpacing={activeParams?.finSpacing ?? null}
-            simFinThickness={activeParams?.finThickness ?? null}
-            simFinEfficiency={activeParams?.finEfficiency ?? null}
-            simOpticalEff={activeParams?.opticalEfficiency ?? null}
-            simPvEfficiency={activeParams?.pvEfficiency ?? null}
-            visMatrixSize={uiMatrixSize}
-            visFwhm={uiFwhm}
-            visMagicArea={uiMagicArea}
-            visCpvScale={uiCpvScale}
-            visUseCircle={uiUseCircle}
-            visLayerThick={realScale ? uiLayerThick : uiLayerThick * 5}
-            visSinkThick={realScale ? uiSinkThick : uiSinkThick * 5}
-            visUseFins={uiUseFins}
-            visFinHeight={uiFinHeight}
-            visFinSpacing={uiFinSpacing}
-            visFinThickness={uiFinThickness}
-            visUseReflector={uiUseReflector}
-            visSolarMode={uiSolarMode}
-            visBaseMatKey={uiBaseMatKey}
-            visSinkMatKey={uiSinkMatKey}
-            hasPendingChanges={hasPendingChanges}
-            status={simStats}
-            realScale={realScale}
-            showGaussian={showGaussian}
-            explodedView={explodedView}
-            showGrid={showGrid}
-            showLabels={showLabels}
-            visNx={uiNx} 
-            visLayerNz={uiLayerNz}
-            visSinkNz={uiSinkNz}
-            onUpdateStats={onUpdateStats}
+          <Stars
+            radius={100}
+            depth={10}
+            count={2000}
+            factor={5}
+            saturation={0.3}
+            fade
+            speed={0.3}
           />
-        </Suspense>
-      </Canvas>
+          <PerspectiveCamera makeDefault position={[2, 0, 2]} fov={40} />
+          <OrbitControls
+            makeDefault
+            minDistance={2}
+            maxDistance={50}
+            target={[0, 0, 0]}
+            enablePan={true}
+            panSpeed={1.0}
+          />
+          {/* ENGINEERING COORDINATE SYSTEM (Bottom-Right) */}
+          <GizmoHelper alignment="top-left" scale={3} margin={gizmoMargin}>
+            <GizmoViewport
+              axisColors={["#ff3653", "#0adb50", "#2c8fdf"]}
+              labelColor="white"
+              hideNegativeAxes={true}
+              scale={gizmoSize}
+            />
+          </GizmoHelper>
+          <ambientLight intensity={5} /> {/* Increased from 0.5 */}
+          <directionalLight
+            shadow-mapSize={[512, 512]}
+            shadow-bias={-0.0001}
+            position={[10, 20, 5]}
+            intensity={9.0}
+            castShadow
+            color="#fffaed"
+          />
+          {/* Add a fill light from the bottom/side to light up shadows */}
+          <directionalLight
+            position={[-5, -10, -5]}
+            intensity={1.0}
+            color="#aaccff"
+          />
+          <Suspense fallback={null}>
+            <SceneReady onReady={() => setLoaded(true)} />
+            <ThermalBox
+              simMatrixSize={activeParams?.matrixSize ?? null}
+              simFwhm={activeParams?.focusOffset ?? null}
+              simMagicArea={activeParams?.magicArea ?? null}
+              simLayerThick={activeParams?.layerThick ?? null}
+              simSinkThick={activeParams?.sinkThick ?? null}
+              simPvThick={
+                activeParams?.pvThick ? activeParams.pvThick / 1000 : null
+              }
+              simPlateDim={activeParams?.plateDim ?? null}
+              simCpvScale={activeParams?.cpvScale ?? null}
+              simNx={activeParams?.nx ?? null}
+              simLayerNz={activeParams?.layerNz ?? null}
+              simSinkNz={activeParams?.sinkNz ?? null}
+              simUseCircle={activeParams?.useCircle ?? null}
+              simUsePv={activeParams?.usePv ?? null}
+              simUseSolarCell={activeParams?.useSolarCell ?? null}
+              simUseFins={activeParams?.useFins ?? null}
+              simUseReflector={activeParams?.useReflector ?? null}
+              simBaseMatKey={activeParams?.baseMatKey ?? null}
+              simSinkMatKey={activeParams?.sinkMatKey ?? null}
+              simWindSpeed={activeParams?.windSpeed ?? null}
+              simAmbientTemp={activeParams?.ambientTemp ?? null}
+              simQSolar={activeParams?.qSolar ?? null}
+              simFinHeight={activeParams?.finHeight ?? null}
+              simFinSpacing={activeParams?.finSpacing ?? null}
+              simFinThickness={activeParams?.finThickness ?? null}
+              simFinEfficiency={activeParams?.finEfficiency ?? null}
+              simOpticalEff={activeParams?.opticalEfficiency ?? null}
+              simPvEfficiency={activeParams?.pvEfficiency ?? null}
+              visMatrixSize={uiMatrixSize}
+              visFwhm={uiFwhm}
+              visMagicArea={uiMagicArea}
+              visCpvScale={uiCpvScale}
+              visUseCircle={uiUseCircle}
+              visPlateDim={uiPlateDim}
+              visLayerThick={realScale ? uiLayerThick : uiLayerThick * 5}
+              visSinkThick={realScale ? uiSinkThick : uiSinkThick * 5}
+              visUseFins={uiUseFins}
+              visFinHeight={uiFinHeight}
+              visFinSpacing={uiFinSpacing}
+              visFinThickness={uiFinThickness}
+              visUseReflector={uiUseReflector}
+              visSolarMode={uiSolarMode}
+              visBaseMatKey={uiBaseMatKey}
+              visSinkMatKey={uiSinkMatKey}
+              hasPendingChanges={hasPendingChanges}
+              status={simStats}
+              realScale={realScale}
+              showGaussian={showGaussian}
+              explodedView={explodedView}
+              showGrid={showGrid}
+              showLabels={showLabels}
+              visNx={uiNx}
+              visLayerNz={uiLayerNz}
+              visSinkNz={uiSinkNz}
+              onUpdateStats={onUpdateStats}
+            />
+          </Suspense>
+        </Canvas>
+      </div>
 
       {/* LEFT CONTROL PANEL */}
       <div
-        className={`absolute z-30 top-22 left-8 flex flex-col items-start gap-4 pointer-events-auto transition-all duration-1000 ${
-          introFinished && !hideUI
-            ? "opacity-100 translate-x-0"
-            : "opacity-0 -translate-x-10 pointer-events-none"
-        }`}
+        className={`
+          relative order-1 z-30 flex-none flex flex-col gap-2 transition-all duration-1000 pointer-events-auto
+          w-full bg-neutral-900/95 backdrop-blur-md border-b border-white/10 p-4 pt-16 pb-2 shadow-2xl
+          md:absolute md:top-16 md:left-8 md:w-auto md:bg-transparent md:backdrop-blur-none md:border-none md:p-0 md:pt-0 md:shadow-none md:origin-top-left
+          ${uiScaleClass} max-md:scale-100
+          ${
+            introFinished && !hideUI
+              ? "opacity-100 translate-x-0"
+              : "opacity-0 -translate-x-10 pointer-events-none"
+          }
+        `}
       >
         {/* UPDATED MULTI-SELECTOR */}
         <div className="w-full">
@@ -2754,7 +2776,7 @@ STARRY SKY ENGINEERING GROUP
         </div>
 
         {/* UNIFIED COMPACT INPUT */}
-        <div className="w-full bg-neutral-900 p-2 rounded-xl border border-white/10 shadow-xl">
+        <div className="w-full flex flex-col gap-2 bg-neutral-900 p-2 rounded-xl border border-white/10 shadow-xl">
           {/* Header with Status Indicator */}
           <div className="flex items-center justify-between mb-2 px-1">
             <span className="text-[10px] uppercase tracking-widest font-bold text-gray-400">
@@ -2781,7 +2803,7 @@ STARRY SKY ENGINEERING GROUP
             <button
               onClick={() => setShowGaussian((prev) => (prev + 1) % 3)}
               title="Veure Distribució de Calor Incident"
-              className={`aspect-square cursor-pointer flex flex-col items-center justify-center rounded-md border transition-all duration-200 active:scale-95 group ${
+              className={` cursor-pointer flex flex-col items-center justify-center rounded-md border transition-all duration-200 active:scale-95 group ${
                 showGaussian === 1
                   ? "bg-orange-500/20 border-orange-500/50 text-orange-400"
                   : showGaussian === 2
@@ -2791,7 +2813,7 @@ STARRY SKY ENGINEERING GROUP
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 mb-0.5"
+                className="h-5 w-5 md:h-4 md:w-4 mb-0.5"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -2803,14 +2825,14 @@ STARRY SKY ENGINEERING GROUP
                   d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
                 />
               </svg>
-              <span className="text-[6px] font-black uppercase">Flux</span>
+              <span className="text-[8px] font-black uppercase">Flux</span>
             </button>
 
             {/* 2. SCALE (Real) */}
             <button
               onClick={() => setRealScale(!realScale)}
               title="Escala Z Real (1:1)"
-              className={`aspect-square cursor-pointer flex flex-col items-center justify-center rounded-md border transition-all duration-200 active:scale-95 group ${
+              className={`cursor-pointer flex flex-col items-center justify-center rounded-md border transition-all duration-200 active:scale-95 group ${
                 realScale
                   ? "bg-green-500/20 border-green-500/50 text-green-400"
                   : "bg-white/5 border-transparent text-gray-500 hover:bg-white/10 hover:text-gray-300"
@@ -2818,7 +2840,7 @@ STARRY SKY ENGINEERING GROUP
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 mb-0.5"
+                className="h-5 w-5 md:h-4 md:w-4 mb-0.5"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -2830,14 +2852,14 @@ STARRY SKY ENGINEERING GROUP
                   d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m8-2a2 2 0 100-4 2 2 0 000 4z"
                 />
               </svg>
-              <span className="text-[6px] font-black uppercase">Real</span>
+              <span className="text-[8px] font-black uppercase">Real</span>
             </button>
 
             {/* 3. GRID (Malla) */}
             <button
               onClick={() => setShowGrid(!showGrid)}
               title="Veure Malla de Càlcul"
-              className={`aspect-square flex flex-col items-center justify-center rounded-md border transition-all duration-200 active:scale-95 group ${
+              className={` flex flex-col items-center justify-center rounded-md border transition-all duration-200 active:scale-95 group ${
                 activeParams && !simStats.loading && !hasPendingChanges
                   ? "opacity-30 cursor-not-allowed bg-black/20 border-transparent text-gray-600"
                   : showGrid
@@ -2847,7 +2869,7 @@ STARRY SKY ENGINEERING GROUP
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 mb-0.5"
+                className="h-5 w-5 md:h-4 md:w-4 mb-0.5"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -2859,14 +2881,14 @@ STARRY SKY ENGINEERING GROUP
                   d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
                 />
               </svg>
-              <span className="text-[6px] font-black uppercase">Malla</span>
+              <span className="text-[8px] font-black uppercase">Malla</span>
             </button>
 
             {/* 4. LAYERS (Capes) */}
             <button
               onClick={() => setExplodedView(!explodedView)}
               title="Obrir/Tancar Capes"
-              className={`aspect-square flex flex-col items-center justify-center rounded-md border transition-all duration-200 group ${
+              className={`flex flex-col items-center justify-center rounded-md border transition-all duration-200 group ${
                 activeParams && !simStats.loading && !hasPendingChanges
                   ? "opacity-30 cursor-not-allowed bg-black/20 border-transparent text-gray-600"
                   : explodedView
@@ -2876,7 +2898,7 @@ STARRY SKY ENGINEERING GROUP
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 mb-0.5"
+                className="h-5 w-5 md:h-4 md:w-4 mb-0.5"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -2888,7 +2910,7 @@ STARRY SKY ENGINEERING GROUP
                   d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
                 />
               </svg>
-              <span className="text-[6px] font-black uppercase">Capes</span>
+              <span className="text-[8px] font-black uppercase">Capes</span>
             </button>
 
             {/* 5. LABELS (Info) */}
@@ -2898,7 +2920,7 @@ STARRY SKY ENGINEERING GROUP
                 !!(activeParams && !simStats.loading && !hasPendingChanges)
               }
               title="Mostrar Etiquetes (Desactivat durant simulació)"
-              className={`aspect-square flex flex-col items-center justify-center rounded-md border transition-all duration-200 group ${
+              className={`py-1.5 flex flex-col items-center justify-center rounded-md border transition-all duration-200 group ${
                 activeParams && !simStats.loading && !hasPendingChanges
                   ? "opacity-30 cursor-not-allowed bg-black/20 border-transparent text-gray-600"
                   : showLabels === 1
@@ -2910,7 +2932,7 @@ STARRY SKY ENGINEERING GROUP
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 mb-0.5"
+                className="h-5 w-5 md:h-4 md:w-4 mb-0.5"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -2922,14 +2944,64 @@ STARRY SKY ENGINEERING GROUP
                   d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <span className="text-[6px] font-black uppercase">Info</span>
+              <span className="text-[8px] font-black uppercase">Info</span>
+            </button>
+          </div>
+
+          {/* NEW: Mobile-only Grid for Actions */}
+          <div className="md:hidden grid grid-cols-2 gap-2">
+            <button
+              onClick={() => setShowAdvanced(true)}
+              className="group cursor-pointer w-full flex items-center justify-between px-4 py-3 bg-neutral-900 border border-white/10 rounded-xl transition-all duration-300"
+            >
+              <span className="text-[10px] uppercase tracking-widest font-bold text-cyan-400 transition-colors">
+                Config.
+              </span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className="w-4 h-4 text-gray-500 group-hover:text-white transition-colors"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"
+                />
+              </svg>
+            </button>
+
+            {/* NEW BUTTON: Open Viability Panel (Mobile Only) */}
+            <button
+              onClick={() => setShowMobileStats(true)}
+              className="md:hidden group cursor-pointer w-full flex items-center justify-between px-4 py-3 bg-neutral-900 border border-white/10 rounded-xl transition-all duration-300"
+            >
+              <span className="text-[10px] uppercase tracking-widest font-bold text-green-400 transition-colors">
+                Viabilitat
+              </span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className="w-4 h-4 text-gray-500 group-hover:text-white transition-colors"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5m.75-9l3-3 2.148 2.148A12.061 12.061 0 0116.5 7.605"
+                />
+              </svg>
             </button>
           </div>
         </div>
 
         <button
           onClick={() => setShowAdvanced(true)}
-          className="group cursor-pointer w-full flex items-center justify-between px-4 py-3 bg-neutral-900 border border-white/10 rounded-xl transition-all duration-300"
+          className="max-md:hidden group cursor-pointer w-full flex items-center justify-between px-4 py-3 bg-neutral-900 border border-white/10 rounded-xl transition-all duration-300"
         >
           <span className="text-[10px] uppercase tracking-widest font-bold text-cyan-400 transition-colors">
             Configurar Paràmteres
@@ -3265,7 +3337,7 @@ STARRY SKY ENGINEERING GROUP
               ]}
               onChange={(val) => {
                 setUiSolarMode(val as any);
-                handleManualChange("usePv"); 
+                handleManualChange("usePv");
               }}
               colorClass="text-blue-400"
             />
@@ -3622,218 +3694,262 @@ STARRY SKY ENGINEERING GROUP
       </div>
       {/* RIGHT STATS PANEL */}
       <div
-        className={`absolute top-22 right-8 w-[320px] pointer-events-auto bg-neutral-900/95 p-5 rounded-2xl border border-white/20 shadow-2xl transition-all duration-1000 hover:border-cyan-500/30 ${
-          introFinished && !hideUI
-            ? "opacity-100 translate-x-0"
-            : "opacity-0 translate-x-10"
-        }`}
+        className={`
+            pointer-events-auto transition-all duration-300
+            ${
+              isMobile
+                ? `fixed inset-0 z-[70] bg-black/95 flex items-center justify-center p-6 ${
+                    showMobileStats
+                      ? "opacity-100 pointer-events-auto"
+                      : "opacity-0 pointer-events-none"
+                  }`
+                : `absolute top-16 right-8 w-[320px] bg-neutral-900/95 p-4 rounded-2xl border border-white/20 shadow-2xl origin-top-right ${uiScaleClass} hover:border-cyan-500/30 ${
+                    introFinished && !hideUI
+                      ? "opacity-100 translate-x-0"
+                      : "opacity-0 translate-x-10"
+                  }`
+            }
+        `}
       >
-        <div className="flex items-center justify-between mb-4 border-b border-white/10 pb-2">
-          <h3 className="text-xs font-extrabold uppercase tracking-widest text-cyan-400">
-            Dades de viabilitat
-          </h3>
-        </div>
-
-        {/* ALWAYS SHOW STRUCTURAL WEIGHT */}
-        <div className="flex justify-between items-center mb-4">
-          <p
-            className={`text-[11px] uppercase tracking-wider ${
-              structureWeight > 200 ? "text-red-400" : "text-white"
-            }`}
-          >
-            Pes Estructural
-          </p>
-          <p
-            className={`font-mono font-bold text-lg ${
-              structureWeight > 200 ? "text-red-400" : "text-white"
-            } leading-none`}
-          >
-            {structureWeight.toFixed(2)} kg
-          </p>
-        </div>
-        <div className="flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-300">
-          {/* COST INPUT / TOGGLE SECTION */}
-          <div className="flex flex-col gap-2 bg-neutral-800/50 rounded-lg p-3 border border-white/10">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] uppercase text-gray-300 font-bold">
-                Mode de Cost
-              </span>
-              <div className="flex bg-black/40 rounded-lg p-0.5 border border-white/5">
-                <button
-                  onClick={() => setUseManualCost(false)}
-                  className={`px-2 py-1 cursor-pointer text-[9px] font-bold uppercase rounded-md transition-all ${
-                    !useManualCost
-                      ? "bg-cyan-600 text-white shadow-sm"
-                      : "text-gray-500 hover:text-white"
-                  }`}
-                >
-                  Auto
-                </button>
-                <button
-                  onClick={() => setUseManualCost(true)}
-                  className={`px-2 py-1 cursor-pointer text-[9px] font-bold uppercase rounded-md transition-all ${
-                    useManualCost
-                      ? "bg-cyan-600 text-white shadow-sm"
-                      : "text-gray-500 hover:text-white"
-                  }`}
-                >
-                  Manual
-                </button>
-              </div>
-            </div>
-
-            {useManualCost ? (
-              <div className="flex items-center gap-2">
-                <span className="text-white font-mono text-sm">€</span>
-                <input
-                  type="number"
-                  value={manualCostInput}
-                  onChange={(e) => setManualCostInput(Number(e.target.value))}
-                  className="w-full bg-black/40 border border-white/10 rounded px-2 py-1 text-right font-mono text-white text-sm focus:border-cyan-500 focus:outline-none"
+        {/* Wrapper div for mobile centering */}
+        <div
+          className={
+            isMobile
+              ? "w-full max-w-sm bg-neutral-900 p-4 rounded-2xl border border-white/20 relative"
+              : ""
+          }
+        >
+          {/* NEW: Close button for mobile modal */}
+          {isMobile && (
+            <button
+              onClick={() => setShowMobileStats(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+                className="w-6 h-6"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
                 />
-              </div>
-            ) : (
-              <div className="flex justify-between items-center">
-                <span className="text-[10px] text-yellow-500/80">Estimat</span>
-                <span className="font-mono font-bold text-lg text-yellow-400">
-                  {projectCost.total.toLocaleString("es-ES", {
-                    style: "currency",
-                    currency: "EUR",
-                    maximumFractionDigits: 0,
-                  })}
-                </span>
-              </div>
-            )}
+              </svg>
+            </button>
+          )}
+          <div className="flex items-center justify-between mb-4 border-b border-white/10 pb-2">
+            <h3 className="text-xs font-extrabold uppercase tracking-widest text-cyan-400">
+              Dades de viabilitat
+            </h3>
           </div>
 
-          {/* ROI RESULTS BLOCK */}
-          {paybackPeriod && (
-            <div
-              className={`rounded-lg p-3 border flex flex-col gap-3 ${
-                paybackPeriod.isViable
-                  ? "bg-green-900/10 border-green-500/30"
-                  : "bg-red-900/10 border-red-300/30"
+          {/* ALWAYS SHOW STRUCTURAL WEIGHT */}
+          <div className="flex justify-between items-center mb-4">
+            <p
+              className={`text-[11px] uppercase tracking-wider ${
+                structureWeight > 200 ? "text-red-400" : "text-white"
               }`}
             >
-              {/* 1. Annual Savings */}
-              <div className="flex justify-between items-center">
-                <span className="text-[10px] uppercase tracking-wider text-gray-300">
-                  Beneficis anuals
+              Pes Estructural
+            </p>
+            <p
+              className={`font-mono font-bold text-lg ${
+                structureWeight > 200 ? "text-red-400" : "text-white"
+              } leading-none`}
+            >
+              {structureWeight.toFixed(2)} kg
+            </p>
+          </div>
+          <div className="flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-300">
+            {/* COST INPUT / TOGGLE SECTION */}
+            <div className="flex flex-col gap-2 bg-neutral-800/50 rounded-lg p-3 border border-white/10">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] uppercase text-gray-300 font-bold">
+                  Mode de Cost
                 </span>
-                <span className="font-mono font-bold text-white">
-                  {paybackPeriod.annualSavings.toLocaleString("es-ES", {
-                    style: "currency",
-                    currency: "EUR",
-                    maximumFractionDigits: 0,
-                  })}
-                </span>
+                <div className="flex bg-black/40 rounded-lg p-0.5 border border-white/5">
+                  <button
+                    onClick={() => setUseManualCost(false)}
+                    className={`px-2 py-1 cursor-pointer text-[9px] font-bold uppercase rounded-md transition-all ${
+                      !useManualCost
+                        ? "bg-cyan-600 text-white shadow-sm"
+                        : "text-gray-500 hover:text-white"
+                    }`}
+                  >
+                    Auto
+                  </button>
+                  <button
+                    onClick={() => setUseManualCost(true)}
+                    className={`px-2 py-1 cursor-pointer text-[9px] font-bold uppercase rounded-md transition-all ${
+                      useManualCost
+                        ? "bg-cyan-600 text-white shadow-sm"
+                        : "text-gray-500 hover:text-white"
+                    }`}
+                  >
+                    Manual
+                  </button>
+                </div>
               </div>
 
-              <div className="flex justify-between items-center">
-                <span className="text-[10px] uppercase tracking-wider text-gray-300">
-                  Beneficis bruts ({maxRoi}a)
-                </span>
-                <span className="font-mono font-bold text-white">
-                  {(maxRoi * paybackPeriod.annualSavings).toLocaleString(
-                    "es-ES",
-                    {
+              {useManualCost ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-white font-mono text-sm">€</span>
+                  <input
+                    type="number"
+                    value={manualCostInput}
+                    onChange={(e) => setManualCostInput(Number(e.target.value))}
+                    className="w-full bg-black/40 border border-white/10 rounded px-2 py-1 text-right font-mono text-white text-sm focus:border-cyan-500 focus:outline-none"
+                  />
+                </div>
+              ) : (
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] text-yellow-500/80">
+                    Estimat
+                  </span>
+                  <span className="font-mono font-bold text-lg text-yellow-400">
+                    {projectCost.total.toLocaleString("es-ES", {
                       style: "currency",
                       currency: "EUR",
                       maximumFractionDigits: 0,
-                    }
-                  )}
-                </span>
-              </div>
-              <div className="border-t border-white/10 my-1"></div>
-
-              {/* 2. ROI Years */}
-              <div className="flex justify-between items-center">
-                <span
-                  className={`text-[10px] uppercase tracking-wider ${
-                    paybackPeriod.isViable ? "text-green-300" : "text-red-300"
-                  }`}
-                >
-                  Retorn Inversió
-                </span>
-                <span
-                  className={`font-mono font-bold text-lg ${
-                    paybackPeriod.isViable ? "text-green-400" : "text-red-400"
-                  }`}
-                >
-                  {paybackPeriod.years.toFixed(1)} Anys
-                </span>
-              </div>
-
-              <div className="border-t border-white/10 my-1"></div>
-
-              {/* 3. Total Profit */}
-              <div className="flex justify-between items-center">
-                <span
-                  className={`text-[10px] uppercase tracking-wider ${
-                    paybackPeriod.isViable ? "text-green-300" : "text-red-300"
-                  }`}
-                >
-                  Benefici Net ({maxRoi}a)
-                </span>
-                <span
-                  className={`font-mono font-bold text-lg ${
-                    paybackPeriod.isViable ? "text-green-400" : "text-red-400"
-                  }`}
-                >
-                  {(
-                    (maxRoi - paybackPeriod.years) *
-                    paybackPeriod.annualSavings
-                  ).toLocaleString("es-ES", {
-                    style: "currency",
-                    currency: "EUR",
-                    maximumFractionDigits: 0,
-                  })}
-                </span>
-              </div>
-            </div>
-          )}
-          {!paybackPeriod && (
-            <div className="p-4 text-center border border-dashed border-white/10 rounded-lg">
-              <p className="text-[10px] text-gray-500 uppercase tracking-widest">
-                Dades de viabilitat no disponibles
-              </p>
-            </div>
-          )}
-          {/* EXPORT BUTTON */}
-          {activeParams && !simStats.loading && !hasPendingChanges && (
-            <div className="animate-in fade-in slide-in-from-top-2 duration-500">
-              <button
-                onClick={handleExportReport}
-                className="group cursor-pointer w-full relative overflow-hidden rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all duration-300 active:scale-95"
-              >
-                <div className="absolute inset-0 bg-cyan-500/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                <div className="relative flex items-center justify-center gap-3 py-3">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
-                    className="w-4 h-4 text-cyan-400 group-hover:text-white transition-colors"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
-                    />
-                  </svg>
-                  <div className="flex flex-col items-start leading-none">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-white">
-                      Exportar Informe
-                    </span>
-                    <span className="text-[8px] font-mono text-cyan-400/80 mt-0.5">
-                      .TXT
-                    </span>
-                  </div>
+                    })}
+                  </span>
                 </div>
-              </button>
+              )}
             </div>
-          )}
+
+            {/* ROI RESULTS BLOCK */}
+            {paybackPeriod && (
+              <div
+                className={`rounded-lg p-3 border flex flex-col gap-3 ${
+                  paybackPeriod.isViable
+                    ? "bg-green-900/10 border-green-500/30"
+                    : "bg-red-900/10 border-red-300/30"
+                }`}
+              >
+                {/* 1. Annual Savings */}
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] uppercase tracking-wider text-gray-300">
+                    Beneficis anuals
+                  </span>
+                  <span className="font-mono font-bold text-white">
+                    {paybackPeriod.annualSavings.toLocaleString("es-ES", {
+                      style: "currency",
+                      currency: "EUR",
+                      maximumFractionDigits: 0,
+                    })}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] uppercase tracking-wider text-gray-300">
+                    Beneficis bruts ({maxRoi}a)
+                  </span>
+                  <span className="font-mono font-bold text-white">
+                    {(maxRoi * paybackPeriod.annualSavings).toLocaleString(
+                      "es-ES",
+                      {
+                        style: "currency",
+                        currency: "EUR",
+                        maximumFractionDigits: 0,
+                      }
+                    )}
+                  </span>
+                </div>
+                <div className="border-t border-white/10 my-1"></div>
+
+                {/* 2. ROI Years */}
+                <div className="flex justify-between items-center">
+                  <span
+                    className={`text-[10px] uppercase tracking-wider ${
+                      paybackPeriod.isViable ? "text-green-300" : "text-red-300"
+                    }`}
+                  >
+                    Retorn Inversió
+                  </span>
+                  <span
+                    className={`font-mono font-bold text-lg ${
+                      paybackPeriod.isViable ? "text-green-400" : "text-red-400"
+                    }`}
+                  >
+                    {paybackPeriod.years.toFixed(1)} Anys
+                  </span>
+                </div>
+
+                <div className="border-t border-white/10 my-1"></div>
+
+                {/* 3. Total Profit */}
+                <div className="flex justify-between items-center">
+                  <span
+                    className={`text-[10px] uppercase tracking-wider ${
+                      paybackPeriod.isViable ? "text-green-300" : "text-red-300"
+                    }`}
+                  >
+                    Benefici Net ({maxRoi}a)
+                  </span>
+                  <span
+                    className={`font-mono font-bold text-lg ${
+                      paybackPeriod.isViable ? "text-green-400" : "text-red-400"
+                    }`}
+                  >
+                    {(
+                      (maxRoi - paybackPeriod.years) *
+                      paybackPeriod.annualSavings
+                    ).toLocaleString("es-ES", {
+                      style: "currency",
+                      currency: "EUR",
+                      maximumFractionDigits: 0,
+                    })}
+                  </span>
+                </div>
+              </div>
+            )}
+            {!paybackPeriod && (
+              <div className="p-4 text-center border border-dashed border-white/10 rounded-lg">
+                <p className="text-[10px] text-gray-500 uppercase tracking-widest">
+                  Dades de beneficis no disponibles
+                </p>
+              </div>
+            )}
+            {/* EXPORT BUTTON */}
+            {activeParams && !simStats.loading && !hasPendingChanges && (
+              <div className="animate-in fade-in slide-in-from-top-2 duration-500">
+                <button
+                  onClick={handleExportReport}
+                  className="group cursor-pointer w-full relative overflow-hidden rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all duration-300 active:scale-95"
+                >
+                  <div className="absolute inset-0 bg-cyan-500/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                  <div className="relative flex items-center justify-center gap-3 py-3">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
+                      className="w-4 h-4 text-cyan-400 group-hover:text-white transition-colors"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
+                      />
+                    </svg>
+                    <div className="flex flex-col items-start leading-none">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-white">
+                        Exportar Informe
+                      </span>
+                      <span className="text-[8px] font-mono text-cyan-400/80 mt-0.5">
+                        .TXT
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -3848,14 +3964,14 @@ STARRY SKY ENGINEERING GROUP
           {/* Flex Container: Single Horizontal Line */}
           <div className="flex items-center justify-between px-4 py-1 gap-6 overflow-x-auto no-scrollbar h-16">
             {/* LEFT: Title & Status */}
-            <div className="flex items-center gap-4 shrink-0 border-r border-white/10 pr-6 h-full">
+            <div className="hidden md:flex items-center gap-4 shrink-0 border-r border-white/10 pr-6 h-full">
               <h3 className="text-xs font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-white leading-tight">
                 Resultats
                 <br />
                 Simulació
               </h3>
               {/* Pulsing Dot */}
-              <div className="flex items-center gap-2">
+              <div className="hidden md:flex items-center gap-2">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
@@ -3935,7 +4051,7 @@ STARRY SKY ENGINEERING GROUP
             </div>
 
             {/* RIGHT: Note / Footer */}
-            <div className="shrink-0 text-[9px] text-gray-500 leading-tight text-right border-l border-white/10 pl-6 h-full flex items-center">
+            <div className="hidden md:flex shrink-0 text-[9px] text-gray-500 leading-tight text-right border-l border-white/10 pl-6 h-full items-center">
               <span>
                 <span className="text-cyan-400 font-bold">NOTA:</span> Model
                 simplificat web.
@@ -3949,8 +4065,7 @@ STARRY SKY ENGINEERING GROUP
         !simStats.loading &&
         !hideUI &&
         introFinished && (
-          
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
+          <div className="fixed max-md:hidden bottom-6 left-1/2 -translate-x-1/2 z-40">
             <div className="px-6 py-2 bg-neutral-900/80 border border-white/10 rounded-full shadow-2xl text-xs text-gray-400 italic">
               {hasPendingChanges
                 ? "⚠️ Paràmetres modificats. Executeu la simulació."
@@ -3961,7 +4076,7 @@ STARRY SKY ENGINEERING GROUP
       )}
       {/* FLOATING HIDE/SHOW UI BUTTON (Bottom Right Corner) */}
       {introFinished && (
-        <div className="absolute bottom-12 right-6 z-[60] pointer-events-auto">
+        <div className="hidden md:block absolute bottom-12 right-6 z-[60] pointer-events-auto">
           <button
             onClick={() => setHideUI(!hideUI)}
             className={`group cursor-pointer relative flex items-center justify-center w-12 h-12 rounded-full border shadow-2xl transition-all duration-300 ${
@@ -3972,7 +4087,6 @@ STARRY SKY ENGINEERING GROUP
             title={hideUI ? "Mostrar UI" : "Amagar UI"}
           >
             {hideUI ? (
-              
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
@@ -3993,7 +4107,6 @@ STARRY SKY ENGINEERING GROUP
                 />
               </svg>
             ) : (
-              
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
