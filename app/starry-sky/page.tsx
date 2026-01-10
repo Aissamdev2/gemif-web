@@ -2158,9 +2158,9 @@ export default function ThermalPage() {
 
   const [showMobileStats, setShowMobileStats] = useState(false);
 
-  const isShortScreen = useMediaQuery("(max-height: 700px)");
+  const isShortScreen = useMediaQuery("(max-height: 675px)");
 
-  const isVeryShortScreen = useMediaQuery("(max-height: 650px)");
+  const isVeryShortScreen = useMediaQuery("(max-height: 575px)");
 
   const isMobile = useMediaQuery("(max-width: 768px)"); // NEW: Mobile detection
 
