@@ -181,7 +181,7 @@ const PRESETS: Record<string, PresetDef> = {
     sinkThick: 0.01,
     useFins: true,
     sinkMatKey: "Al-1050A (Anodized)",
-    finHeight: 0.05,
+    finHeight: 0.1,
     finSpacing: 0.03,
     finThickness: 0.001,
     finEfficiency: 0.85,
@@ -2157,6 +2157,7 @@ export default function ThermalPage() {
   const [showDeathRay, setShowDeathRay] = useState(false);
 
   const [showMobileStats, setShowMobileStats] = useState(false);
+  const [showExpandedStats, setShowExpandedStats] = useState(false);
 
   const isShortScreen = useMediaQuery("(max-height: 675px)");
 
@@ -2726,7 +2727,7 @@ STARRY SKY ENGINEERING GROUP
   ]);
 
   return (
-    <div className="relative w-full h-[100dvh] bg-black overflow-hidden rounded-none flex flex-col md:block">
+    <div className="relative w-full h-[100dvh] bg-black overflow-hidden rounded-none flex flex-col md:block select-none">
       {/* HEADER */}
       <div
         className={`absolute w-full top-0 left-0 px-4 md:px-8 py-2 z-50 pointer-events-none select-none flex justify-between items-center transition-all duration-1000 ease-out border-b border-white/20 bg-neutral-900 shadow-2xl origin-top ${
@@ -2831,7 +2832,7 @@ STARRY SKY ENGINEERING GROUP
       </div>
 
       {/* 3D SCENE */}
-      <div className="relative order-2 flex-1 w-full min-h-0 md:absolute md:inset-0 md:h-full">
+      <div className="relative order-2 flex-1 w-full min-h-0 md:absolute md:inset-0 md:h-full touch-none">
         <Canvas
           shadows
           dpr={[1, 2]}
@@ -2975,8 +2976,8 @@ STARRY SKY ENGINEERING GROUP
       <div
         className={`
           relative order-1 z-30 flex-none flex flex-col gap-2 transition-all duration-1000 pointer-events-auto
-          w-full bg-neutral-900/95 backdrop-blur-md border-b border-white/10 p-4 pt-16 pb-2 shadow-2xl
-          md:absolute md:top-16 md:left-8 md:w-auto md:bg-transparent md:backdrop-blur-none md:border-none md:p-0 md:pt-0 md:shadow-none md:origin-top-left
+          w-full bg-neutral-900/95 border-b border-white/10 p-4 pt-16 pb-2 shadow-2xl
+          md:absolute md:top-16 md:left-8 md:w-auto md:bg-transparent md:border-none md:p-0 md:pt-0 md:shadow-none md:origin-top-left
           ${uiScaleClass} max-md:scale-100
           ${
             introFinished && !hideUI
@@ -3917,8 +3918,11 @@ STARRY SKY ENGINEERING GROUP
       </div>
       {/* RIGHT STATS PANEL */}
       <div
+        // KEY FIX: Adding a key forces React to treat these as separate elements, 
+        // preventing the "stretching" transition bug.
+        key={isMobile ? "mobile-stats" : showExpandedStats ? "desktop-modal" : "desktop-panel"}
         className={`
-            pointer-events-auto transition-all duration-300
+            pointer-events-auto
             ${
               isMobile
                 ? `fixed inset-0 z-[70] bg-black/95 flex items-center justify-center p-6 ${
@@ -3926,70 +3930,81 @@ STARRY SKY ENGINEERING GROUP
                       ? "opacity-100 pointer-events-auto"
                       : "opacity-0 pointer-events-none"
                   }`
-                : `absolute top-16 right-8 w-[320px] bg-neutral-900/95 p-4 rounded-2xl border border-white/20 shadow-2xl origin-top-right ${uiScaleClass} hover:border-cyan-500/30 ${
+                : showExpandedStats
+                ? "fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-12 animate-in fade-in zoom-in-95 duration-200" // Modal State (No transition-all)
+                : `absolute top-16 right-8 w-[320px] bg-neutral-900/95 p-4 rounded-2xl border border-white/20 shadow-2xl origin-top-right ${uiScaleClass} hover:border-cyan-500/30 transition-all duration-1000 ease-out ${
                     introFinished && !hideUI
                       ? "opacity-100 translate-x-0"
                       : "opacity-0 translate-x-10"
-                  }`
+                  }` // Panel State
             }
         `}
       >
-        {/* Wrapper div for mobile centering */}
+        {/* Inner Content Wrapper */}
         <div
           className={
             isMobile
               ? "w-full max-w-sm bg-neutral-900 p-4 rounded-2xl border border-white/20 relative"
-              : ""
+              : showExpandedStats
+              ? "w-full max-w-5xl bg-neutral-900 p-8 rounded-2xl border border-cyan-500/30 shadow-[0_0_50px_rgba(8,145,178,0.2)] relative max-h-[90vh] overflow-y-auto"
+              : "w-full"
           }
         >
-          {/* NEW: Close button for mobile modal */}
+          {/* Desktop Toggle Button */}
+          {!isMobile && (
+            <button
+              onClick={() => setShowExpandedStats(!showExpandedStats)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-cyan-400 transition-all hover:scale-110 z-20"
+              title={showExpandedStats ? "Tancar" : "Expandir"}
+            >
+              {showExpandedStats ? (
+                // Close/Minimize Icon
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                // Expand Icon
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                </svg>
+              )}
+            </button>
+          )}
+
+          {/* Mobile Close Button */}
           {isMobile && (
             <button
               onClick={() => setShowMobileStats(false)}
               className="absolute top-4 right-4 text-gray-400 hover:text-white"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="currentColor"
-                className="w-6 h-6"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 18L18 6M6 6l12 12"
-                />
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           )}
+
+          {/* Header */}
           <div className="flex items-center justify-between mb-4 border-b border-white/10 pb-2">
-            <h3 className="text-xs font-extrabold uppercase tracking-widest text-cyan-400">
-              Dades de viabilitat
+            <h3 className={`font-extrabold uppercase tracking-widest text-cyan-400 ${showExpandedStats ? "text-xl" : "text-xs"}`}>
+              Dades de viabilitat {showExpandedStats && "Detallades"}
             </h3>
           </div>
 
-          {/* ALWAYS SHOW STRUCTURAL WEIGHT */}
+          {/* Structural Weight Display */}
           <div className="flex justify-between items-center mb-4">
-            <p
-              className={`text-[11px] uppercase tracking-wider ${
-                structureWeight > 200 ? "text-red-400" : "text-white"
-              }`}
-            >
+            <p className={`text-[11px] uppercase tracking-wider ${structureWeight > 200 ? "text-red-400" : "text-white"}`}>
               Pes Estructural
             </p>
-            <p
-              className={`font-mono font-bold text-lg ${
-                structureWeight > 200 ? "text-red-400" : "text-white"
-              } leading-none`}
-            >
+            <p className={`font-mono font-bold ${showExpandedStats ? "text-2xl" : "text-lg"} ${structureWeight > 200 ? "text-red-400" : "text-white"} leading-none`}>
               {structureWeight.toFixed(2)} kg
             </p>
           </div>
-          <div className="flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-300">
-            {/* COST INPUT / TOGGLE SECTION */}
-            <div className="flex flex-col gap-2 bg-neutral-800/50 rounded-lg p-3 border border-white/10">
+          
+          {/* Main Grid Content */}
+          <div className={showExpandedStats ? "grid grid-cols-1 md:grid-cols-2 gap-8" : "flex flex-col gap-3"}>
+            
+            {/* COST SECTION */}
+            <div className={`flex flex-col gap-2 bg-neutral-800/50 rounded-lg border border-white/10 ${showExpandedStats ? "p-6" : "p-3"}`}>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] uppercase text-gray-300 font-bold">
                   Mode de Cost
@@ -3998,9 +4013,7 @@ STARRY SKY ENGINEERING GROUP
                   <button
                     onClick={() => setUseManualCost(false)}
                     className={`px-2 py-1 cursor-pointer text-[9px] font-bold uppercase rounded-md transition-all ${
-                      !useManualCost
-                        ? "bg-cyan-600 text-white shadow-sm"
-                        : "text-gray-500 hover:text-white"
+                      !useManualCost ? "bg-cyan-600 text-white shadow-sm" : "text-gray-500 hover:text-white"
                     }`}
                   >
                     Auto
@@ -4008,9 +4021,7 @@ STARRY SKY ENGINEERING GROUP
                   <button
                     onClick={() => setUseManualCost(true)}
                     className={`px-2 py-1 cursor-pointer text-[9px] font-bold uppercase rounded-md transition-all ${
-                      useManualCost
-                        ? "bg-cyan-600 text-white shadow-sm"
-                        : "text-gray-500 hover:text-white"
+                      useManualCost ? "bg-cyan-600 text-white shadow-sm" : "text-gray-500 hover:text-white"
                     }`}
                   >
                     Manual
@@ -4030,148 +4041,99 @@ STARRY SKY ENGINEERING GROUP
                 </div>
               ) : (
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] text-yellow-500/80">
-                    Estimat
-                  </span>
-                  <span className="font-mono font-bold text-lg text-yellow-400">
-                    {projectCost.total.toLocaleString("es-ES", {
-                      style: "currency",
-                      currency: "EUR",
-                      maximumFractionDigits: 0,
-                    })}
+                  <span className="text-[10px] text-yellow-500/80">Estimat</span>
+                  <span className={`font-mono font-bold text-yellow-400 ${showExpandedStats ? "text-2xl" : "text-lg"}`}>
+                    {projectCost.total.toLocaleString("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })}
                   </span>
                 </div>
               )}
+              
+              {showExpandedStats && !useManualCost && (
+                 <div className="mt-4 pt-4 border-t border-white/10 flex flex-col gap-2">
+                    <div className="flex justify-between text-xs text-gray-400"><span>Materials</span><span>{projectCost.breakdown.materials.toLocaleString("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })}</span></div>
+                    <div className="flex justify-between text-xs text-gray-400"><span>Manufactura</span><span>{projectCost.breakdown.manufacturing.toLocaleString("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })}</span></div>
+                    <div className="flex justify-between text-xs text-gray-400"><span>Logística</span><span>{projectCost.breakdown.logistics.toLocaleString("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })}</span></div>
+                 </div>
+              )}
             </div>
 
-            {/* ROI RESULTS BLOCK */}
-            {paybackPeriod && (
+            {/* ROI SECTION */}
+            {paybackPeriod ? (
               <div
-                className={`rounded-lg p-3 border flex flex-col gap-3 ${
-                  paybackPeriod.isViable
-                    ? "bg-green-900/10 border-green-500/30"
-                    : "bg-red-900/10 border-red-300/30"
-                }`}
+                className={`rounded-lg border flex flex-col gap-3 ${
+                    showExpandedStats ? "p-6 justify-center" : "p-3"
+                } ${paybackPeriod.isViable ? "bg-green-900/10 border-green-500/30" : "bg-red-900/10 border-red-300/30"}`}
               >
-                {/* 1. Annual Savings */}
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] uppercase tracking-wider text-gray-300">
-                    Beneficis anuals
-                  </span>
+                  <span className="text-[10px] uppercase tracking-wider text-gray-300">Beneficis anuals</span>
                   <span className="font-mono font-bold text-white">
-                    {paybackPeriod.annualSavings.toLocaleString("es-ES", {
-                      style: "currency",
-                      currency: "EUR",
-                      maximumFractionDigits: 0,
-                    })}
+                    {paybackPeriod.annualSavings.toLocaleString("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })}
                   </span>
                 </div>
-
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] uppercase tracking-wider text-gray-300">
-                    Beneficis bruts ({maxRoi}a)
-                  </span>
+                  <span className="text-[10px] uppercase tracking-wider text-gray-300">Beneficis bruts ({maxRoi}a)</span>
                   <span className="font-mono font-bold text-white">
-                    {(maxRoi * paybackPeriod.annualSavings).toLocaleString(
-                      "es-ES",
-                      {
-                        style: "currency",
-                        currency: "EUR",
-                        maximumFractionDigits: 0,
-                      }
-                    )}
+                    {(maxRoi * paybackPeriod.annualSavings).toLocaleString("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })}
                   </span>
                 </div>
                 <div className="border-t border-white/10 my-1"></div>
-
-                {/* 2. ROI Years */}
                 <div className="flex justify-between items-center">
-                  <span
-                    className={`text-[10px] uppercase tracking-wider ${
-                      paybackPeriod.isViable ? "text-green-300" : "text-red-300"
-                    }`}
-                  >
-                    Retorn Inversió
-                  </span>
-                  <span
-                    className={`font-mono font-bold text-lg ${
-                      paybackPeriod.isViable ? "text-green-400" : "text-red-400"
-                    }`}
-                  >
+                  <span className={`text-[10px] uppercase tracking-wider ${paybackPeriod.isViable ? "text-green-300" : "text-red-300"}`}>Retorn Inversió</span>
+                  <span className={`font-mono font-bold ${showExpandedStats ? "text-2xl" : "text-lg"} ${paybackPeriod.isViable ? "text-green-400" : "text-red-400"}`}>
                     {paybackPeriod.years.toFixed(1)} Anys
                   </span>
                 </div>
-
                 <div className="border-t border-white/10 my-1"></div>
-
-                {/* 3. Total Profit */}
                 <div className="flex justify-between items-center">
-                  <span
-                    className={`text-[10px] uppercase tracking-wider ${
-                      paybackPeriod.isViable ? "text-green-300" : "text-red-300"
-                    }`}
-                  >
-                    Benefici Net ({maxRoi}a)
-                  </span>
-                  <span
-                    className={`font-mono font-bold text-lg ${
-                      paybackPeriod.isViable ? "text-green-400" : "text-red-400"
-                    }`}
-                  >
-                    {(
-                      (maxRoi - paybackPeriod.years) *
-                      paybackPeriod.annualSavings
-                    ).toLocaleString("es-ES", {
-                      style: "currency",
-                      currency: "EUR",
-                      maximumFractionDigits: 0,
-                    })}
+                  <span className={`text-[10px] uppercase tracking-wider ${paybackPeriod.isViable ? "text-green-300" : "text-red-300"}`}>Benefici Net ({maxRoi}a)</span>
+                  <span className={`font-mono font-bold ${showExpandedStats ? "text-2xl" : "text-lg"} ${paybackPeriod.isViable ? "text-green-400" : "text-red-400"}`}>
+                    {((maxRoi - paybackPeriod.years) * paybackPeriod.annualSavings).toLocaleString("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })}
                   </span>
                 </div>
               </div>
+            ) : (
+                <div className="p-4 text-center border border-dashed border-white/10 rounded-lg">
+                    <p className="text-[10px] text-gray-500 uppercase tracking-widest">Dades no disponibles</p>
+                </div>
             )}
-            {!paybackPeriod && (
-              <div className="p-4 text-center border border-dashed border-white/10 rounded-lg">
-                <p className="text-[10px] text-gray-500 uppercase tracking-widest">
-                  Dades de beneficis no disponibles
-                </p>
-              </div>
-            )}
+            
             {/* EXPORT BUTTON */}
-            {activeParams && !simStats.loading && !hasPendingChanges && (
-              <div className="animate-in fade-in slide-in-from-top-2 duration-500">
-                <button
-                  onClick={handleExportReport}
-                  className="group cursor-pointer w-full relative overflow-hidden rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all duration-300 active:scale-95"
-                >
-                  <div className="absolute inset-0 bg-cyan-500/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                  <div className="relative flex items-center justify-center gap-3 py-3">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth={1.5}
-                      stroke="currentColor"
-                      className="w-4 h-4 text-cyan-400 group-hover:text-white transition-colors"
+            <div className={showExpandedStats ? "col-span-1 md:col-span-2" : ""}>
+                {activeParams && !simStats.loading && !hasPendingChanges && (
+                <div className="animate-in fade-in slide-in-from-top-2 duration-500 mt-2">
+                    <button
+                    onClick={handleExportReport}
+                    className={`group cursor-pointer w-full relative overflow-hidden rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all duration-300 active:scale-95 ${showExpandedStats ? "py-4" : ""}`}
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
-                      />
-                    </svg>
-                    <div className="flex flex-col items-start leading-none">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-white">
-                        Exportar Informe
-                      </span>
-                      <span className="text-[8px] font-mono text-cyan-400/80 mt-0.5">
-                        .TXT
-                      </span>
+                    <div className="absolute inset-0 bg-cyan-500/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                    <div className="relative flex items-center justify-center gap-3 py-3">
+                        <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                        className="w-4 h-4 text-cyan-400 group-hover:text-white transition-colors"
+                        >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
+                        />
+                        </svg>
+                        <div className="flex flex-col items-start leading-none">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-white">
+                            Exportar Informe
+                        </span>
+                        <span className="text-[8px] font-mono text-cyan-400/80 mt-0.5">
+                            .TXT
+                        </span>
+                        </div>
                     </div>
-                  </div>
-                </button>
-              </div>
-            )}
+                    </button>
+                </div>
+                )}
+            </div>
           </div>
         </div>
       </div>
