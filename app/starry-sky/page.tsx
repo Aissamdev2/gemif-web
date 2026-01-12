@@ -1612,10 +1612,8 @@ const ThermalBox = memo(
 
     return (
       <group rotation={[0, 0, 0]} position={[0, 0.1, 0]}>
-        {/* NEW: Death Ray - Only visible when critical */}
-        <DeathRay visible={showDeathRay && status.maxTemp > DEATH_RAY_TEMP} visLayerThick={visLayerThick} visSinkThick={visSinkThick} />
+        {/* <DeathRay visible={showDeathRay && status.maxTemp > DEATH_RAY_TEMP} visLayerThick={visLayerThick} visSinkThick={visSinkThick} />
 
-        {/* NEW: Fire/Sparks - Only visible when critical */}
         {showDeathRay && status.maxTemp > DEATH_RAY_TEMP && (
           <Sparkles
             count={50}
@@ -1624,9 +1622,9 @@ const ThermalBox = memo(
             speed={0.4}
             opacity={0.8}
             color="#ffaa00"
-            position={[0, 0.3, 0]} // Float above the plate
+            position={[0, 0.3, 0]}
           />
-        )}
+        )} */}
         {/* SINK LAYER */}
         {visSinkThick > 0.0001 && (
           <group ref={sinkRef}>
@@ -3166,11 +3164,11 @@ STARRY SKY ENGINEERING GROUP
             </button>
           </div>
 
-          {
+          {/* {
           simStats && simStats.maxTemp && simStats.maxTemp > DEATH_RAY_TEMP ? (
               <DeathRayButton isActive={showDeathRay} onClick={() => setShowDeathRay(prev => !prev)} />
             ) : null
-          }
+          } */}
 
           {/* NEW: Mobile-only Grid for Actions */}
           <div className="md:hidden grid grid-cols-2 gap-2">
