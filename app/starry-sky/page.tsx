@@ -3952,7 +3952,7 @@ STARRY SKY ENGINEERING GROUP
           {!isMobile && (
             <button
               onClick={() => setShowExpandedStats(!showExpandedStats)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-cyan-400 transition-all hover:scale-110 z-20"
+              className="absolute cursor-pointer top-4 right-4 text-gray-500 hover:text-cyan-400 transition-all hover:scale-110 z-20"
               title={showExpandedStats ? "Tancar" : "Expandir"}
             >
               {showExpandedStats ? (
