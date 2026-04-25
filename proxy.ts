@@ -62,12 +62,12 @@ export async function proxy(request: NextRequest) {
         return NextResponse.redirect(new URL('/initial-setup/subjects', request.url));
       }
 
-      if (!pathname.startsWith('/gemif') && pathname !== '/logout' && pathname !== '/' && !pathname.startsWith('/playground') && !pathname.startsWith('/starry-sky') && isVerified && isCompleteUserInfo && isCompleteSubjects)
+      if (!pathname.startsWith('/gemif') && pathname !== '/logout' && pathname !== '/' && !pathname.startsWith('/playground') && !pathname.startsWith('/starry-sky') && !pathname.startsWith('/astro') && isVerified && isCompleteUserInfo && isCompleteSubjects)
         return NextResponse.redirect(new URL('/gemif/main', request.url));
 
     } else {
       const url = new URL(request.url)
-      if (pathname.startsWith("/playground/magic") || pathname.startsWith("/starry-sky")) {
+      if (pathname.startsWith("/playground/magic") || pathname.startsWith("/starry-sky") || pathname.startsWith("/astro")) {
         return NextResponse.next()
       }
       const simulationToken = url.searchParams.get('simulation-token')
@@ -94,7 +94,7 @@ export const config = {
      * - Next.js internals (_next/static, _next/image)
      * - Common static file extensions
      */
-    '/((?!_next/static|_next/image|.*\\.(?:css|js|png|jpg|jpeg|ico|svg|xml|txt|woff|woff2|eot|ttf|otf|json|hdr)$).*)',
+    '/((?!_next/static|_next/image|.*\\.(?:css|js|png|jpg|jpeg|ico|svg|xml|txt|woff|woff2|eot|ttf|otf|json|hdr|pdf)$).*)',
     '/api/(.*)',
   ],
 };
