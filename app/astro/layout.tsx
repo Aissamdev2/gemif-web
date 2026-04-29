@@ -28,9 +28,6 @@ export default function AstroLayout({
       <main className="grow w-full">
         {children}
       </main>
-      <footer className="py-6 bg-slate-900 text-slate-400 text-center text-sm">
-        <p suppressHydrationWarning>© {new Date().getFullYear()} GEMiFWeb</p>
-      </footer>
     </div>
   );
 }

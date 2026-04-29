@@ -12,20 +12,22 @@ export default function Navbar() {
   const fontSection = SECTIONS.find(s => s.id === 'fonts');
 
   return (
-    <nav className={`sticky top-0 z-50 transition-all duration-500 ${
+    <nav className={`${isHome ? 'absolute' : 'sticky'} top-0 w-full z-50 transition-all duration-500 ${
       isHome 
-        ? 'bg-slate-50/80 backdrop-blur-md border-b border-slate-200' 
+        ? 'bg-transparent border-none' 
         : 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800'
     }`}>
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex justify-between items-center h-20">
           {/* Logo & Author */}
           <Link href="/astro" className="flex items-baseline gap-3 group">
-            <span className="font-black text-xl tracking-tighter text-blue-600 transition-transform group-hover:scale-105">
+            <span className={`font-black text-xl tracking-tighter transition-transform group-hover:scale-105 ${
+              isHome ? 'text-white' : 'text-blue-600'
+            }`}>
               FESTIVAL GALÀCTIC
             </span>
             <span className={`text-[10px] font-medium tracking-[0.2em] uppercase transition-colors hidden sm:inline ${
-              isHome ? 'text-slate-400 group-hover:text-blue-600' : 'text-slate-500 group-hover:text-blue-600'
+              isHome ? 'text-slate-300/60 group-hover:text-white' : 'text-slate-500 group-hover:text-blue-600'
             }`}>
               <span className="mx-1 opacity-20">|</span> Aissam Khadraoui
             </span>
@@ -34,7 +36,7 @@ export default function Navbar() {
           {/* Navigation Links */}
           <div className="hidden lg:flex items-center gap-2">
             <div className={`flex items-center p-1 rounded-2xl border ${
-              isHome ? 'bg-slate-100/50 border-slate-200' : 'bg-slate-500/5 border-slate-200 dark:border-white/5'
+              isHome ? 'bg-white/5 border-white/10 backdrop-blur-sm' : 'bg-slate-100/50 border-slate-200'
             }`}>
               {mainSections.map((section) => {
                 const isActive = pathname === section.path;
@@ -44,15 +46,17 @@ export default function Navbar() {
                     href={section.path}
                     className={`relative px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
                       isActive
-                        ? 'text-blue-600 bg-white shadow-sm'
+                        ? isHome ? 'text-blue-400 bg-white/10 shadow-sm' : 'text-blue-600 bg-white shadow-sm'
                         : isHome
-                          ? 'text-slate-600 hover:text-blue-600 hover:bg-white/50'
+                          ? 'text-slate-300 hover:text-white hover:bg-white/5'
                           : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
                     {section.label}
                     {isActive && (
-                      <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-blue-600 rounded-full shadow-[0_0_8px_#3b82f6]"></span>
+                      <span className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full shadow-[0_0_8px_#3b82f6] ${
+                        isHome ? 'bg-blue-400' : 'bg-blue-600'
+                      }`}></span>
                     )}
                   </Link>
                 );
@@ -67,7 +71,7 @@ export default function Navbar() {
                   pathname === fontSection.path
                     ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20'
                     : isHome
-                      ? 'border-slate-200 text-slate-600 hover:bg-blue-600 hover:text-white hover:border-blue-600'
+                      ? 'border-white/20 text-slate-300 hover:bg-white hover:text-slate-900 hover:border-white'
                       : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-blue-500 hover:text-blue-500'
                 }`}
               >
